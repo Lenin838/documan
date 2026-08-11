@@ -1,7 +1,12 @@
+import { env } from './config/env.js';
+import { logger } from './config/logger.js';
 import { app } from './app.js';
 
-const PORT = Number(process.env.PORT) || 4000;
-
-app.listen(PORT, () => {
-  console.log(`Documan API running on http://localhost:${PORT}`);
+app.listen(env.PORT, () => {
+  logger.info(
+    {
+      port: env.PORT,
+    },
+    'Documan API started',
+  );
 });

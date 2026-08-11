@@ -23,6 +23,17 @@ export const nodeConfig = defineConfig([
     languageOptions: {
       globals: globals.node,
     },
+
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
+    },
   },
 ]);
 
