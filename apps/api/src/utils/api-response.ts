@@ -17,6 +17,7 @@ export function sendError(
   message: string,
   statusCode = 500,
   requestId?: string,
+  details?: unknown,
 ) {
   return res.status(statusCode).json({
     success: false,
@@ -24,6 +25,7 @@ export function sendError(
       code,
       message,
       ...(requestId ? { requestId } : {}),
+      ...(details ? {details} : {})
     },
   });
 }
