@@ -2,6 +2,7 @@ import type { ErrorRequestHandler } from 'express';
 
 import { logger } from '../config/logger.js';
 import { AppError } from '../errors/app-error.js';
+import { sendError } from '../utils/api-response.js';
 
 export const errorMiddleware: ErrorRequestHandler = (
   error,
@@ -22,16 +23,13 @@ export const errorMiddleware: ErrorRequestHandler = (
       'Application error',
     );
 
-    res.status(error.statusCode).json({
-      success: false,
-      error: {
-        code: error.code,
-        message: error.message,
-        requestId,
-      },
-    });
-
-    return;
+    return sendError(
+      res,
+      error.code,
+      error.message,
+      error.statusCode,
+      requestId,
+    );
   }
 
   logger.error(
@@ -42,12 +40,11 @@ export const errorMiddleware: ErrorRequestHandler = (
     'Unhandled application error',
   );
 
-  res.status(500).json({
-    success: false,
-    error: {
-      code: 'INTERNAL_SERVER_ERROR',
-      message: 'An unexpected error occurred',
-      requestId,
-    },
-  });
+  return sendError(
+    res,
+    'INTERNAL_SERVER_ERROR',
+    'An unexpected error occurred',
+    500,
+    requestId,
+  );
 };

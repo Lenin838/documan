@@ -6,6 +6,4 @@ const healthRouter = Router();
 
 healthRouter.get('/', healthController);
 
-
-
 export { healthRouter };
