@@ -35,3 +35,27 @@ export async function createUser(input: CreateUserInput) {
     updatedAt: user.updatedAt,
   };
 }
+
+export async function getCurrentUser(userId: string) {
+  const user = await User.findById(userId).select(
+    'name email role isActive createdAt updatedAt',
+  );
+
+  if (!user) {
+    throw new AppError(
+      'User not found',
+      404,
+      'USER_NOT_FOUND',
+    );
+  }
+
+  return {
+    id: user._id.toString(),
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    isActive: user.isActive,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  };
+}
