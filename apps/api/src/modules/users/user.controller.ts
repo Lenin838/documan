@@ -3,7 +3,7 @@ import type { Request, Response, RequestHandler } from 'express';
 import { AppError } from '../../errors/app-error.js';
 import { sendSuccess } from '../../utils/api-response.js';
 
-import { createUser } from './user.service.js';
+import { createUser,getCurrentUser } from './user.service.js';
 
 export async function createUserController(
   req: Request,
@@ -30,9 +30,9 @@ export const getCurrentUserController: RequestHandler = async (
       );
     }
 
-    return sendSuccess(res, {
-      userId: req.user.userId,
-    });
+    const user = await getCurrentUser(req.user.userId);
+
+    return sendSuccess(res, user);
   } catch (error) {
     return next(error);
   }
