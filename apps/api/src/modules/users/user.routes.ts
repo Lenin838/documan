@@ -17,4 +17,5 @@ userRouter.post(
 );
 userRouter.get('/me', authenticate, getCurrentUserController);
 
+
 export { userRouter };

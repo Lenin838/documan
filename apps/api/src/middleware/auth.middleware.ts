@@ -4,11 +4,17 @@ import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
 import { AppError } from '../errors/app-error.js';
 
+import { User } from '../modules/users/user.model.js';
+
 interface AccessTokenPayload {
   userId: string;
 }
 
-export const authenticate: RequestHandler = (req, _res, next) => {
+export const authenticate: RequestHandler = async (
+  req,
+  _res,
+  next,
+) => {
   const authorization = req.headers.authorization;
 
   if (!authorization?.startsWith('Bearer ')) {
@@ -39,8 +45,33 @@ export const authenticate: RequestHandler = (req, _res, next) => {
       );
     }
 
+    const user = await User.findById(payload.userId).select(
+      'role isActive',
+    );
+
+    if (!user) {
+      return next(
+        new AppError(
+          'User no longer exists',
+          401,
+          'INVALID_TOKEN',
+        ),
+      );
+    }
+
+    if (!user.isActive) {
+      return next(
+        new AppError(
+          'User account is inactive',
+          403,
+          'ACCOUNT_INACTIVE',
+        ),
+      );
+    }
+
     req.user = {
-      userId: payload.userId,
+      userId: user.id,
+      role: user.role,
     };
 
     return next();
