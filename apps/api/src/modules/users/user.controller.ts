@@ -1,6 +1,8 @@
-import type { Request, Response } from 'express';
+import type { Request, Response, RequestHandler } from 'express';
 
+import { AppError } from '../../errors/app-error.js';
 import { sendSuccess } from '../../utils/api-response.js';
+
 import { createUser } from './user.service.js';
 
 export async function createUserController(
@@ -11,3 +13,27 @@ export async function createUserController(
 
   return sendSuccess(res, user, 201);
 }
+
+export const getCurrentUserController: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    if (!req.user) {
+      return next(
+        new AppError(
+          'Authentication required',
+          401,
+          'AUTHENTICATION_REQUIRED',
+        ),
+      );
+    }
+
+    return sendSuccess(res, {
+      userId: req.user.userId,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
