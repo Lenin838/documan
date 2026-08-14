@@ -29,6 +29,12 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z
     .string()
     .default('15m'),
+
+    REFRESH_TOKEN_EXPIRES_IN_DAYS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(7),
 });
 
 export const env = envSchema.parse(process.env);

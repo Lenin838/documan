@@ -2,7 +2,7 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
-
+import cookieParser from 'cookie-parser';
 import { env } from './config/env.js';
 import { logger } from './config/logger.js';
 import { requestIdMiddleware } from './middleware/request-id.middleware.js';
@@ -43,6 +43,8 @@ app.use(
 );
 
 app.use(express.json());
+app.use(cookieParser());
+
 
 app.use('/api/v1', apiRouter);
 app.use(errorMiddleware);
