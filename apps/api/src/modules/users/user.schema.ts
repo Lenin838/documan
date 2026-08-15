@@ -20,3 +20,15 @@ export const createUserSchema = z.object({
 });
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;
+
+export const updateUserSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(2, 'Name must be at least 2 characters')
+      .max(100, 'Name must not exceed 100 characters'),
+  })
+  .strict();
+
+export type UpdateUserInput = z.infer<typeof updateUserSchema>;

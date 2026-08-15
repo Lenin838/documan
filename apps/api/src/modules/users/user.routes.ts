@@ -6,9 +6,13 @@ import { validateBody } from '../../middleware/validate.middleware.js';
 import {
   createUserController,
   getCurrentUserController,
+  updateCurrentUserController,
 } from './user.controller.js';
 
-import { createUserSchema } from './user.schema.js';
+import {
+  createUserSchema,
+  updateUserSchema,
+} from './user.schema.js';
 
 const userRouter = Router();
 
@@ -24,4 +28,10 @@ userRouter.get(
   getCurrentUserController,
 );
 
+userRouter.patch(
+  '/me',
+  authenticate,
+  validateBody(updateUserSchema),
+  updateCurrentUserController,
+);
 export { userRouter };
