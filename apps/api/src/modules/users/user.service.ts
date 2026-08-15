@@ -4,8 +4,10 @@ import { User } from './user.model.js';
 import type {
   CreateUserInput,
   UpdateUserInput,
+  ChangePasswordInput,
 } from './user.schema.js';
 import { AppError } from '../../errors/app-error.js';
+import { RefreshToken } from '../auth/refresh-token.model.js';
 
 export async function createUser(input: CreateUserInput) {
   const existingUser = await User.findOne({
@@ -98,5 +100,58 @@ export async function updateCurrentUser(
     isActive: user.isActive,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
+  };
+}
+
+export async function changePassword(
+  userId: string,
+  input: ChangePasswordInput,
+) {
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new AppError(
+      'User not found',
+      404,
+      'USER_NOT_FOUND',
+    );
+  }
+
+  const passwordMatches = await bcrypt.compare(
+    input.currentPassword,
+    user.passwordHash,
+  );
+
+  if (!passwordMatches) {
+    throw new AppError(
+      'Current password is incorrect',
+      401,
+      'INVALID_CURRENT_PASSWORD',
+    );
+  }
+
+  const passwordHash = await bcrypt.hash(
+    input.newPassword,
+    12,
+  );
+
+  user.passwordHash = passwordHash;
+
+  await user.save();
+
+  await RefreshToken.updateMany(
+    {
+      userId: user._id,
+      revokedAt: null,
+    },
+    {
+      $set: {
+        revokedAt: new Date(),
+      },
+    },
+  );
+
+  return {
+    message: 'Password changed successfully',
   };
 }

@@ -7,11 +7,13 @@ import {
   createUserController,
   getCurrentUserController,
   updateCurrentUserController,
+  changePasswordController
 } from './user.controller.js';
 
 import {
   createUserSchema,
   updateUserSchema,
+  changePasswordSchema,
 } from './user.schema.js';
 
 const userRouter = Router();
@@ -34,4 +36,12 @@ userRouter.patch(
   validateBody(updateUserSchema),
   updateCurrentUserController,
 );
+
+userRouter.patch(
+  '/me/password',
+  authenticate,
+  validateBody(changePasswordSchema),
+  changePasswordController,
+);
+
 export { userRouter };

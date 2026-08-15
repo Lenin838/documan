@@ -7,6 +7,7 @@ import {
   createUser,
   getCurrentUser,
   updateCurrentUser,
+  changePassword
 } from './user.service.js';
 export async function createUserController(
   req: Request,
@@ -64,6 +65,33 @@ export const updateCurrentUserController: RequestHandler = async (
     );
 
     return sendSuccess(res, user);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const changePasswordController: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    if (!req.user) {
+      return next(
+        new AppError(
+          'Authentication required',
+          401,
+          'AUTHENTICATION_REQUIRED',
+        ),
+      );
+    }
+
+    const result = await changePassword(
+      req.user.userId,
+      req.body,
+    );
+
+    return sendSuccess(res, result);
   } catch (error) {
     return next(error);
   }
