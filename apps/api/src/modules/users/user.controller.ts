@@ -7,7 +7,11 @@ import {
   createUser,
   getCurrentUser,
   updateCurrentUser,
-  changePassword
+  changePassword,
+  getAllUsers,
+  getUserById,
+  adminUpdateUser,
+  updateUserStatus,
 } from './user.service.js';
 export async function createUserController(
   req: Request,
@@ -92,6 +96,74 @@ export const changePasswordController: RequestHandler = async (
     );
 
     return sendSuccess(res, result);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const getAllUsersController: RequestHandler = async (
+  _req,
+  res,
+  next,
+) => {
+  try {
+    const users = await getAllUsers();
+
+    return sendSuccess(res, users);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const getUserByIdController: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const { id } = res.locals.validatedParams;
+
+    const user = await getUserById(id);
+
+    return sendSuccess(res, user);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const adminUpdateUserController: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const { id } = res.locals.validatedParams;
+
+    const user = await adminUpdateUser(
+      id,
+      req.body,
+    );
+
+    return sendSuccess(res, user);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const updateUserStatusController: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const { id } = res.locals.validatedParams;
+
+    const user = await updateUserStatus(
+      id,
+      req.body.isActive,
+    );
+
+    return sendSuccess(res, user);
   } catch (error) {
     return next(error);
   }
