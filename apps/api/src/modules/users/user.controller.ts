@@ -107,7 +107,9 @@ export const getAllUsersController: RequestHandler = async (
   next,
 ) => {
   try {
-    const users = await getAllUsers();
+    const users = await getAllUsers(
+      res.locals.validatedQuery,
+    );
 
     return sendSuccess(res, users);
   } catch (error) {

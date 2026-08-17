@@ -6,6 +6,7 @@ import type {
   UpdateUserInput,
   ChangePasswordInput,
   AdminUpdateUserInput,
+  AdminUsersQueryInput,
 } from './user.schema.js';
 import { AppError } from '../../errors/app-error.js';
 import { RefreshToken } from '../auth/refresh-token.model.js';
@@ -157,23 +158,85 @@ export async function changePassword(
   };
 }
 
-export async function getAllUsers() {
-  const users = await User.find()
-    .select(
-      'name email role isActive createdAt updatedAt',
-    )
-    .sort({ createdAt: -1 });
+export async function getAllUsers(
+  query: AdminUsersQueryInput,
+) {
+  const {
+    page,
+    limit,
+    role,
+    isActive,
+    search,
+  } = query;
 
-  return users.map((user) => ({
-    id: user._id.toString(),
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    isActive: user.isActive,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
-  }));
+  const filter: {
+    role?: 'user' | 'admin';
+    isActive?: boolean;
+    $or?: Array<{
+      name?: { $regex: string; $options: string };
+      email?: { $regex: string; $options: string };
+    }>;
+  } = {};
+
+  if (role) {
+    filter.role = role;
+  }
+
+  if (isActive !== undefined) {
+    filter.isActive = isActive;
+  }
+
+  if (search) {
+    filter.$or = [
+      {
+        name: {
+          $regex: search,
+          $options: 'i',
+        },
+      },
+      {
+        email: {
+          $regex: search,
+          $options: 'i',
+        },
+      },
+    ];
+  }
+
+  const skip = (page - 1) * limit;
+
+  const [users, total] = await Promise.all([
+    User.find(filter)
+      .select(
+        'name email role isActive createdAt updatedAt',
+      )
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+
+    User.countDocuments(filter),
+  ]);
+
+  return {
+    users: users.map((user) => ({
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      isActive: user.isActive,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    })),
+
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 }
+
 
 export async function getUserById(userId: string) {
   const user = await User.findById(userId).select(

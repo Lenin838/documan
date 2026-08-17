@@ -57,6 +57,41 @@ export type ChangePasswordInput = z.infer<
   typeof changePasswordSchema
 >;
 
+export const adminUsersQuerySchema = z.object({
+  page: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .default(1),
+
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .default(10),
+
+  role: z
+    .enum(['user', 'admin'])
+    .optional(),
+
+  isActive: z
+    .enum(['true', 'false'])
+    .transform((value) => value === 'true')
+    .optional(),
+
+  search: z
+    .string()
+    .trim()
+    .min(1)
+    .max(100)
+    .optional(),
+});
+
+export type AdminUsersQueryInput = z.infer<
+  typeof adminUsersQuerySchema
+>;
+
 export const userIdParamsSchema = z.object({
   id: z.string().regex(
     /^[0-9a-fA-F]{24}$/,
