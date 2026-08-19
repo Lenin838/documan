@@ -14,6 +14,7 @@ import {
   getUserByIdController,
   adminUpdateUserController,
   updateUserStatusController,
+  deleteUserController,
 } from './user.controller.js';
 
 import {
@@ -86,6 +87,14 @@ userRouter.patch(
   validateParams(userIdParamsSchema),
   validateBody(updateUserStatusSchema),
   updateUserStatusController,
+);
+
+userRouter.delete(
+  '/:id',
+  authenticate,
+  requireRole('admin'),
+  validateParams(userIdParamsSchema),
+  deleteUserController,
 );
 
 
