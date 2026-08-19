@@ -5,10 +5,12 @@ import {
   loginRateLimiter,
   refreshRateLimiter,
 } from '../../middleware/rate-limit.middleware.js';
+import { authenticate } from '../../middleware/auth.middleware.js';
 
 import {
   loginController,
   logoutController,
+  logoutAllController,
   refreshController,
 } from './auth.controller.js';
 import { loginSchema } from './auth.schema.js';
@@ -29,5 +31,11 @@ authRouter.post(
 );
 
 authRouter.post('/logout', logoutController);
+
+authRouter.post(
+  '/logout-all',
+  authenticate,
+  logoutAllController,
+);
 
 export { authRouter };

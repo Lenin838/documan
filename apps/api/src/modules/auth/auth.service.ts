@@ -185,3 +185,17 @@ export async function logoutUser(refreshToken: string) {
     },
   );
 }
+
+export async function logoutAllSessions(userId: string) {
+  await RefreshToken.updateMany(
+    {
+      userId,
+      revokedAt: null,
+    },
+    {
+      $set: {
+        revokedAt: new Date(),
+      },
+    },
+  );
+}
