@@ -376,3 +376,54 @@ export async function updateUserStatus(
     updatedAt: user.updatedAt,
   };
 }
+
+export async function deleteUser(
+  currentAdminId: string,
+  userId: string,
+) {
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new AppError(
+      'User not found',
+      404,
+      'USER_NOT_FOUND',
+    );
+  }
+
+  if (currentAdminId === user._id.toString()) {
+    throw new AppError(
+      'You cannot delete your own admin account',
+      400,
+      'SELF_DELETION_NOT_ALLOWED',
+    );
+  }
+
+  if (!user.isActive) {
+    throw new AppError(
+      'User is already inactive',
+      400,
+      'USER_ALREADY_INACTIVE',
+    );
+  }
+
+  user.isActive = false;
+
+  await user.save();
+
+  await RefreshToken.updateMany(
+    {
+      userId: user._id,
+      revokedAt: null,
+    },
+    {
+      $set: {
+        revokedAt: new Date(),
+      },
+    },
+  );
+
+  return {
+    message: 'User deleted successfully',
+  };
+}

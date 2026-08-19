@@ -12,6 +12,7 @@ import {
   getUserById,
   adminUpdateUser,
   updateUserStatus,
+  deleteUser
 } from './user.service.js';
 export async function createUserController(
   req: Request,
@@ -188,6 +189,35 @@ export const updateUserStatusController: RequestHandler = async (
     );
 
     return sendSuccess(res, user);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const deleteUserController: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const { id } = res.locals.validatedParams;
+
+    if (!req.user) {
+      return next(
+        new AppError(
+          'Authentication required',
+          401,
+          'AUTHENTICATION_REQUIRED',
+        ),
+      );
+    }
+
+    const result = await deleteUser(
+      req.user.userId,
+      id,
+    );
+
+    return sendSuccess(res, result);
   } catch (error) {
     return next(error);
   }
