@@ -141,7 +141,18 @@ export const adminUpdateUserController: RequestHandler = async (
   try {
     const { id } = res.locals.validatedParams;
 
+    if (!req.user) {
+      return next(
+        new AppError(
+          'Authentication required',
+          401,
+          'AUTHENTICATION_REQUIRED',
+        ),
+      );
+    }
+
     const user = await adminUpdateUser(
+      req.user.userId,
       id,
       req.body,
     );
@@ -160,7 +171,18 @@ export const updateUserStatusController: RequestHandler = async (
   try {
     const { id } = res.locals.validatedParams;
 
+    if (!req.user) {
+      return next(
+        new AppError(
+          'Authentication required',
+          401,
+          'AUTHENTICATION_REQUIRED',
+        ),
+      );
+    }
+
     const user = await updateUserStatus(
+      req.user.userId,
       id,
       req.body.isActive,
     );

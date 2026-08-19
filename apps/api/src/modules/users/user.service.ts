@@ -263,6 +263,7 @@ export async function getUserById(userId: string) {
 }
 
 export async function adminUpdateUser(
+  currentAdminId: string,
   userId: string,
   input: AdminUpdateUserInput,
 ) {
@@ -273,6 +274,14 @@ export async function adminUpdateUser(
       'User not found',
       404,
       'USER_NOT_FOUND',
+    );
+  }
+
+    if (currentAdminId === user._id.toString()) {
+    throw new AppError(
+      'You cannot modify your own admin account',
+      400,
+      'SELF_MODIFICATION_NOT_ALLOWED',
     );
   }
 
@@ -317,6 +326,7 @@ export async function adminUpdateUser(
 }
 
 export async function updateUserStatus(
+  currentAdminId: string,
   userId: string,
   isActive: boolean,
 ) {
@@ -327,6 +337,14 @@ export async function updateUserStatus(
       'User not found',
       404,
       'USER_NOT_FOUND',
+    );
+  }
+
+    if (currentAdminId === user._id.toString()) {
+    throw new AppError(
+      'You cannot modify your own admin account',
+      400,
+      'SELF_MODIFICATION_NOT_ALLOWED',
     );
   }
 

@@ -43,6 +43,26 @@ userRouter.get(
 );
 
 userRouter.get(
+  '/me',
+  authenticate,
+  getCurrentUserController,
+);
+
+userRouter.patch(
+  '/me',
+  authenticate,
+  validateBody(updateUserSchema),
+  updateCurrentUserController,
+);
+
+userRouter.patch(
+  '/me/password',
+  authenticate,
+  validateBody(changePasswordSchema),
+  changePasswordController,
+);
+
+userRouter.get(
   '/:id',
   authenticate,
   requireRole('admin'),
@@ -68,24 +88,5 @@ userRouter.patch(
   updateUserStatusController,
 );
 
-userRouter.get(
-  '/me',
-  authenticate,
-  getCurrentUserController,
-);
-
-userRouter.patch(
-  '/me',
-  authenticate,
-  validateBody(updateUserSchema),
-  updateCurrentUserController,
-);
-
-userRouter.patch(
-  '/me/password',
-  authenticate,
-  validateBody(changePasswordSchema),
-  changePasswordController,
-);
 
 export { userRouter };
