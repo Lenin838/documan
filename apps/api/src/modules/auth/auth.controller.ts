@@ -6,6 +6,7 @@ import { env } from '../../config/env.js';
 import {
   loginUser,
   logoutUser,
+  logoutAllSessions,
   refreshAccessToken,
 } from './auth.service.js';
 
@@ -101,6 +102,39 @@ export const logoutController: RequestHandler = async (
 
     return sendSuccess(res, {
       message: 'Logged out successfully',
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const logoutAllController: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    if (!req.user) {
+      return next(
+        new AppError(
+          'Authentication required',
+          401,
+          'AUTHENTICATION_REQUIRED',
+        ),
+      );
+    }
+
+    await logoutAllSessions(req.user.userId);
+
+    res.clearCookie('documan_refresh_token', {
+      httpOnly: true,
+      secure: env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/api/v1/auth',
+    });
+
+    return sendSuccess(res, {
+      message: 'Logged out from all sessions successfully',
     });
   } catch (error) {
     return next(error);
