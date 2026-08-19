@@ -1,4 +1,5 @@
 import bcrypt from 'bcrypt';
+import { randomUUID } from 'node:crypto';
 
 import { env } from '../../config/env.js';
 import { AppError } from '../../errors/app-error.js';
@@ -48,6 +49,7 @@ export async function loginUser(input: LoginInput) {
   const accessToken = generateAccessToken(user.id);
   const refreshToken = generateRefreshToken();
   const refreshTokenHash = hashRefreshToken(refreshToken);
+  const familyId = randomUUID();
 
   const expiresAt = new Date();
 
@@ -58,6 +60,7 @@ export async function loginUser(input: LoginInput) {
   await RefreshToken.create({
     userId: user._id,
     tokenHash: refreshTokenHash,
+    familyId,
     expiresAt,
     revokedAt: null,
   });
@@ -93,10 +96,23 @@ export async function refreshAccessToken(
   }
 
   if (storedToken.revokedAt) {
+    await RefreshToken.updateMany(
+      {
+        userId: storedToken.userId,
+        familyId: storedToken.familyId,
+        revokedAt: null,
+      },
+      {
+        $set: {
+          revokedAt: new Date(),
+        },
+      },
+    );
+
     throw new AppError(
-      'Refresh token has been revoked',
+      'Refresh token reuse detected',
       401,
-      'REFRESH_TOKEN_REVOKED',
+      'REFRESH_TOKEN_REUSE_DETECTED',
     );
   }
 
@@ -126,11 +142,9 @@ export async function refreshAccessToken(
     );
   }
 
-  // Revoke the current refresh token.
   storedToken.revokedAt = new Date();
   await storedToken.save();
 
-  // Create a replacement refresh token.
   const newRefreshToken = generateRefreshToken();
   const newRefreshTokenHash = hashRefreshToken(newRefreshToken);
 
@@ -143,6 +157,7 @@ export async function refreshAccessToken(
   await RefreshToken.create({
     userId: user._id,
     tokenHash: newRefreshTokenHash,
+    familyId: storedToken.familyId,
     expiresAt,
     revokedAt: null,
   });

@@ -2,6 +2,7 @@ import { Schema, Types, model } from 'mongoose';
 export interface RefreshTokenDocument {
   userId: Types.ObjectId;
   tokenHash: string;
+  familyId: string;
   expiresAt: Date;
   revokedAt: Date | null;
   createdAt: Date;
@@ -21,6 +22,12 @@ const refreshTokenSchema = new Schema<RefreshTokenDocument>(
       type: String,
       required: true,
       unique: true,
+    },
+
+    familyId: {
+      type: String,
+      required: true,
+      index: true,
     },
 
     expiresAt: {
