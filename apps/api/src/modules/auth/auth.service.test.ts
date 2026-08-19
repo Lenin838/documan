@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
+import bcrypt from 'bcrypt';
 const {
   mockRefreshToken,
   mockUser,
@@ -34,6 +34,7 @@ vi.mock('../users/user.model.js', () => ({
 }));
 
 import {
+  loginUser,
   logoutAllSessions,
   logoutUser,
   refreshAccessToken,
@@ -153,4 +154,106 @@ describe('auth service', () => {
       );
     });
   });
+  describe('loginUser', () => {
+    it('should reject when the user does not exist', async () => {
+        mockUser.findOne.mockResolvedValue(null);
+
+        await expect(
+        loginUser({
+            email: 'missing@example.com',
+            password: 'password123',
+        }),
+        ).rejects.toMatchObject({
+        statusCode: 401,
+        code: 'INVALID_CREDENTIALS',
+        });
+
+        expect(mockUser.findOne).toHaveBeenCalledWith({
+        email: 'missing@example.com',
+        });
+    });
+
+    it('should reject an inactive user', async () => {
+        mockUser.findOne.mockResolvedValue({
+        isActive: false,
+        });
+
+        await expect(
+        loginUser({
+            email: 'inactive@example.com',
+            password: 'password123',
+        }),
+        ).rejects.toMatchObject({
+        statusCode: 403,
+        code: 'ACCOUNT_INACTIVE',
+        });
+    });
+
+    it('should reject an incorrect password', async () => {
+        mockUser.findOne.mockResolvedValue({
+        isActive: true,
+        passwordHash: await bcrypt.hash(
+            'correct-password',
+            4,
+        ),
+        });
+
+        await expect(
+        loginUser({
+            email: 'user@example.com',
+            password: 'wrong-password',
+        }),
+        ).rejects.toMatchObject({
+        statusCode: 401,
+        code: 'INVALID_CREDENTIALS',
+        });
+    });
+
+    it('should successfully log in and create a refresh token', async () => {
+        const user = {
+        _id: 'user-123',
+        id: 'user-123',
+        name: 'Test User',
+        email: 'user@example.com',
+        role: 'user' as const,
+        isActive: true,
+        passwordHash: await bcrypt.hash(
+            'password123',
+            4,
+        ),
+        };
+
+        mockUser.findOne.mockResolvedValue(user);
+
+        mockRefreshToken.create.mockResolvedValue({
+        userId: user._id,
+        });
+
+        const result = await loginUser({
+        email: 'user@example.com',
+        password: 'password123',
+        });
+
+        expect(result.accessToken).toBeTypeOf('string');
+        expect(result.refreshToken).toBeTypeOf('string');
+
+        expect(result.user).toEqual({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isActive: user.isActive,
+        });
+
+        expect(mockRefreshToken.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+            userId: user._id,
+            tokenHash: expect.any(String),
+            familyId: expect.any(String),
+            expiresAt: expect.any(Date),
+            revokedAt: null,
+        }),
+        );
+    });
+    });
 });
