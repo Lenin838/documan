@@ -88,14 +88,24 @@ describe('app', () => {
   });
 
   describe('CORS', () => {
-    it('should allow the configured CORS origin', async () => {
-      const response = await request(app)
-        .get('/api/v1/health')
-        .set('Origin', 'http://localhost:5173');
+  it('should allow the configured CORS origin', async () => {
+    const response = await request(app)
+      .get('/api/v1/health')
+      .set('Origin', 'http://localhost:5173');
 
-      expect(
-        response.headers['access-control-allow-origin'],
-      ).toBe('http://localhost:5173');
-    });
+    expect(
+      response.headers['access-control-allow-origin'],
+    ).toBe('http://localhost:5173');
   });
+
+  it('should allow credentials for the configured CORS origin', async () => {
+    const response = await request(app)
+      .get('/api/v1/health')
+      .set('Origin', 'http://localhost:5173');
+
+    expect(
+      response.headers['access-control-allow-credentials'],
+    ).toBe('true');
+  });
+});
 });
