@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import bcrypt from 'bcrypt';
+
 const {
   mockRefreshToken,
   mockUser,
@@ -107,6 +108,97 @@ describe('auth service', () => {
         code: 'REFRESH_TOKEN_EXPIRED',
       });
     });
+
+    it('should reject when the user does not exist', async () => {
+      const storedToken = {
+        userId: 'user-123',
+        familyId: 'family-123',
+        revokedAt: null,
+        expiresAt: new Date(Date.now() + 60_000),
+      };
+
+      mockRefreshToken.findOne.mockResolvedValue(storedToken);
+      mockUser.findById.mockResolvedValue(null);
+
+      await expect(
+        refreshAccessToken('valid-refresh-token'),
+      ).rejects.toMatchObject({
+        statusCode: 401,
+        code: 'INVALID_REFRESH_TOKEN',
+      });
+
+      expect(mockUser.findById).toHaveBeenCalledWith(
+        storedToken.userId,
+      );
+    });
+
+    it('should reject when the user is inactive', async () => {
+      const storedToken = {
+        userId: 'user-123',
+        familyId: 'family-123',
+        revokedAt: null,
+        expiresAt: new Date(Date.now() + 60_000),
+      };
+
+      mockRefreshToken.findOne.mockResolvedValue(storedToken);
+
+      mockUser.findById.mockResolvedValue({
+        _id: 'user-123',
+        id: 'user-123',
+        isActive: false,
+      });
+
+      await expect(
+        refreshAccessToken('valid-refresh-token'),
+      ).rejects.toMatchObject({
+        statusCode: 403,
+        code: 'ACCOUNT_INACTIVE',
+      });
+    });
+
+    it('should successfully refresh the access and refresh tokens', async () => {
+      const storedToken = {
+        userId: 'user-123',
+        familyId: 'family-123',
+        revokedAt: null,
+        expiresAt: new Date(Date.now() + 60_000),
+        save: vi.fn().mockResolvedValue(undefined),
+      };
+
+      const user = {
+        _id: 'user-123',
+        id: 'user-123',
+        isActive: true,
+      };
+
+      mockRefreshToken.findOne.mockResolvedValue(storedToken);
+      mockUser.findById.mockResolvedValue(user);
+
+      mockRefreshToken.create.mockResolvedValue({
+        userId: user._id,
+      });
+
+      const result = await refreshAccessToken(
+        'valid-refresh-token',
+      );
+
+      expect(storedToken.revokedAt).toBeInstanceOf(Date);
+
+      expect(storedToken.save).toHaveBeenCalled();
+
+      expect(mockRefreshToken.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: user._id,
+          tokenHash: expect.any(String),
+          familyId: storedToken.familyId,
+          expiresAt: expect.any(Date),
+          revokedAt: null,
+        }),
+      );
+
+      expect(result.accessToken).toBeTypeOf('string');
+      expect(result.refreshToken).toBeTypeOf('string');
+    });
   });
 
   describe('logoutUser', () => {
@@ -154,63 +246,64 @@ describe('auth service', () => {
       );
     });
   });
+
   describe('loginUser', () => {
     it('should reject when the user does not exist', async () => {
-        mockUser.findOne.mockResolvedValue(null);
+      mockUser.findOne.mockResolvedValue(null);
 
-        await expect(
+      await expect(
         loginUser({
-            email: 'missing@example.com',
-            password: 'password123',
+          email: 'missing@example.com',
+          password: 'password123',
         }),
-        ).rejects.toMatchObject({
+      ).rejects.toMatchObject({
         statusCode: 401,
         code: 'INVALID_CREDENTIALS',
-        });
+      });
 
-        expect(mockUser.findOne).toHaveBeenCalledWith({
+      expect(mockUser.findOne).toHaveBeenCalledWith({
         email: 'missing@example.com',
-        });
+      });
     });
 
     it('should reject an inactive user', async () => {
-        mockUser.findOne.mockResolvedValue({
+      mockUser.findOne.mockResolvedValue({
         isActive: false,
-        });
+      });
 
-        await expect(
+      await expect(
         loginUser({
-            email: 'inactive@example.com',
-            password: 'password123',
+          email: 'inactive@example.com',
+          password: 'password123',
         }),
-        ).rejects.toMatchObject({
+      ).rejects.toMatchObject({
         statusCode: 403,
         code: 'ACCOUNT_INACTIVE',
-        });
+      });
     });
 
     it('should reject an incorrect password', async () => {
-        mockUser.findOne.mockResolvedValue({
+      mockUser.findOne.mockResolvedValue({
         isActive: true,
         passwordHash: await bcrypt.hash(
-            'correct-password',
-            4,
+          'correct-password',
+          4,
         ),
-        });
+      });
 
-        await expect(
+      await expect(
         loginUser({
-            email: 'user@example.com',
-            password: 'wrong-password',
+          email: 'user@example.com',
+          password: 'wrong-password',
         }),
-        ).rejects.toMatchObject({
+      ).rejects.toMatchObject({
         statusCode: 401,
         code: 'INVALID_CREDENTIALS',
-        });
+      });
     });
 
     it('should successfully log in and create a refresh token', async () => {
-        const user = {
+      const user = {
         _id: 'user-123',
         id: 'user-123',
         name: 'Test User',
@@ -218,42 +311,42 @@ describe('auth service', () => {
         role: 'user' as const,
         isActive: true,
         passwordHash: await bcrypt.hash(
-            'password123',
-            4,
+          'password123',
+          4,
         ),
-        };
+      };
 
-        mockUser.findOne.mockResolvedValue(user);
+      mockUser.findOne.mockResolvedValue(user);
 
-        mockRefreshToken.create.mockResolvedValue({
+      mockRefreshToken.create.mockResolvedValue({
         userId: user._id,
-        });
+      });
 
-        const result = await loginUser({
+      const result = await loginUser({
         email: 'user@example.com',
         password: 'password123',
-        });
+      });
 
-        expect(result.accessToken).toBeTypeOf('string');
-        expect(result.refreshToken).toBeTypeOf('string');
+      expect(result.accessToken).toBeTypeOf('string');
+      expect(result.refreshToken).toBeTypeOf('string');
 
-        expect(result.user).toEqual({
+      expect(result.user).toEqual({
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
         isActive: user.isActive,
-        });
+      });
 
-        expect(mockRefreshToken.create).toHaveBeenCalledWith(
+      expect(mockRefreshToken.create).toHaveBeenCalledWith(
         expect.objectContaining({
-            userId: user._id,
-            tokenHash: expect.any(String),
-            familyId: expect.any(String),
-            expiresAt: expect.any(Date),
-            revokedAt: null,
+          userId: user._id,
+          tokenHash: expect.any(String),
+          familyId: expect.any(String),
+          expiresAt: expect.any(Date),
+          revokedAt: null,
         }),
-        );
+      );
     });
-    });
+  });
 });
