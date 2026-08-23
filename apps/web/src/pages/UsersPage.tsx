@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { getUsers } from '../features/users/user.api';
 import type {
@@ -130,6 +131,7 @@ export default function UsersPage() {
                 <th>Role</th>
                 <th>Status</th>
                 <th>Created</th>
+                <th>Actions</th>
               </tr>
             </thead>
 
@@ -149,12 +151,17 @@ export default function UsersPage() {
                       user.createdAt,
                     ).toLocaleDateString()}
                   </td>
+                  <td>
+                    <Link to={`/users/${user.id}`}>
+                        View
+                    </Link>
+                    </td>
                 </tr>
               ))}
 
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={5}>
+                  <td colSpan={6}>
                     No users found.
                   </td>
                 </tr>

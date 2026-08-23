@@ -10,6 +10,8 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import ProtectedRoute from './routes/ProtectedRoute';
 import UsersPage from './pages/UsersPage';
+import UserDetailsPage from './pages/UserDetailsPage';
+import EditUserPage from './pages/EditUserPage';
 import { useAuthStore } from './features/auth/auth.store';
 
 function App() {
@@ -53,6 +55,16 @@ function App() {
         <Route
           path="/users"
           element={<UsersPage />}
+        />
+
+        <Route
+          path="/users/:id"
+          element={<UserDetailsPage />}
+        />
+
+        <Route
+          path="/users/:id/edit"
+          element={<EditUserPage />}
         />
       </Route>
     </Routes>
