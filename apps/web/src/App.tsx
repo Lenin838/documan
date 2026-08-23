@@ -9,6 +9,7 @@ import {
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import ProtectedRoute from './routes/ProtectedRoute';
+import UsersPage from './pages/UsersPage';
 import { useAuthStore } from './features/auth/auth.store';
 
 function App() {
@@ -41,6 +42,17 @@ function App() {
         <Route
           path="/dashboard"
           element={<DashboardPage />}
+        />
+      </Route>
+
+      <Route
+        element={
+          <ProtectedRoute allowedRoles={['admin']} />
+        }
+      >
+        <Route
+          path="/users"
+          element={<UsersPage />}
         />
       </Route>
     </Routes>
