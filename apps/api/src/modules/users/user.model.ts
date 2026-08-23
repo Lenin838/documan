@@ -6,6 +6,7 @@ export interface UserDocument {
   passwordHash: string;
   role: 'user' | 'admin';
   isActive: boolean;
+  isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -40,6 +41,11 @@ const userSchema = new Schema<UserDocument>(
     isActive: {
       type: Boolean,
       default: true,
+    },
+
+    isDeleted: {
+      type: Boolean,
+      default: false,
     },
   },
   {

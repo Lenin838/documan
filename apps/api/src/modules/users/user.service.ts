@@ -11,20 +11,36 @@ import type {
 import { AppError } from '../../errors/app-error.js';
 import { RefreshToken } from '../auth/refresh-token.model.js';
 
-export async function createUser(input: CreateUserInput) {
+interface UserResponse {
+  id: string;
+  name: string;
+  email: string;
+  role: 'user' | 'admin';
+  isActive: boolean;
+  isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export async function createUser(
+  input: CreateUserInput,
+): Promise<UserResponse> {
   const existingUser = await User.findOne({
     email: input.email,
   });
 
   if (existingUser) {
     throw new AppError(
-        'User with this email already exists',
-        409,
-        'USER_ALREADY_EXISTS',
-        );
+      'User with this email already exists',
+      409,
+      'USER_ALREADY_EXISTS',
+    );
   }
 
-  const passwordHash = await bcrypt.hash(input.password, 12);
+  const passwordHash = await bcrypt.hash(
+    input.password,
+    12,
+  );
 
   const user = await User.create({
     name: input.name,
@@ -38,14 +54,20 @@ export async function createUser(input: CreateUserInput) {
     email: user.email,
     role: user.role,
     isActive: user.isActive,
+    isDeleted: user.isDeleted,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };
 }
 
-export async function getCurrentUser(userId: string) {
-  const user = await User.findById(userId).select(
-    'name email role isActive createdAt updatedAt',
+export async function getCurrentUser(
+  userId: string,
+): Promise<UserResponse> {
+  const user = await User.findOne({
+    _id: userId,
+    isDeleted: false,
+  }).select(
+    'name email role isActive isDeleted createdAt updatedAt',
   );
 
   if (!user) {
@@ -62,6 +84,7 @@ export async function getCurrentUser(userId: string) {
     email: user.email,
     role: user.role,
     isActive: user.isActive,
+    isDeleted: user.isDeleted,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };
@@ -70,9 +93,12 @@ export async function getCurrentUser(userId: string) {
 export async function updateCurrentUser(
   userId: string,
   input: UpdateUserInput,
-) {
-  const user = await User.findByIdAndUpdate(
-    userId,
+): Promise<UserResponse> {
+  const user = await User.findOneAndUpdate(
+    {
+      _id: userId,
+      isDeleted: false,
+    },
     {
       $set: {
         name: input.name,
@@ -83,7 +109,7 @@ export async function updateCurrentUser(
       runValidators: true,
     },
   ).select(
-    'name email role isActive createdAt updatedAt',
+    'name email role isActive isDeleted createdAt updatedAt',
   );
 
   if (!user) {
@@ -100,6 +126,7 @@ export async function updateCurrentUser(
     email: user.email,
     role: user.role,
     isActive: user.isActive,
+    isDeleted: user.isDeleted,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };
@@ -109,7 +136,10 @@ export async function changePassword(
   userId: string,
   input: ChangePasswordInput,
 ) {
-  const user = await User.findById(userId);
+  const user = await User.findOne({
+    _id: userId,
+    isDeleted: false,
+  });
 
   if (!user) {
     throw new AppError(
@@ -170,13 +200,22 @@ export async function getAllUsers(
   } = query;
 
   const filter: {
+    isDeleted: boolean;
     role?: 'user' | 'admin';
     isActive?: boolean;
     $or?: Array<{
-      name?: { $regex: string; $options: string };
-      email?: { $regex: string; $options: string };
+      name?: {
+        $regex: string;
+        $options: string;
+      };
+      email?: {
+        $regex: string;
+        $options: string;
+      };
     }>;
-  } = {};
+  } = {
+    isDeleted: false,
+  };
 
   if (role) {
     filter.role = role;
@@ -208,7 +247,7 @@ export async function getAllUsers(
   const [users, total] = await Promise.all([
     User.find(filter)
       .select(
-        'name email role isActive createdAt updatedAt',
+        'name email role isActive isDeleted createdAt updatedAt',
       )
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -224,6 +263,7 @@ export async function getAllUsers(
       email: user.email,
       role: user.role,
       isActive: user.isActive,
+      isDeleted: user.isDeleted,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     })),
@@ -237,10 +277,14 @@ export async function getAllUsers(
   };
 }
 
-
-export async function getUserById(userId: string) {
-  const user = await User.findById(userId).select(
-    'name email role isActive createdAt updatedAt',
+export async function getUserById(
+  userId: string,
+): Promise<UserResponse> {
+  const user = await User.findOne({
+    _id: userId,
+    isDeleted: false,
+  }).select(
+    'name email role isActive isDeleted createdAt updatedAt',
   );
 
   if (!user) {
@@ -257,6 +301,7 @@ export async function getUserById(userId: string) {
     email: user.email,
     role: user.role,
     isActive: user.isActive,
+    isDeleted: user.isDeleted,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };
@@ -266,8 +311,11 @@ export async function adminUpdateUser(
   currentAdminId: string,
   userId: string,
   input: AdminUpdateUserInput,
-) {
-  const user = await User.findById(userId);
+): Promise<UserResponse> {
+  const user = await User.findOne({
+    _id: userId,
+    isDeleted: false,
+  });
 
   if (!user) {
     throw new AppError(
@@ -277,7 +325,7 @@ export async function adminUpdateUser(
     );
   }
 
-    if (currentAdminId === user._id.toString()) {
+  if (currentAdminId === user._id.toString()) {
     throw new AppError(
       'You cannot modify your own admin account',
       400,
@@ -285,10 +333,16 @@ export async function adminUpdateUser(
     );
   }
 
-  if (input.email && input.email !== user.email) {
+  if (
+    input.email &&
+    input.email !== user.email
+  ) {
     const existingUser = await User.findOne({
       email: input.email,
-      _id: { $ne: user._id },
+      _id: {
+        $ne: user._id,
+      },
+      isDeleted: false,
     });
 
     if (existingUser) {
@@ -320,6 +374,7 @@ export async function adminUpdateUser(
     email: user.email,
     role: user.role,
     isActive: user.isActive,
+    isDeleted: user.isDeleted,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };
@@ -329,8 +384,11 @@ export async function updateUserStatus(
   currentAdminId: string,
   userId: string,
   isActive: boolean,
-) {
-  const user = await User.findById(userId);
+): Promise<UserResponse> {
+  const user = await User.findOne({
+    _id: userId,
+    isDeleted: false,
+  });
 
   if (!user) {
     throw new AppError(
@@ -340,7 +398,7 @@ export async function updateUserStatus(
     );
   }
 
-    if (currentAdminId === user._id.toString()) {
+  if (currentAdminId === user._id.toString()) {
     throw new AppError(
       'You cannot modify your own admin account',
       400,
@@ -372,6 +430,7 @@ export async function updateUserStatus(
     email: user.email,
     role: user.role,
     isActive: user.isActive,
+    isDeleted: user.isDeleted,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };
@@ -381,7 +440,10 @@ export async function deleteUser(
   currentAdminId: string,
   userId: string,
 ) {
-  const user = await User.findById(userId);
+  const user = await User.findOne({
+    _id: userId,
+    isDeleted: false,
+  });
 
   if (!user) {
     throw new AppError(
@@ -399,15 +461,8 @@ export async function deleteUser(
     );
   }
 
-  if (!user.isActive) {
-    throw new AppError(
-      'User is already inactive',
-      400,
-      'USER_ALREADY_INACTIVE',
-    );
-  }
-
   user.isActive = false;
+  user.isDeleted = true;
 
   await user.save();
 

@@ -1,49 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const {
-  mockUser,
-  mockRefreshToken,
-  mockBcrypt,
-} = vi.hoisted(() => {
-  process.env.MONGO_URI =
-    'mongodb://127.0.0.1:27017/documan_test';
-
-  process.env.JWT_SECRET =
-    'test-secret-that-is-at-least-32-characters-long';
-
-  return {
-    mockUser: {
-      findOne: vi.fn(),
-      findById: vi.fn(),
-      findByIdAndUpdate: vi.fn(),
-      find: vi.fn(),
-      countDocuments: vi.fn(),
-      create: vi.fn(),
-    },
-
-    mockRefreshToken: {
-      updateMany: vi.fn(),
-    },
-
-    mockBcrypt: {
-      hash: vi.fn(),
-      compare: vi.fn(),
-    },
-  };
-});
-
-vi.mock('./user.model.js', () => ({
-  User: mockUser,
-}));
-
-vi.mock('../auth/refresh-token.model.js', () => ({
-  RefreshToken: mockRefreshToken,
-}));
-
-vi.mock('bcrypt', () => ({
-  default: mockBcrypt,
-}));
-
 import {
   createUser,
   getCurrentUser,
@@ -56,6 +12,51 @@ import {
   deleteUser,
 } from './user.service.js';
 
+import { User } from './user.model.js';
+import { RefreshToken } from '../auth/refresh-token.model.js';
+
+import bcrypt from 'bcrypt';
+
+vi.mock('./user.model.js', () => ({
+  User: {
+    findOne: vi.fn(),
+    findOneAndUpdate: vi.fn(),
+    find: vi.fn(),
+    countDocuments: vi.fn(),
+    create: vi.fn(),
+  },
+}));
+
+vi.mock('../auth/refresh-token.model.js', () => ({
+  RefreshToken: {
+    updateMany: vi.fn(),
+  },
+}));
+
+vi.mock('bcrypt', () => ({
+  default: {
+    hash: vi.fn(),
+    compare: vi.fn(),
+  },
+}));
+
+const mockUser = User as unknown as {
+  findOne: ReturnType<typeof vi.fn>;
+  findOneAndUpdate: ReturnType<typeof vi.fn>;
+  find: ReturnType<typeof vi.fn>;
+  countDocuments: ReturnType<typeof vi.fn>;
+  create: ReturnType<typeof vi.fn>;
+};
+
+const mockRefreshToken = RefreshToken as unknown as {
+  updateMany: ReturnType<typeof vi.fn>;
+};
+
+const mockBcrypt = bcrypt as unknown as {
+  hash: ReturnType<typeof vi.fn>;
+  compare: ReturnType<typeof vi.fn>;
+};
+
 function createUserDocument(
   overrides: Record<string, unknown> = {},
 ) {
@@ -64,886 +65,737 @@ function createUserDocument(
       toString: () => 'user-123',
     },
     name: 'Test User',
-    email: 'user@example.com',
+    email: 'test@example.com',
     passwordHash: 'hashed-password',
     role: 'user' as const,
     isActive: true,
+    isDeleted: false,
     createdAt: new Date('2026-01-01'),
     updatedAt: new Date('2026-01-02'),
-    save: vi.fn().mockResolvedValue(undefined),
+    save: vi.fn(),
     ...overrides,
   };
 }
 
-describe('user service', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+function createSelectMock(value: unknown) {
+  const select = vi.fn().mockResolvedValue(value);
 
-  describe('createUser', () => {
-    it('should reject when a user with the email already exists', async () => {
-      mockUser.findOne.mockResolvedValue(
-        createUserDocument(),
-      );
+  return {
+    select,
+  };
+}
 
-      await expect(
-        createUser({
-          name: 'Test User',
-          email: 'user@example.com',
-          password: 'password123',
-        }),
-      ).rejects.toMatchObject({
-        statusCode: 409,
-        code: 'USER_ALREADY_EXISTS',
-      });
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
-      expect(mockUser.findOne).toHaveBeenCalledWith({
-        email: 'user@example.com',
-      });
+describe('createUser', () => {
+  it('should create a user successfully', async () => {
+    mockUser.findOne.mockResolvedValue(null);
 
-      expect(mockBcrypt.hash).not.toHaveBeenCalled();
-      expect(mockUser.create).not.toHaveBeenCalled();
+    mockBcrypt.hash.mockResolvedValue(
+      'hashed-password',
+    );
+
+    const user = createUserDocument();
+
+    mockUser.create.mockResolvedValue(user);
+
+    const result = await createUser({
+      name: 'Test User',
+      email: 'test@example.com',
+      password: 'password123',
     });
 
-    it('should create a user successfully', async () => {
-      mockUser.findOne.mockResolvedValue(null);
+    expect(mockUser.findOne).toHaveBeenCalledWith({
+      email: 'test@example.com',
+    });
 
-      mockBcrypt.hash.mockResolvedValue(
-        'hashed-password',
-      );
+    expect(mockBcrypt.hash).toHaveBeenCalledWith(
+      'password123',
+      12,
+    );
 
-      const user = createUserDocument({
-        name: 'New User',
-        email: 'new@example.com',
-        role: 'user',
-      });
+    expect(mockUser.create).toHaveBeenCalledWith({
+      name: 'Test User',
+      email: 'test@example.com',
+      passwordHash: 'hashed-password',
+    });
 
-      mockUser.create.mockResolvedValue(user);
+    expect(result).toEqual({
+      id: 'user-123',
+      name: 'Test User',
+      email: 'test@example.com',
+      role: 'user',
+      isActive: true,
+      isDeleted: false,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    });
+  });
 
-      const result = await createUser({
-        name: 'New User',
-        email: 'new@example.com',
+  it('should reject duplicate email', async () => {
+    mockUser.findOne.mockResolvedValue(
+      createUserDocument(),
+    );
+
+    await expect(
+      createUser({
+        name: 'Test User',
+        email: 'test@example.com',
         password: 'password123',
-      });
+      }),
+    ).rejects.toMatchObject({
+      statusCode: 409,
+      code: 'USER_ALREADY_EXISTS',
+    });
 
-      expect(mockBcrypt.hash).toHaveBeenCalledWith(
-        'password123',
-        12,
-      );
+    expect(mockBcrypt.hash).not.toHaveBeenCalled();
+    expect(mockUser.create).not.toHaveBeenCalled();
+  });
+});
 
-      expect(mockUser.create).toHaveBeenCalledWith({
-        name: 'New User',
-        email: 'new@example.com',
-        passwordHash: 'hashed-password',
-      });
+describe('getCurrentUser', () => {
+  it('should return the current user', async () => {
+    const user = createUserDocument();
 
-      expect(result).toEqual({
-        id: 'user-123',
-        name: 'New User',
-        email: 'new@example.com',
-        role: 'user',
-        isActive: true,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      });
+    const query = createSelectMock(user);
+
+    mockUser.findOne.mockReturnValue(query);
+
+    const result = await getCurrentUser('user-123');
+
+    expect(mockUser.findOne).toHaveBeenCalledWith({
+      _id: 'user-123',
+      isDeleted: false,
+    });
+
+    expect(query.select).toHaveBeenCalledWith(
+      'name email role isActive isDeleted createdAt updatedAt',
+    );
+
+    expect(result).toEqual({
+      id: 'user-123',
+      name: 'Test User',
+      email: 'test@example.com',
+      role: 'user',
+      isActive: true,
+      isDeleted: false,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
     });
   });
 
-  describe('getCurrentUser', () => {
-    it('should return the current user', async () => {
-      const user = createUserDocument();
+  it('should throw when user does not exist', async () => {
+    const query = createSelectMock(null);
 
-      const select = vi.fn().mockResolvedValue(user);
+    mockUser.findOne.mockReturnValue(query);
 
-      mockUser.findById.mockReturnValue({
-        select,
-      });
-
-      const result = await getCurrentUser(
-        'user-123',
-      );
-
-      expect(mockUser.findById).toHaveBeenCalledWith(
-        'user-123',
-      );
-
-      expect(select).toHaveBeenCalledWith(
-        'name email role isActive createdAt updatedAt',
-      );
-
-      expect(result).toEqual({
-        id: 'user-123',
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isActive: user.isActive,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      });
-    });
-
-    it('should reject when the user does not exist', async () => {
-      const select = vi.fn().mockResolvedValue(null);
-
-      mockUser.findById.mockReturnValue({
-        select,
-      });
-
-      await expect(
-        getCurrentUser('missing-user'),
-      ).rejects.toMatchObject({
-        statusCode: 404,
-        code: 'USER_NOT_FOUND',
-      });
+    await expect(
+      getCurrentUser('user-123'),
+    ).rejects.toMatchObject({
+      statusCode: 404,
+      code: 'USER_NOT_FOUND',
     });
   });
+});
 
-  describe('updateCurrentUser', () => {
-    it('should update the current user name', async () => {
-      const user = createUserDocument({
+describe('updateCurrentUser', () => {
+  it('should update the current user name', async () => {
+    const user = createUserDocument({
+      name: 'Updated User',
+    });
+
+    const query = createSelectMock(user);
+
+    mockUser.findOneAndUpdate.mockReturnValue(query);
+
+    const result = await updateCurrentUser(
+      'user-123',
+      {
         name: 'Updated User',
-      });
+      },
+    );
 
-      const select = vi.fn().mockResolvedValue(user);
-
-      mockUser.findByIdAndUpdate.mockReturnValue({
-        select,
-      });
-
-      const result = await updateCurrentUser(
-        'user-123',
-        {
+    expect(mockUser.findOneAndUpdate).toHaveBeenCalledWith(
+      {
+        _id: 'user-123',
+        isDeleted: false,
+      },
+      {
+        $set: {
           name: 'Updated User',
         },
-      );
+      },
+      {
+        new: true,
+        runValidators: true,
+      },
+    );
 
-      expect(
-        mockUser.findByIdAndUpdate,
-      ).toHaveBeenCalledWith(
-        'user-123',
-        {
-          $set: {
-            name: 'Updated User',
-          },
-        },
-        {
-          new: true,
-          runValidators: true,
-        },
-      );
+    expect(query.select).toHaveBeenCalledWith(
+      'name email role isActive isDeleted createdAt updatedAt',
+    );
 
-      expect(result).toEqual({
-        id: 'user-123',
+    expect(result.name).toBe('Updated User');
+    expect(result.isDeleted).toBe(false);
+  });
+
+  it('should throw when user does not exist', async () => {
+    const query = createSelectMock(null);
+
+    mockUser.findOneAndUpdate.mockReturnValue(query);
+
+    await expect(
+      updateCurrentUser('user-123', {
         name: 'Updated User',
-        email: user.email,
-        role: user.role,
-        isActive: user.isActive,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      });
+      }),
+    ).rejects.toMatchObject({
+      statusCode: 404,
+      code: 'USER_NOT_FOUND',
+    });
+  });
+});
+
+describe('changePassword', () => {
+  it('should change password successfully', async () => {
+    const user = createUserDocument();
+
+    mockUser.findOne.mockResolvedValue(user);
+
+    mockBcrypt.compare.mockResolvedValue(true);
+    mockBcrypt.hash.mockResolvedValue(
+      'new-hashed-password',
+    );
+
+    user.save.mockResolvedValue(user);
+
+    mockRefreshToken.updateMany.mockResolvedValue({
+      modifiedCount: 1,
     });
 
-    it('should reject when the user does not exist', async () => {
-      const select = vi.fn().mockResolvedValue(null);
+    const result = await changePassword(
+      'user-123',
+      {
+        currentPassword: 'oldPassword',
+        newPassword: 'newPassword',
+      },
+    );
 
-      mockUser.findByIdAndUpdate.mockReturnValue({
-        select,
-      });
+    expect(mockUser.findOne).toHaveBeenCalledWith({
+      _id: 'user-123',
+      isDeleted: false,
+    });
 
-      await expect(
-        updateCurrentUser('missing-user', {
-          name: 'Updated User',
-        }),
-      ).rejects.toMatchObject({
-        statusCode: 404,
-        code: 'USER_NOT_FOUND',
-      });
+    expect(mockBcrypt.compare).toHaveBeenCalledWith(
+      'oldPassword',
+      'hashed-password',
+    );
+
+    expect(mockBcrypt.hash).toHaveBeenCalledWith(
+      'newPassword',
+      12,
+    );
+
+    expect(user.passwordHash).toBe(
+      'new-hashed-password',
+    );
+
+    expect(user.save).toHaveBeenCalled();
+
+    expect(mockRefreshToken.updateMany).toHaveBeenCalled();
+
+    expect(result).toEqual({
+      message: 'Password changed successfully',
     });
   });
 
-  describe('changePassword', () => {
-    it('should reject when the user does not exist', async () => {
-      mockUser.findById.mockResolvedValue(null);
+  it('should reject incorrect current password', async () => {
+    const user = createUserDocument();
 
-      await expect(
-        changePassword('missing-user', {
-          currentPassword: 'old-password',
-          newPassword: 'new-password',
-        }),
-      ).rejects.toMatchObject({
-        statusCode: 404,
-        code: 'USER_NOT_FOUND',
-      });
+    mockUser.findOne.mockResolvedValue(user);
 
-      expect(mockBcrypt.compare).not.toHaveBeenCalled();
+    mockBcrypt.compare.mockResolvedValue(false);
+
+    await expect(
+      changePassword('user-123', {
+        currentPassword: 'wrongPassword',
+        newPassword: 'newPassword',
+      }),
+    ).rejects.toMatchObject({
+      statusCode: 401,
+      code: 'INVALID_CURRENT_PASSWORD',
     });
 
-    it('should reject when the current password is incorrect', async () => {
-      const user = createUserDocument();
+    expect(mockBcrypt.hash).not.toHaveBeenCalled();
+    expect(user.save).not.toHaveBeenCalled();
+  });
+});
 
-      mockUser.findById.mockResolvedValue(user);
-      mockBcrypt.compare.mockResolvedValue(false);
+describe('getAllUsers', () => {
+  function setupFind(users: unknown[]) {
+    const limit = vi.fn().mockResolvedValue(users);
 
-      await expect(
-        changePassword('user-123', {
-          currentPassword: 'wrong-password',
-          newPassword: 'new-password',
-        }),
-      ).rejects.toMatchObject({
-        statusCode: 401,
-        code: 'INVALID_CURRENT_PASSWORD',
-      });
-
-      expect(mockBcrypt.compare).toHaveBeenCalledWith(
-        'wrong-password',
-        'hashed-password',
-      );
-
-      expect(mockBcrypt.hash).not.toHaveBeenCalled();
-      expect(user.save).not.toHaveBeenCalled();
-      expect(
-        mockRefreshToken.updateMany,
-      ).not.toHaveBeenCalled();
+    const skip = vi.fn().mockReturnValue({
+      limit,
     });
 
-    it('should change the password and revoke active refresh tokens', async () => {
-      const user = createUserDocument();
+    const sort = vi.fn().mockReturnValue({
+      skip,
+    });
 
-      mockUser.findById.mockResolvedValue(user);
-      mockBcrypt.compare.mockResolvedValue(true);
-      mockBcrypt.hash.mockResolvedValue(
-        'new-hashed-password',
-      );
+    const select = vi.fn().mockReturnValue({
+      sort,
+    });
 
-      mockRefreshToken.updateMany.mockResolvedValue({
-        modifiedCount: 2,
-      });
+    mockUser.find.mockReturnValue({
+      select,
+      sort,
+      skip,
+      limit,
+    });
 
-      const result = await changePassword(
-        'user-123',
-        {
-          currentPassword: 'old-password',
-          newPassword: 'new-password',
-        },
-      );
+    return {
+      select,
+      sort,
+      skip,
+      limit,
+    };
+  }
 
-      expect(mockBcrypt.compare).toHaveBeenCalledWith(
-        'old-password',
-        'hashed-password',
-      );
+  it('should return users with pagination', async () => {
+    const user = createUserDocument();
 
-      expect(mockBcrypt.hash).toHaveBeenCalledWith(
-        'new-password',
-        12,
-      );
+    setupFind([user]);
 
-      expect(user.passwordHash).toBe(
-        'new-hashed-password',
-      );
+    mockUser.countDocuments.mockResolvedValue(1);
 
-      expect(user.save).toHaveBeenCalled();
+    const result = await getAllUsers({
+      page: 1,
+      limit: 10,
+    });
 
-      expect(
-        mockRefreshToken.updateMany,
-      ).toHaveBeenCalledWith(
-        {
-          userId: user._id,
-          revokedAt: null,
-        },
-        {
-          $set: {
-            revokedAt: expect.any(Date),
-          },
-        },
-      );
+    expect(mockUser.find).toHaveBeenCalledWith({
+      isDeleted: false,
+    });
 
-      expect(result).toEqual({
-        message: 'Password changed successfully',
-      });
+    expect(mockUser.countDocuments).toHaveBeenCalledWith({
+      isDeleted: false,
+    });
+
+    expect(result.users).toHaveLength(1);
+
+    expect(result.users[0]).toEqual({
+      id: 'user-123',
+      name: 'Test User',
+      email: 'test@example.com',
+      role: 'user',
+      isActive: true,
+      isDeleted: false,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    });
+
+    expect(result.pagination).toEqual({
+      page: 1,
+      limit: 10,
+      total: 1,
+      totalPages: 1,
     });
   });
 
-  describe('getAllUsers', () => {
-    function createFindChain(users: unknown[]) {
-      const limit = vi.fn().mockResolvedValue(users);
-      const skip = vi.fn().mockReturnValue({
-        limit,
-      });
-      const sort = vi.fn().mockReturnValue({
-        skip,
-      });
-      const select = vi.fn().mockReturnValue({
-        sort,
-      });
+  it('should filter by role', async () => {
+    setupFind([]);
 
-      mockUser.find.mockReturnValue({
-        select,
-      });
+    mockUser.countDocuments.mockResolvedValue(0);
 
-      return {
-        select,
-        sort,
-        skip,
-        limit,
-      };
-    }
-
-    it('should return paginated users without filters', async () => {
-      const users = [
-        createUserDocument(),
-        createUserDocument({
-          _id: {
-            toString: () => 'user-456',
-          },
-          name: 'Second User',
-          email: 'second@example.com',
-        }),
-      ];
-
-      const chain = createFindChain(users);
-
-      mockUser.countDocuments.mockResolvedValue(25);
-
-      const result = await getAllUsers({
-        page: 2,
-        limit: 10,
-      });
-
-      expect(mockUser.find).toHaveBeenCalledWith({});
-
-      expect(chain.select).toHaveBeenCalledWith(
-        'name email role isActive createdAt updatedAt',
-      );
-
-      expect(chain.sort).toHaveBeenCalledWith({
-        createdAt: -1,
-      });
-
-      expect(chain.skip).toHaveBeenCalledWith(10);
-      expect(chain.limit).toHaveBeenCalledWith(10);
-
-      expect(
-        mockUser.countDocuments,
-      ).toHaveBeenCalledWith({});
-
-      expect(result.users).toHaveLength(2);
-
-      expect(result.pagination).toEqual({
-        page: 2,
-        limit: 10,
-        total: 25,
-        totalPages: 3,
-      });
+    await getAllUsers({
+      page: 1,
+      limit: 10,
+      role: 'admin',
     });
 
-    it('should filter users by role', async () => {
-      createFindChain([]);
-
-      mockUser.countDocuments.mockResolvedValue(0);
-
-      await getAllUsers({
-        page: 1,
-        limit: 10,
-        role: 'admin',
-      });
-
-      expect(mockUser.find).toHaveBeenCalledWith({
-        role: 'admin',
-      });
-
-      expect(
-        mockUser.countDocuments,
-      ).toHaveBeenCalledWith({
-        role: 'admin',
-      });
-    });
-
-    it('should filter users by active status', async () => {
-      createFindChain([]);
-
-      mockUser.countDocuments.mockResolvedValue(0);
-
-      await getAllUsers({
-        page: 1,
-        limit: 10,
-        isActive: false,
-      });
-
-      expect(mockUser.find).toHaveBeenCalledWith({
-        isActive: false,
-      });
-
-      expect(
-        mockUser.countDocuments,
-      ).toHaveBeenCalledWith({
-        isActive: false,
-      });
-    });
-
-    it('should search users by name and email', async () => {
-      createFindChain([]);
-
-      mockUser.countDocuments.mockResolvedValue(0);
-
-      await getAllUsers({
-        page: 1,
-        limit: 10,
-        search: 'john',
-      });
-
-      expect(mockUser.find).toHaveBeenCalledWith({
-        $or: [
-          {
-            name: {
-              $regex: 'john',
-              $options: 'i',
-            },
-          },
-          {
-            email: {
-              $regex: 'john',
-              $options: 'i',
-            },
-          },
-        ],
-      });
-    });
-
-    it('should combine role, status, and search filters', async () => {
-      createFindChain([]);
-
-      mockUser.countDocuments.mockResolvedValue(0);
-
-      await getAllUsers({
-        page: 2,
-        limit: 5,
-        role: 'user',
-        isActive: true,
-        search: 'alice',
-      });
-
-      expect(mockUser.find).toHaveBeenCalledWith({
-        role: 'user',
-        isActive: true,
-        $or: [
-          {
-            name: {
-              $regex: 'alice',
-              $options: 'i',
-            },
-          },
-          {
-            email: {
-              $regex: 'alice',
-              $options: 'i',
-            },
-          },
-        ],
-      });
+    expect(mockUser.find).toHaveBeenCalledWith({
+      isDeleted: false,
+      role: 'admin',
     });
   });
 
-  describe('getUserById', () => {
-    it('should return a user by ID', async () => {
-      const user = createUserDocument();
+  it('should filter by active status', async () => {
+    setupFind([]);
 
-      const select = vi.fn().mockResolvedValue(user);
+    mockUser.countDocuments.mockResolvedValue(0);
 
-      mockUser.findById.mockReturnValue({
-        select,
-      });
-
-      const result = await getUserById(
-        'user-123',
-      );
-
-      expect(mockUser.findById).toHaveBeenCalledWith(
-        'user-123',
-      );
-
-      expect(result).toEqual({
-        id: 'user-123',
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isActive: user.isActive,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      });
+    await getAllUsers({
+      page: 1,
+      limit: 10,
+      isActive: false,
     });
 
-    it('should reject when the user does not exist', async () => {
-      const select = vi.fn().mockResolvedValue(null);
-
-      mockUser.findById.mockReturnValue({
-        select,
-      });
-
-      await expect(
-        getUserById('missing-user'),
-      ).rejects.toMatchObject({
-        statusCode: 404,
-        code: 'USER_NOT_FOUND',
-      });
+    expect(mockUser.find).toHaveBeenCalledWith({
+      isDeleted: false,
+      isActive: false,
     });
   });
 
-  describe('adminUpdateUser', () => {
-    it('should update user name, email, and role', async () => {
-      const user = createUserDocument({
-        name: 'Old Name',
-        email: 'old@example.com',
-        role: 'user',
-      });
+  it('should search by name or email', async () => {
+    setupFind([]);
 
-      mockUser.findById.mockResolvedValue(user);
-      mockUser.findOne.mockResolvedValue(null);
+    mockUser.countDocuments.mockResolvedValue(0);
 
-      const result = await adminUpdateUser(
-        'admin-123',
-        'user-123',
+    await getAllUsers({
+      page: 1,
+      limit: 10,
+      search: 'john',
+    });
+
+    expect(mockUser.find).toHaveBeenCalledWith({
+      isDeleted: false,
+      $or: [
         {
-          name: 'New Name',
-          email: 'new@example.com',
-          role: 'admin',
+          name: {
+            $regex: 'john',
+            $options: 'i',
+          },
         },
-      );
-
-      expect(mockUser.findById).toHaveBeenCalledWith(
-        'user-123',
-      );
-
-      expect(mockUser.findOne).toHaveBeenCalledWith({
-        email: 'new@example.com',
-        _id: {
-          $ne: user._id,
+        {
+          email: {
+            $regex: 'john',
+            $options: 'i',
+          },
         },
-      });
+      ],
+    });
+  });
+});
 
-      expect(user.name).toBe('New Name');
-      expect(user.email).toBe('new@example.com');
-      expect(user.role).toBe('admin');
+describe('getUserById', () => {
+  it('should return a user by id', async () => {
+    const user = createUserDocument();
 
-      expect(user.save).toHaveBeenCalled();
+    const query = createSelectMock(user);
 
-      expect(result).toEqual({
-        id: 'user-123',
-        name: 'New Name',
-        email: 'new@example.com',
-        role: 'admin',
-        isActive: true,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      });
+    mockUser.findOne.mockReturnValue(query);
+
+    const result = await getUserById('user-123');
+
+    expect(mockUser.findOne).toHaveBeenCalledWith({
+      _id: 'user-123',
+      isDeleted: false,
     });
 
-    it('should update only the provided fields', async () => {
-      const user = createUserDocument({
-        name: 'Existing Name',
-        email: 'existing@example.com',
-        role: 'user',
-      });
+    expect(query.select).toHaveBeenCalledWith(
+      'name email role isActive isDeleted createdAt updatedAt',
+    );
 
-      mockUser.findById.mockResolvedValue(user);
+    expect(result).toEqual({
+      id: 'user-123',
+      name: 'Test User',
+      email: 'test@example.com',
+      role: 'user',
+      isActive: true,
+      isDeleted: false,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    });
+  });
 
-      const result = await adminUpdateUser(
-        'admin-123',
+  it('should throw when user does not exist', async () => {
+    const query = createSelectMock(null);
+
+    mockUser.findOne.mockReturnValue(query);
+
+    await expect(
+      getUserById('user-123'),
+    ).rejects.toMatchObject({
+      statusCode: 404,
+      code: 'USER_NOT_FOUND',
+    });
+  });
+});
+
+describe('adminUpdateUser', () => {
+  it('should update another user', async () => {
+    const user = createUserDocument();
+
+    mockUser.findOne
+      .mockResolvedValueOnce(user)
+      .mockResolvedValueOnce(null);
+
+    user.save.mockResolvedValue(user);
+
+    const result = await adminUpdateUser(
+      'admin-123',
+      'user-123',
+      {
+        name: 'Updated Name',
+        email: 'updated@example.com',
+        role: 'admin',
+      },
+    );
+
+    expect(mockUser.findOne).toHaveBeenNthCalledWith(
+      1,
+      {
+        _id: 'user-123',
+        isDeleted: false,
+      },
+    );
+
+    const duplicateEmailQuery =
+      mockUser.findOne.mock.calls[1]?.[0];
+
+    expect(duplicateEmailQuery).toBeDefined();
+
+    expect(duplicateEmailQuery).toMatchObject({
+      email: 'updated@example.com',
+      isDeleted: false,
+    });
+
+    expect(
+      duplicateEmailQuery?._id?.$ne?.toString(),
+    ).toBe('user-123');
+
+    expect(user.name).toBe('Updated Name');
+    expect(user.email).toBe('updated@example.com');
+    expect(user.role).toBe('admin');
+
+    expect(user.save).toHaveBeenCalled();
+
+    expect(result).toEqual({
+      id: 'user-123',
+      name: 'Updated Name',
+      email: 'updated@example.com',
+      role: 'admin',
+      isActive: true,
+      isDeleted: false,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    });
+  });
+
+  it('should reject modifying own admin account', async () => {
+    const user = createUserDocument({
+      role: 'admin',
+    });
+
+    mockUser.findOne.mockResolvedValue(user);
+
+    await expect(
+      adminUpdateUser(
+        'user-123',
         'user-123',
         {
           name: 'Updated Name',
         },
-      );
-
-      expect(user.name).toBe('Updated Name');
-      expect(user.email).toBe(
-        'existing@example.com',
-      );
-      expect(user.role).toBe('user');
-
-      expect(mockUser.findOne).not.toHaveBeenCalled();
-      expect(user.save).toHaveBeenCalled();
-
-      expect(result.name).toBe('Updated Name');
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      code: 'SELF_MODIFICATION_NOT_ALLOWED',
     });
 
-    it('should reject when the user does not exist', async () => {
-      mockUser.findById.mockResolvedValue(null);
+    expect(user.save).not.toHaveBeenCalled();
+  });
 
-      await expect(
-        adminUpdateUser(
-          'admin-123',
-          'missing-user',
-          {
-            name: 'Updated Name',
-          },
-        ),
-      ).rejects.toMatchObject({
-        statusCode: 404,
-        code: 'USER_NOT_FOUND',
-      });
+  it('should reject duplicate email', async () => {
+    const user = createUserDocument();
+
+    const existingUser = createUserDocument({
+      _id: {
+        toString: () => 'another-user',
+      },
+      email: 'existing@example.com',
     });
 
-    it('should reject self modification', async () => {
-      const user = createUserDocument();
+    mockUser.findOne
+      .mockResolvedValueOnce(user)
+      .mockResolvedValueOnce(existingUser);
 
-      mockUser.findById.mockResolvedValue(user);
-
-      await expect(
-        adminUpdateUser(
-          'user-123',
-          'user-123',
-          {
-            name: 'Updated Name',
-          },
-        ),
-      ).rejects.toMatchObject({
-        statusCode: 400,
-        code: 'SELF_MODIFICATION_NOT_ALLOWED',
-      });
-
-      expect(user.save).not.toHaveBeenCalled();
-    });
-
-    it('should reject when the new email already belongs to another user', async () => {
-      const user = createUserDocument({
-        email: 'old@example.com',
-      });
-
-      mockUser.findById.mockResolvedValue(user);
-
-      mockUser.findOne.mockResolvedValue(
-        createUserDocument({
-          _id: {
-            toString: () => 'other-user',
-          },
-          email: 'new@example.com',
-        }),
-      );
-
-      await expect(
-        adminUpdateUser(
-          'admin-123',
-          'user-123',
-          {
-            email: 'new@example.com',
-          },
-        ),
-      ).rejects.toMatchObject({
-        statusCode: 409,
-        code: 'USER_ALREADY_EXISTS',
-      });
-
-      expect(user.save).not.toHaveBeenCalled();
-    });
-
-    it('should allow keeping the same email', async () => {
-      const user = createUserDocument({
-        email: 'same@example.com',
-      });
-
-      mockUser.findById.mockResolvedValue(user);
-
-      await adminUpdateUser(
+    await expect(
+      adminUpdateUser(
         'admin-123',
         'user-123',
         {
-          email: 'same@example.com',
+          email: 'existing@example.com',
         },
-      );
-
-      expect(mockUser.findOne).not.toHaveBeenCalled();
-      expect(user.save).toHaveBeenCalled();
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 409,
+      code: 'USER_ALREADY_EXISTS',
     });
+
+    expect(user.save).not.toHaveBeenCalled();
+  });
+});
+
+describe('updateUserStatus', () => {
+  it('should deactivate a user', async () => {
+    const user = createUserDocument({
+      isActive: true,
+    });
+
+    mockUser.findOne.mockResolvedValue(user);
+
+    user.save.mockResolvedValue(user);
+
+    mockRefreshToken.updateMany.mockResolvedValue({
+      modifiedCount: 1,
+    });
+
+    const result = await updateUserStatus(
+      'admin-123',
+      'user-123',
+      false,
+    );
+
+    expect(mockUser.findOne).toHaveBeenCalledWith({
+      _id: 'user-123',
+      isDeleted: false,
+    });
+
+    expect(user.isActive).toBe(false);
+    expect(user.isDeleted).toBe(false);
+
+    expect(mockRefreshToken.updateMany).toHaveBeenCalledWith(
+      {
+        userId: user._id,
+        revokedAt: null,
+      },
+      {
+        $set: {
+          revokedAt: expect.any(Date),
+        },
+      },
+    );
+
+    expect(result.isActive).toBe(false);
+    expect(result.isDeleted).toBe(false);
   });
 
-  describe('updateUserStatus', () => {
-    it('should activate an inactive user', async () => {
-      const user = createUserDocument({
-        isActive: false,
-      });
-
-      mockUser.findById.mockResolvedValue(user);
-
-      const result = await updateUserStatus(
-        'admin-123',
-        'user-123',
-        true,
-      );
-
-      expect(user.isActive).toBe(true);
-      expect(user.save).toHaveBeenCalled();
-
-      expect(
-        mockRefreshToken.updateMany,
-      ).not.toHaveBeenCalled();
-
-      expect(result.isActive).toBe(true);
+  it('should activate a user', async () => {
+    const user = createUserDocument({
+      isActive: false,
     });
 
-    it('should deactivate an active user and revoke refresh tokens', async () => {
-      const user = createUserDocument({
-        isActive: true,
-      });
+    mockUser.findOne.mockResolvedValue(user);
 
-      mockUser.findById.mockResolvedValue(user);
+    user.save.mockResolvedValue(user);
 
-      mockRefreshToken.updateMany.mockResolvedValue({
-        modifiedCount: 2,
-      });
+    const result = await updateUserStatus(
+      'admin-123',
+      'user-123',
+      true,
+    );
 
-      const result = await updateUserStatus(
-        'admin-123',
+    expect(user.isActive).toBe(true);
+    expect(user.isDeleted).toBe(false);
+
+    expect(mockRefreshToken.updateMany).not.toHaveBeenCalled();
+
+    expect(result.isActive).toBe(true);
+    expect(result.isDeleted).toBe(false);
+  });
+
+  it('should reject modifying own admin account', async () => {
+    const user = createUserDocument({
+      role: 'admin',
+    });
+
+    mockUser.findOne.mockResolvedValue(user);
+
+    await expect(
+      updateUserStatus(
+        'user-123',
         'user-123',
         false,
-      );
-
-      expect(user.isActive).toBe(false);
-      expect(user.save).toHaveBeenCalled();
-
-      expect(
-        mockRefreshToken.updateMany,
-      ).toHaveBeenCalledWith(
-        {
-          userId: user._id,
-          revokedAt: null,
-        },
-        {
-          $set: {
-            revokedAt: expect.any(Date),
-          },
-        },
-      );
-
-      expect(result.isActive).toBe(false);
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      code: 'SELF_MODIFICATION_NOT_ALLOWED',
     });
 
-    it('should reject when the user does not exist', async () => {
-      mockUser.findById.mockResolvedValue(null);
+    expect(user.save).not.toHaveBeenCalled();
+  });
+});
 
-      await expect(
-        updateUserStatus(
-          'admin-123',
-          'missing-user',
-          false,
-        ),
-      ).rejects.toMatchObject({
-        statusCode: 404,
-        code: 'USER_NOT_FOUND',
-      });
+describe('deleteUser', () => {
+  it('should soft delete a user', async () => {
+    const user = createUserDocument({
+      isActive: true,
+      isDeleted: false,
     });
 
-    it('should reject self modification', async () => {
-      const user = createUserDocument();
+    mockUser.findOne.mockResolvedValue(user);
 
-      mockUser.findById.mockResolvedValue(user);
+    user.save.mockResolvedValue(user);
 
-      await expect(
-        updateUserStatus(
-          'user-123',
-          'user-123',
-          false,
-        ),
-      ).rejects.toMatchObject({
-        statusCode: 400,
-        code: 'SELF_MODIFICATION_NOT_ALLOWED',
-      });
+    mockRefreshToken.updateMany.mockResolvedValue({
+      modifiedCount: 1,
+    });
 
-      expect(user.save).not.toHaveBeenCalled();
+    const result = await deleteUser(
+      'admin-123',
+      'user-123',
+    );
+
+    expect(mockUser.findOne).toHaveBeenCalledWith({
+      _id: 'user-123',
+      isDeleted: false,
+    });
+
+    expect(user.isActive).toBe(false);
+    expect(user.isDeleted).toBe(true);
+
+    expect(user.save).toHaveBeenCalled();
+
+    expect(mockRefreshToken.updateMany).toHaveBeenCalledWith(
+      {
+        userId: user._id,
+        revokedAt: null,
+      },
+      {
+        $set: {
+          revokedAt: expect.any(Date),
+        },
+      },
+    );
+
+    expect(result).toEqual({
+      message: 'User deleted successfully',
     });
   });
 
-  describe('deleteUser', () => {
-    it('should soft delete an active user and revoke refresh tokens', async () => {
-      const user = createUserDocument({
-        isActive: true,
-      });
+  it('should reject deleting own admin account', async () => {
+    const user = createUserDocument({
+      role: 'admin',
+    });
 
-      mockUser.findById.mockResolvedValue(user);
+    mockUser.findOne.mockResolvedValue(user);
 
-      mockRefreshToken.updateMany.mockResolvedValue({
-        modifiedCount: 2,
-      });
+    await expect(
+      deleteUser(
+        'user-123',
+        'user-123',
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      code: 'SELF_DELETION_NOT_ALLOWED',
+    });
 
-      const result = await deleteUser(
+    expect(user.save).not.toHaveBeenCalled();
+  });
+
+  it('should reject a user that does not exist', async () => {
+    mockUser.findOne.mockResolvedValue(null);
+
+    await expect(
+      deleteUser(
         'admin-123',
         'user-123',
-      );
-
-      expect(user.isActive).toBe(false);
-      expect(user.save).toHaveBeenCalled();
-
-      expect(
-        mockRefreshToken.updateMany,
-      ).toHaveBeenCalledWith(
-        {
-          userId: user._id,
-          revokedAt: null,
-        },
-        {
-          $set: {
-            revokedAt: expect.any(Date),
-          },
-        },
-      );
-
-      expect(result).toEqual({
-        message: 'User deleted successfully',
-      });
-    });
-
-    it('should reject when the user does not exist', async () => {
-      mockUser.findById.mockResolvedValue(null);
-
-      await expect(
-        deleteUser(
-          'admin-123',
-          'missing-user',
-        ),
-      ).rejects.toMatchObject({
-        statusCode: 404,
-        code: 'USER_NOT_FOUND',
-      });
-    });
-
-    it('should reject self deletion', async () => {
-      const user = createUserDocument();
-
-      mockUser.findById.mockResolvedValue(user);
-
-      await expect(
-        deleteUser(
-          'user-123',
-          'user-123',
-        ),
-      ).rejects.toMatchObject({
-        statusCode: 400,
-        code: 'SELF_DELETION_NOT_ALLOWED',
-      });
-
-      expect(user.save).not.toHaveBeenCalled();
-    });
-
-    it('should reject an already inactive user', async () => {
-      const user = createUserDocument({
-        isActive: false,
-      });
-
-      mockUser.findById.mockResolvedValue(user);
-
-      await expect(
-        deleteUser(
-          'admin-123',
-          'user-123',
-        ),
-      ).rejects.toMatchObject({
-        statusCode: 400,
-        code: 'USER_ALREADY_INACTIVE',
-      });
-
-      expect(user.save).not.toHaveBeenCalled();
-      expect(
-        mockRefreshToken.updateMany,
-      ).not.toHaveBeenCalled();
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 404,
+      code: 'USER_NOT_FOUND',
     });
   });
 });
