@@ -38,6 +38,18 @@ vi.mock('../modules/auth/auth.routes.js', () => {
   };
 });
 
+vi.mock('../modules/documents/document.routes.js', () => {
+  const router = express.Router();
+
+  router.get('/', (_req, res) => {
+    res.status(200).json({ route: 'documents' });
+  });
+
+  return {
+    documentRouter: router,
+  };
+});
+
 import { apiRouter } from './index.js';
 
 function createTestApp() {
@@ -52,34 +64,57 @@ describe('apiRouter', () => {
   const app = createTestApp();
 
   it('should mount the health router', async () => {
-    const response = await request(app).get('/api/v1/health');
+    const response = await request(app).get(
+      '/api/v1/health',
+    );
 
     expect(response.status).toBe(200);
+
     expect(response.body).toEqual({
       route: 'health',
     });
   });
 
   it('should mount the users router', async () => {
-    const response = await request(app).get('/api/v1/users');
+    const response = await request(app).get(
+      '/api/v1/users',
+    );
 
     expect(response.status).toBe(200);
+
     expect(response.body).toEqual({
       route: 'users',
     });
   });
 
   it('should mount the auth router', async () => {
-    const response = await request(app).post('/api/v1/auth/login');
+    const response = await request(app).post(
+      '/api/v1/auth/login',
+    );
 
     expect(response.status).toBe(200);
+
     expect(response.body).toEqual({
       route: 'auth',
     });
   });
 
+  it('should mount the documents router', async () => {
+    const response = await request(app).get(
+      '/api/v1/documents',
+    );
+
+    expect(response.status).toBe(200);
+
+    expect(response.body).toEqual({
+      route: 'documents',
+    });
+  });
+
   it('should return 404 for an unknown route', async () => {
-    const response = await request(app).get('/api/v1/unknown');
+    const response = await request(app).get(
+      '/api/v1/unknown',
+    );
 
     expect(response.status).toBe(404);
   });
