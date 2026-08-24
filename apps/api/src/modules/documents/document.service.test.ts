@@ -78,10 +78,12 @@ describe('createDocument', () => {
       {
         title: 'Test Document',
         description: 'Test description',
-        fileName: 'test.pdf',
-        filePath: '/uploads/test.pdf',
-        fileType: 'application/pdf',
-        fileSize: 1024,
+      },
+      {
+        originalname: 'test.pdf',
+        path: 'uploads/documents/test.pdf',
+        mimetype: 'application/pdf',
+        size: 1024,
       },
     );
 
@@ -89,7 +91,7 @@ describe('createDocument', () => {
       title: 'Test Document',
       description: 'Test description',
       fileName: 'test.pdf',
-      filePath: '/uploads/test.pdf',
+      filePath: 'uploads/documents/test.pdf',
       fileType: 'application/pdf',
       fileSize: 1024,
       ownerId: expect.any(Types.ObjectId),
@@ -120,17 +122,19 @@ describe('createDocument', () => {
       OWNER_ID,
       {
         title: 'Test Document',
-        fileName: 'test.pdf',
-        filePath: '/uploads/test.pdf',
-        fileType: 'application/pdf',
-        fileSize: 1024,
+      },
+      {
+        originalname: 'test.pdf',
+        path: 'uploads/documents/test.pdf',
+        mimetype: 'application/pdf',
+        size: 1024,
       },
     );
 
     expect(mockDocument.create).toHaveBeenCalledWith({
       title: 'Test Document',
       fileName: 'test.pdf',
-      filePath: '/uploads/test.pdf',
+      filePath: 'uploads/documents/test.pdf',
       fileType: 'application/pdf',
       fileSize: 1024,
       ownerId: expect.any(Types.ObjectId),

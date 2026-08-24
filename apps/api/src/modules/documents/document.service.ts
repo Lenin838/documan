@@ -56,6 +56,12 @@ function toDocumentResponse(
 export async function createDocument(
   ownerId: string,
   input: CreateDocumentInput,
+  file: {
+    originalname: string;
+    path: string;
+    mimetype: string;
+    size: number;
+  },
 ) {
   const document = await Document.create({
     title: input.title,
@@ -64,10 +70,11 @@ export async function createDocument(
       ? { description: input.description }
       : {}),
 
-    fileName: input.fileName,
-    filePath: input.filePath,
-    fileType: input.fileType,
-    fileSize: input.fileSize,
+    fileName: file.originalname,
+    filePath: file.path,
+    fileType: file.mimetype,
+    fileSize: file.size,
+
     ownerId: new Types.ObjectId(ownerId),
     isDeleted: false,
   });
