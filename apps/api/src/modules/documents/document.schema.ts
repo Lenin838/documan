@@ -13,28 +13,6 @@ export const createDocumentSchema = z
       .trim()
       .max(1000, 'Description must not exceed 1000 characters')
       .optional(),
-
-    fileName: z
-      .string()
-      .trim()
-      .min(1, 'File name is required')
-      .max(255, 'File name must not exceed 255 characters'),
-
-    filePath: z
-      .string()
-      .trim()
-      .min(1, 'File path is required'),
-
-    fileType: z
-      .string()
-      .trim()
-      .min(1, 'File type is required')
-      .max(100, 'File type must not exceed 100 characters'),
-
-    fileSize: z
-      .number()
-      .int()
-      .min(0, 'File size cannot be negative'),
   })
   .strict();
 

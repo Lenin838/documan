@@ -25,11 +25,14 @@ import {
   documentIdParamsSchema,
 } from './document.schema.js';
 
+import { documentUpload } from '../../middleware/uploads/document-upload.middleware.js';
+
 const documentRouter = Router();
 
 documentRouter.post(
   '/',
   authenticate,
+  documentUpload.single('file'),
   validateBody(createDocumentSchema),
   createDocumentController,
 );

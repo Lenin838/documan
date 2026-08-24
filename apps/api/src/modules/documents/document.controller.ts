@@ -29,9 +29,25 @@ export const createDocumentController: RequestHandler = async (
       );
     }
 
+    if (!req.file) {
+      return next(
+        new AppError(
+          'Document file is required',
+          400,
+          'DOCUMENT_FILE_REQUIRED',
+        ),
+      );
+    }
+
     const document = await createDocument(
       req.user.userId,
       req.body,
+      {
+        originalname: req.file.originalname,
+        path: req.file.path,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+      },
     );
 
     return sendSuccess(res, document, 201);
