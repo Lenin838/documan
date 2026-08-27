@@ -345,6 +345,21 @@ describe('getDocumentById', () => {
       code: 'DOCUMENT_NOT_FOUND',
     });
   });
+
+  it('should throw when document id is invalid', async () => {
+    await expect(
+      getDocumentById(
+        OWNER_ID,
+        'user',
+        'invalid-document-id',
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 404,
+      code: 'DOCUMENT_NOT_FOUND',
+    });
+
+    expect(mockDocument.findOne).not.toHaveBeenCalled();
+  });
 });
 
 describe('updateDocument', () => {
