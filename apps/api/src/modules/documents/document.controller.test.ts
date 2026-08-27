@@ -12,6 +12,7 @@ const {
   mockGetDocumentById,
   mockUpdateDocument,
   mockDeleteDocument,
+  mockRestoreDocument,
   mockDownloadDocument,
   mockViewDocument,
 } = vi.hoisted(() => {
@@ -27,6 +28,7 @@ const {
     mockGetDocumentById: vi.fn(),
     mockUpdateDocument: vi.fn(),
     mockDeleteDocument: vi.fn(),
+    mockRestoreDocument: vi.fn(),
     mockDownloadDocument: vi.fn(),
     mockViewDocument: vi.fn(),
   };
@@ -38,6 +40,7 @@ vi.mock('./document.service.js', () => ({
   getDocumentById: mockGetDocumentById,
   updateDocument: mockUpdateDocument,
   deleteDocument: mockDeleteDocument,
+  restoreDocument: mockRestoreDocument,
   downloadDocument: mockDownloadDocument,
   viewDocument: mockViewDocument,
 }));
@@ -48,6 +51,7 @@ import {
   getDocumentByIdController,
   updateDocumentController,
   deleteDocumentController,
+  restoreDocumentController,
   downloadDocumentController,
   viewDocumentController,
 } from './document.controller.js';
@@ -58,6 +62,7 @@ function createMockResponse() {
     json: vi.fn(),
     setHeader: vi.fn(),
     sendFile: vi.fn(),
+    locals: {},
   } as unknown as Response;
 
   vi.mocked(res.status).mockReturnValue(res);
@@ -797,6 +802,97 @@ describe('document controller', () => {
       expect(next).toHaveBeenCalledWith(error);
     });
   });
+
+  describe('restoreDocumentController', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should reject when authentication is missing', async () => {
+    const req = createMockRequest();
+
+    const res = createMockResponse();
+    res.locals.validatedParams = {
+        id: 'document-123',
+    };
+
+    const next = createMockNext();
+
+    await restoreDocumentController(
+        req,
+        res,
+        next,
+    );
+
+    expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({
+        statusCode: 401,
+        code: 'AUTHENTICATION_REQUIRED',
+        }),
+    );
+
+    expect(mockRestoreDocument).not.toHaveBeenCalled();
+  });
+
+  it('should restore a document successfully', async () => {
+    const req = createMockRequest({
+      user: {
+        userId: 'user-123',
+        role: 'user',
+      },
+    });
+
+    const res = createMockResponse();
+    res.locals.validatedParams = {
+      id: 'document-123',
+    };
+
+    const next = createMockNext();
+
+    mockRestoreDocument.mockResolvedValue({
+      message: 'Document restored successfully',
+    });
+
+    await restoreDocumentController(
+      req,
+      res,
+      next,
+    );
+
+    expect(mockRestoreDocument).toHaveBeenCalledWith(
+      'user-123',
+      'user',
+      'document-123',
+    );
+  });
+
+  it('should pass service errors to next', async () => {
+    const req = createMockRequest({
+      user: {
+        userId: 'user-123',
+        role: 'user',
+      },
+    });
+
+    const res = createMockResponse();
+    res.locals.validatedParams = {
+      id: 'document-123',
+    };
+
+    const next = createMockNext();
+    const error = new Error('Restore failed');
+
+    mockRestoreDocument.mockRejectedValue(error);
+
+    await restoreDocumentController(
+      req,
+      res,
+      next,
+    );
+
+    expect(next).toHaveBeenCalledWith(error);
+  });
+});
 
   describe('downloadDocumentController', () => {
     it('should reject when authentication is missing', async () => {

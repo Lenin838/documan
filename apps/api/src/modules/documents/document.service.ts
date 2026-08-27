@@ -367,3 +367,42 @@ export async function viewDocument(
     fileType: document.fileType,
   };
 }
+
+export async function restoreDocument(
+  ownerId: string,
+  role: 'user' | 'admin',
+  documentId: string,
+) {
+  validateDocumentId(documentId);
+
+  const filter: {
+    _id: string;
+    isDeleted: boolean;
+    ownerId?: Types.ObjectId;
+  } = {
+    _id: documentId,
+    isDeleted: true,
+  };
+
+  if (role !== 'admin') {
+    filter.ownerId = new Types.ObjectId(ownerId);
+  }
+
+  const document = await Document.findOne(filter);
+
+  if (!document) {
+    throw new AppError(
+      'Document not found',
+      404,
+      'DOCUMENT_NOT_FOUND',
+    );
+  }
+
+  document.isDeleted = false;
+
+  await document.save();
+
+  return {
+    message: 'Document restored successfully',
+  };
+}
