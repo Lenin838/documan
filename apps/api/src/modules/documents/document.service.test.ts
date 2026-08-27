@@ -1,5 +1,29 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Types } from 'mongoose';
+import fs from 'node:fs/promises';
+
+const { mockCreateDocumentAudit } = vi.hoisted(() => ({
+  mockCreateDocumentAudit: vi.fn(),
+}));
+
+vi.mock('node:fs/promises', () => ({
+  default: {
+    access: vi.fn(),
+  },
+}));
+
+vi.mock('./document-audit.service.js', () => ({
+  createDocumentAudit: mockCreateDocumentAudit,
+}));
+
+vi.mock('./document.model.js', () => ({
+  Document: {
+    create: vi.fn(),
+    find: vi.fn(),
+    findOne: vi.fn(),
+    countDocuments: vi.fn(),
+  },
+}));
 
 import {
   createDocument,
@@ -12,24 +36,7 @@ import {
   restoreDocument,
 } from './document.service.js';
 
-import fs from 'node:fs/promises';
-
-vi.mock('node:fs/promises', () => ({
-  default: {
-    access: vi.fn(),
-  },
-}));
-
 import { Document } from './document.model.js';
-
-vi.mock('./document.model.js', () => ({
-  Document: {
-    create: vi.fn(),
-    find: vi.fn(),
-    findOne: vi.fn(),
-    countDocuments: vi.fn(),
-  },
-}));
 
 const mockDocument = Document as unknown as {
   create: ReturnType<typeof vi.fn>;
@@ -120,6 +127,11 @@ describe('createDocument', () => {
       ownerId: OWNER_ID,
       isDeleted: false,
     });
+    expect(mockCreateDocumentAudit).toHaveBeenCalledWith(
+      DOCUMENT_ID,
+      OWNER_ID,
+      'CREATE',
+    );
   });
 
   it('should create a document without description', async () => {
@@ -153,6 +165,12 @@ describe('createDocument', () => {
     });
 
     expect(result.id).toBe(DOCUMENT_ID);
+
+    expect(mockCreateDocumentAudit).toHaveBeenCalledWith(
+      DOCUMENT_ID,
+      OWNER_ID,
+      'CREATE',
+    );
   });
 });
 
@@ -395,6 +413,12 @@ describe('updateDocument', () => {
 
     expect(document.save).toHaveBeenCalled();
 
+    expect(mockCreateDocumentAudit).toHaveBeenCalledWith(
+      DOCUMENT_ID,
+      OWNER_ID,
+      'UPDATE',
+    );
+
     expect(result).toMatchObject({
       id: DOCUMENT_ID,
       title: 'Updated title',
@@ -444,6 +468,12 @@ describe('updateDocument', () => {
     expect(document.fileSize).toBe(2048);
 
     expect(document.save).toHaveBeenCalled();
+
+    expect(mockCreateDocumentAudit).toHaveBeenCalledWith(
+      DOCUMENT_ID,
+      OWNER_ID,
+      'UPDATE',
+    );
 
     expect(result).toMatchObject({
       id: DOCUMENT_ID,
@@ -496,6 +526,12 @@ describe('updateDocument', () => {
 
     expect(document.save).toHaveBeenCalled();
 
+    expect(mockCreateDocumentAudit).toHaveBeenCalledWith(
+      DOCUMENT_ID,
+      OWNER_ID,
+      'UPDATE',
+    );
+
     expect(result).toMatchObject({
       fileName: 'replacement.txt',
       fileType: 'text/plain',
@@ -546,6 +582,12 @@ describe('deleteDocument', () => {
     expect(document.isDeleted).toBe(true);
     expect(document.save).toHaveBeenCalled();
 
+    expect(mockCreateDocumentAudit).toHaveBeenCalledWith(
+      DOCUMENT_ID,
+      OWNER_ID,
+      'DELETE',
+    );
+
     expect(result).toEqual({
       message: 'Document deleted successfully',
     });
@@ -571,6 +613,12 @@ describe('deleteDocument', () => {
 
     expect(document.isDeleted).toBe(true);
     expect(document.save).toHaveBeenCalled();
+
+    expect(mockCreateDocumentAudit).toHaveBeenCalledWith(
+      DOCUMENT_ID,
+      OWNER_ID,
+      'DELETE',
+    );
 
     expect(result).toEqual({
       message: 'Document deleted successfully',
@@ -620,6 +668,12 @@ describe('restoreDocument', () => {
     expect(document.isDeleted).toBe(false);
     expect(document.save).toHaveBeenCalled();
 
+    expect(mockCreateDocumentAudit).toHaveBeenCalledWith(
+      DOCUMENT_ID,
+      OWNER_ID,
+      'RESTORE',
+    );
+
     expect(result).toEqual({
       message: 'Document restored successfully',
     });
@@ -646,6 +700,12 @@ describe('restoreDocument', () => {
 
     expect(document.isDeleted).toBe(false);
     expect(document.save).toHaveBeenCalled();
+
+    expect(mockCreateDocumentAudit).toHaveBeenCalledWith(
+      DOCUMENT_ID,
+      OWNER_ID,
+      'RESTORE',
+    );
 
     expect(result).toEqual({
       message: 'Document restored successfully',
