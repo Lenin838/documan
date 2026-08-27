@@ -16,6 +16,10 @@ import {
   viewDocument,
 } from './document.service.js';
 
+import {
+  getDocumentAuditHistory,
+} from './document-audit.service.js';
+
 export const createDocumentController: RequestHandler = async (
   req,
   res,
@@ -294,3 +298,34 @@ export const viewDocumentController: RequestHandler = async (
     return next(error);
   }
 };
+
+export const getDocumentAuditHistoryController: RequestHandler =
+  async (
+    req,
+    res,
+    next,
+  ) => {
+    try {
+      if (!req.user) {
+        return next(
+          new AppError(
+            'Authentication required',
+            401,
+            'AUTHENTICATION_REQUIRED',
+          ),
+        );
+      }
+
+      const { id } = res.locals.validatedParams;
+
+      const audits = await getDocumentAuditHistory(
+        req.user.userId,
+        req.user.role,
+        id,
+      );
+
+      return sendSuccess(res, audits);
+    } catch (error) {
+      return next(error);
+    }
+  };
