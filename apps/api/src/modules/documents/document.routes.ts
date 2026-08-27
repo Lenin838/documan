@@ -17,6 +17,7 @@ import {
   updateDocumentController,
   deleteDocumentController,
   downloadDocumentController,
+  viewDocumentController,
 } from './document.controller.js';
 
 import {
@@ -43,6 +44,13 @@ documentRouter.get(
   authenticate,
   validateQuery(documentsQuerySchema),
   getAllDocumentsController,
+);
+
+documentRouter.get(
+  '/:id/view',
+  authenticate,
+  validateParams(documentIdParamsSchema),
+  viewDocumentController,
 );
 
 documentRouter.get(

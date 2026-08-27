@@ -294,3 +294,48 @@ export async function downloadDocument(
     fileType: document.fileType,
   };
 }
+
+export async function viewDocument(
+  ownerId: string,
+  role: 'user' | 'admin',
+  documentId: string,
+) {
+  const filter: {
+    _id: string;
+    isDeleted: boolean;
+    ownerId?: Types.ObjectId;
+  } = {
+    _id: documentId,
+    isDeleted: false,
+  };
+
+  if (role !== 'admin') {
+    filter.ownerId = new Types.ObjectId(ownerId);
+  }
+
+  const document = await Document.findOne(filter);
+
+  if (!document) {
+    throw new AppError(
+      'Document not found',
+      404,
+      'DOCUMENT_NOT_FOUND',
+    );
+  }
+
+  try {
+    await fs.access(document.filePath);
+  } catch {
+    throw new AppError(
+      'Document file not found',
+      404,
+      'DOCUMENT_FILE_NOT_FOUND',
+    );
+  }
+
+  return {
+    filePath: path.resolve(document.filePath),
+    fileName: document.fileName,
+    fileType: document.fileType,
+  };
+}

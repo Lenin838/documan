@@ -8,6 +8,7 @@ import {
   updateDocument,
   deleteDocument,
   downloadDocument,
+  viewDocument,
 } from './document.service.js';
 
 import fs from 'node:fs/promises';
@@ -577,6 +578,119 @@ describe('downloadDocument', () => {
 
     await expect(
       downloadDocument(
+        OWNER_ID,
+        'user',
+        DOCUMENT_ID,
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 404,
+      code: 'DOCUMENT_FILE_NOT_FOUND',
+    });
+  });
+});
+
+describe('viewDocument', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(fs.access).mockResolvedValue(undefined);
+  });
+
+  it('should allow a user to view their own document', async () => {
+    const document = createDocumentMock();
+
+    mockDocument.findOne.mockResolvedValue(document);
+
+    const result = await viewDocument(
+      OWNER_ID,
+      'user',
+      DOCUMENT_ID,
+    );
+
+    expect(mockDocument.findOne).toHaveBeenCalledWith({
+      _id: DOCUMENT_ID,
+      isDeleted: false,
+      ownerId: expect.any(Types.ObjectId),
+    });
+
+    expect(fs.access).toHaveBeenCalledWith(
+      document.filePath,
+    );
+
+    expect(result).toEqual({
+      filePath: expect.any(String),
+      fileName: 'test.pdf',
+      fileType: 'application/pdf',
+    });
+  });
+
+  it('should allow an admin to view any document', async () => {
+    const document = createDocumentMock({
+      ownerId: new Types.ObjectId(OTHER_OWNER_ID),
+    });
+
+    mockDocument.findOne.mockResolvedValue(document);
+
+    const result = await viewDocument(
+      OWNER_ID,
+      'admin',
+      DOCUMENT_ID,
+    );
+
+    expect(mockDocument.findOne).toHaveBeenCalledWith({
+      _id: DOCUMENT_ID,
+      isDeleted: false,
+    });
+
+    expect(result).toEqual({
+      filePath: expect.any(String),
+      fileName: 'test.pdf',
+      fileType: 'application/pdf',
+    });
+  });
+
+  it('should not allow a user to view another user document', async () => {
+    mockDocument.findOne.mockResolvedValue(null);
+
+    await expect(
+      viewDocument(
+        OWNER_ID,
+        'user',
+        DOCUMENT_ID,
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 404,
+      code: 'DOCUMENT_NOT_FOUND',
+    });
+
+    expect(fs.access).not.toHaveBeenCalled();
+  });
+
+  it('should not view a deleted document', async () => {
+    mockDocument.findOne.mockResolvedValue(null);
+
+    await expect(
+      viewDocument(
+        OWNER_ID,
+        'user',
+        DOCUMENT_ID,
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 404,
+      code: 'DOCUMENT_NOT_FOUND',
+    });
+  });
+
+  it('should throw when the physical file does not exist', async () => {
+    const document = createDocumentMock();
+
+    mockDocument.findOne.mockResolvedValue(document);
+
+    vi.mocked(fs.access).mockRejectedValue(
+      new Error('ENOENT'),
+    );
+
+    await expect(
+      viewDocument(
         OWNER_ID,
         'user',
         DOCUMENT_ID,

@@ -13,6 +13,7 @@ const {
   mockUpdateDocument,
   mockDeleteDocument,
   mockDownloadDocument,
+  mockViewDocument,
 } = vi.hoisted(() => {
   process.env.MONGO_URI =
     'mongodb://127.0.0.1:27017/documan_test';
@@ -27,6 +28,7 @@ const {
     mockUpdateDocument: vi.fn(),
     mockDeleteDocument: vi.fn(),
     mockDownloadDocument: vi.fn(),
+    mockViewDocument: vi.fn(),
   };
 });
 
@@ -37,6 +39,7 @@ vi.mock('./document.service.js', () => ({
   updateDocument: mockUpdateDocument,
   deleteDocument: mockDeleteDocument,
   downloadDocument: mockDownloadDocument,
+  viewDocument: mockViewDocument,
 }));
 
 import {
@@ -46,6 +49,7 @@ import {
   updateDocumentController,
   deleteDocumentController,
   downloadDocumentController,
+  viewDocumentController,
 } from './document.controller.js';
 
 function createMockResponse() {
@@ -837,6 +841,127 @@ describe('document controller', () => {
       );
 
       expect(next).toHaveBeenCalledWith(error);
+    });
+  });
+
+  describe('viewDocumentController', () => {
+    it('should reject when authentication is missing', async () => {
+        const req = createMockRequest();
+
+        const res = createMockResponse();
+
+        res.locals = {
+        validatedParams: {
+            id: 'document-123',
+        },
+        };
+
+        const next = createMockNext();
+
+        await viewDocumentController(
+        req,
+        res,
+        next,
+        );
+
+        expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({
+            statusCode: 401,
+            code: 'AUTHENTICATION_REQUIRED',
+        }),
+        );
+
+        expect(
+        mockViewDocument,
+        ).not.toHaveBeenCalled();
+    });
+
+    it('should view a document successfully', async () => {
+        const req = createMockRequest({
+        user: {
+            userId: 'user-123',
+            role: 'user',
+        },
+        });
+
+        const res = createMockResponse();
+
+        res.locals = {
+        validatedParams: {
+            id: 'document-123',
+        },
+        };
+
+        const next = createMockNext();
+
+        mockViewDocument.mockResolvedValue({
+        filePath: 'uploads/documents/test.pdf',
+        fileName: 'test.pdf',
+        fileType: 'application/pdf',
+        });
+
+        await viewDocumentController(
+        req,
+        res,
+        next,
+        );
+
+        expect(
+        mockViewDocument,
+        ).toHaveBeenCalledWith(
+        'user-123',
+        'user',
+        'document-123',
+        );
+
+        expect(res.setHeader).toHaveBeenCalledWith(
+        'Content-Disposition',
+        'inline; filename="test.pdf"',
+        );
+
+        expect(res.setHeader).toHaveBeenCalledWith(
+        'Content-Type',
+        'application/pdf',
+        );
+
+        expect(res.sendFile).toHaveBeenCalledWith(
+        'uploads/documents/test.pdf',
+        );
+
+        expect(next).not.toHaveBeenCalled();
+    });
+
+    it('should pass service errors to next', async () => {
+        const req = createMockRequest({
+        user: {
+            userId: 'user-123',
+            role: 'user',
+        },
+        });
+
+        const res = createMockResponse();
+
+        res.locals = {
+        validatedParams: {
+            id: 'document-123',
+        },
+        };
+
+        const next = createMockNext();
+
+        const error = new Error(
+        'Document not found',
+        );
+
+        mockViewDocument.mockRejectedValue(error);
+
+        await viewDocumentController(
+        req,
+        res,
+        next,
+        );
+
+        expect(next).toHaveBeenCalledWith(error);
     });
   });
 });
