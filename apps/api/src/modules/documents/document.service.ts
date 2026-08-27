@@ -1,4 +1,6 @@
 import { Types } from 'mongoose';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 import { Document } from './document.model.js';
 import type {
@@ -245,5 +247,50 @@ export async function deleteDocument(
 
   return {
     message: 'Document deleted successfully',
+  };
+}
+
+export async function downloadDocument(
+  ownerId: string,
+  role: 'user' | 'admin',
+  documentId: string,
+) {
+  const filter: {
+    _id: string;
+    isDeleted: boolean;
+    ownerId?: Types.ObjectId;
+  } = {
+    _id: documentId,
+    isDeleted: false,
+  };
+
+  if (role !== 'admin') {
+    filter.ownerId = new Types.ObjectId(ownerId);
+  }
+
+  const document = await Document.findOne(filter);
+
+  if (!document) {
+    throw new AppError(
+      'Document not found',
+      404,
+      'DOCUMENT_NOT_FOUND',
+    );
+  }
+
+  try {
+    await fs.access(document.filePath);
+  } catch {
+    throw new AppError(
+      'Document file not found',
+      404,
+      'DOCUMENT_FILE_NOT_FOUND',
+    );
+  }
+
+  return {
+    filePath: path.resolve(document.filePath),
+    fileName: document.fileName,
+    fileType: document.fileType,
   };
 }
