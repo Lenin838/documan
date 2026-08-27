@@ -55,6 +55,16 @@ function toDocumentResponse(
   };
 }
 
+function validateDocumentId(documentId: string) {
+  if (!Types.ObjectId.isValid(documentId)) {
+    throw new AppError(
+      'Document not found',
+      404,
+      'DOCUMENT_NOT_FOUND',
+    );
+  }
+}
+
 export async function createDocument(
   ownerId: string,
   input: CreateDocumentInput,
@@ -155,6 +165,7 @@ export async function getDocumentById(
   role: 'user' | 'admin',
   documentId: string,
 ) {
+  validateDocumentId(documentId)
   const filter: {
     _id: string;
     isDeleted: boolean;
@@ -192,6 +203,7 @@ export async function updateDocument(
     size: number;
   },
 ) {
+  validateDocumentId(documentId)
   const document = await Document.findOne({
     _id: documentId,
     ownerId: new Types.ObjectId(ownerId),
@@ -231,6 +243,7 @@ export async function deleteDocument(
   role: 'user' | 'admin',
   documentId: string,
 ) {
+  validateDocumentId(documentId)
   const filter: {
     _id: string;
     isDeleted: boolean;
@@ -268,6 +281,7 @@ export async function downloadDocument(
   role: 'user' | 'admin',
   documentId: string,
 ) {
+  validateDocumentId(documentId)
   const filter: {
     _id: string;
     isDeleted: boolean;
@@ -313,6 +327,7 @@ export async function viewDocument(
   role: 'user' | 'admin',
   documentId: string,
 ) {
+  validateDocumentId(documentId)
   const filter: {
     _id: string;
     isDeleted: boolean;
