@@ -70,6 +70,7 @@ documentRouter.get(
 documentRouter.patch(
   '/:id',
   authenticate,
+  documentUpload.single('file'),
   validateParams(documentIdParamsSchema),
   validateBody(updateDocumentSchema),
   updateDocumentController,

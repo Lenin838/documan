@@ -557,10 +557,11 @@ describe('document controller', () => {
 
       expect(
         mockUpdateDocument,
-      ).toHaveBeenCalledWith(
+        ).toHaveBeenCalledWith(
         'user-123',
         'document-123',
         body,
+        undefined,
       );
 
       expect(res.status).toHaveBeenCalledWith(200);
@@ -571,6 +572,80 @@ describe('document controller', () => {
       });
 
       expect(next).not.toHaveBeenCalled();
+    });
+
+    it('should replace the document file successfully', async () => {
+        const body = {
+            title: 'Updated Document',
+        };
+
+        const file = {
+            originalname: 'new-document.pdf',
+            path: 'uploads/documents/new-document.pdf',
+            mimetype: 'application/pdf',
+            size: 2048,
+        };
+
+        const req = createMockRequest({
+            body,
+            file: file as Request['file'],
+            user: {
+            userId: 'user-123',
+            role: 'user',
+            },
+        });
+
+        const res = createMockResponse();
+
+        res.locals = {
+            validatedParams: {
+            id: 'document-123',
+            },
+        };
+
+        const next = createMockNext();
+
+        const updatedDocument = {
+            ...mockDocument,
+            title: 'Updated Document',
+            fileName: 'new-document.pdf',
+            filePath: 'uploads/documents/new-document.pdf',
+            fileType: 'application/pdf',
+            fileSize: 2048,
+        };
+
+        mockUpdateDocument.mockResolvedValue(
+            updatedDocument,
+        );
+
+        await updateDocumentController(
+            req,
+            res,
+            next,
+        );
+
+        expect(
+            mockUpdateDocument,
+        ).toHaveBeenCalledWith(
+            'user-123',
+            'document-123',
+            body,
+            {
+            originalname: 'new-document.pdf',
+            path: 'uploads/documents/new-document.pdf',
+            mimetype: 'application/pdf',
+            size: 2048,
+            },
+        );
+
+        expect(res.status).toHaveBeenCalledWith(200);
+
+        expect(res.json).toHaveBeenCalledWith({
+            success: true,
+            data: updatedDocument,
+        });
+
+        expect(next).not.toHaveBeenCalled();
     });
 
     it('should pass service errors to next', async () => {
