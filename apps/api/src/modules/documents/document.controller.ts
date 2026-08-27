@@ -11,6 +11,7 @@ import {
   getDocumentById,
   updateDocument,
   deleteDocument,
+  downloadDocument,
 } from './document.service.js';
 
 export const createDocumentController: RequestHandler = async (
@@ -169,6 +170,46 @@ export const deleteDocumentController: RequestHandler = async (
     );
 
     return sendSuccess(res, result);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const downloadDocumentController: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    if (!req.user) {
+      return next(
+        new AppError(
+          'Authentication required',
+          401,
+          'AUTHENTICATION_REQUIRED',
+        ),
+      );
+    }
+
+    const { id } = res.locals.validatedParams;
+
+    const document = await downloadDocument(
+      req.user.userId,
+      req.user.role,
+      id,
+    );
+
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${document.fileName}"`,
+    );
+
+    res.setHeader(
+      'Content-Type',
+      document.fileType,
+    );
+
+    return res.sendFile(document.filePath);
   } catch (error) {
     return next(error);
   }
