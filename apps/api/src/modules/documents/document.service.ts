@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import { Document } from './document.model.js';
+import { createDocumentAudit } from './document-audit.service.js';
 import type {
   CreateDocumentInput,
   DocumentsQueryInput,
@@ -90,6 +91,12 @@ export async function createDocument(
     ownerId: new Types.ObjectId(ownerId),
     isDeleted: false,
   });
+
+  await createDocumentAudit(
+    document._id.toString(),
+    ownerId,
+    'CREATE',
+  );
 
   return toDocumentResponse(document);
 }
@@ -235,6 +242,12 @@ export async function updateDocument(
 
   await document.save();
 
+  await createDocumentAudit(
+  document._id.toString(),
+  ownerId,
+  'UPDATE',
+);
+
   return toDocumentResponse(document);
 }
 
@@ -270,6 +283,12 @@ export async function deleteDocument(
   document.isDeleted = true;
 
   await document.save();
+
+  await createDocumentAudit(
+    document._id.toString(),
+    ownerId,
+    'DELETE',
+  );
 
   return {
     message: 'Document deleted successfully',
@@ -401,6 +420,12 @@ export async function restoreDocument(
   document.isDeleted = false;
 
   await document.save();
+
+  await createDocumentAudit(
+    document._id.toString(),
+    ownerId,
+    'RESTORE',
+  );
 
   return {
     message: 'Document restored successfully',

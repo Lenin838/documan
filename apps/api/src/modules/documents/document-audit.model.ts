@@ -1,0 +1,72 @@
+import { Schema, model, Types } from 'mongoose';
+
+export type DocumentAuditAction =
+  | 'CREATE'
+  | 'UPDATE'
+  | 'FILE_REPLACE'
+  | 'VIEW'
+  | 'DOWNLOAD'
+  | 'DELETE'
+  | 'RESTORE';
+
+export interface DocumentAuditDocument {
+  documentId: Types.ObjectId;
+  userId: Types.ObjectId;
+  action: DocumentAuditAction;
+  metadata?: Record<string, unknown>;
+  createdAt: Date;
+}
+
+const documentAuditSchema =
+  new Schema<DocumentAuditDocument>(
+    {
+      documentId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Document',
+        required: true,
+        index: true,
+      },
+
+      userId: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+        index: true,
+      },
+
+      action: {
+        type: String,
+        enum: [
+          'CREATE',
+          'UPDATE',
+          'FILE_REPLACE',
+          'VIEW',
+          'DOWNLOAD',
+          'DELETE',
+          'RESTORE',
+        ],
+        required: true,
+      },
+
+      metadata: {
+        type: Schema.Types.Mixed,
+      },
+    },
+    {
+      timestamps: {
+        createdAt: true,
+        updatedAt: false,
+      },
+    },
+  );
+
+documentAuditSchema.index({
+  documentId: 1,
+  createdAt: -1,
+});
+
+export const DocumentAudit =
+  model<DocumentAuditDocument>(
+    'DocumentAudit',
+    documentAuditSchema,
+  );
