@@ -11,6 +11,7 @@ import {
   getDocumentById,
   updateDocument,
   deleteDocument,
+  restoreDocument,
   downloadDocument,
   viewDocument,
 } from './document.service.js';
@@ -173,6 +174,36 @@ export const deleteDocumentController: RequestHandler = async (
     const { id } = res.locals.validatedParams;
 
     const result = await deleteDocument(
+      req.user.userId,
+      req.user.role,
+      id,
+    );
+
+    return sendSuccess(res, result);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const restoreDocumentController: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    if (!req.user) {
+      return next(
+        new AppError(
+          'Authentication required',
+          401,
+          'AUTHENTICATION_REQUIRED',
+        ),
+      );
+    }
+
+    const { id } = res.locals.validatedParams;
+
+    const result = await restoreDocument(
       req.user.userId,
       req.user.role,
       id,

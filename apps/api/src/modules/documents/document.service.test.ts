@@ -9,6 +9,7 @@ import {
   deleteDocument,
   downloadDocument,
   viewDocument,
+  restoreDocument,
 } from './document.service.js';
 
 import fs from 'node:fs/promises';
@@ -589,6 +590,117 @@ describe('deleteDocument', () => {
       statusCode: 404,
       code: 'DOCUMENT_NOT_FOUND',
     });
+  });
+});
+
+describe('restoreDocument', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should restore a deleted document owned by the user', async () => {
+    const document = createDocumentMock({
+      isDeleted: true,
+    });
+
+    mockDocument.findOne.mockResolvedValue(document);
+
+    const result = await restoreDocument(
+      OWNER_ID,
+      'user',
+      DOCUMENT_ID,
+    );
+
+    expect(mockDocument.findOne).toHaveBeenCalledWith({
+      _id: DOCUMENT_ID,
+      isDeleted: true,
+      ownerId: expect.any(Types.ObjectId),
+    });
+
+    expect(document.isDeleted).toBe(false);
+    expect(document.save).toHaveBeenCalled();
+
+    expect(result).toEqual({
+      message: 'Document restored successfully',
+    });
+  });
+
+  it('should allow an admin to restore any deleted document', async () => {
+    const document = createDocumentMock({
+      ownerId: new Types.ObjectId(OTHER_OWNER_ID),
+      isDeleted: true,
+    });
+
+    mockDocument.findOne.mockResolvedValue(document);
+
+    const result = await restoreDocument(
+      OWNER_ID,
+      'admin',
+      DOCUMENT_ID,
+    );
+
+    expect(mockDocument.findOne).toHaveBeenCalledWith({
+      _id: DOCUMENT_ID,
+      isDeleted: true,
+    });
+
+    expect(document.isDeleted).toBe(false);
+    expect(document.save).toHaveBeenCalled();
+
+    expect(result).toEqual({
+      message: 'Document restored successfully',
+    });
+  });
+
+  it('should not allow a user to restore another user document', async () => {
+    mockDocument.findOne.mockResolvedValue(null);
+
+    await expect(
+      restoreDocument(
+        OWNER_ID,
+        'user',
+        DOCUMENT_ID,
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 404,
+      code: 'DOCUMENT_NOT_FOUND',
+    });
+
+    expect(mockDocument.findOne).toHaveBeenCalledWith({
+      _id: DOCUMENT_ID,
+      isDeleted: true,
+      ownerId: expect.any(Types.ObjectId),
+    });
+  });
+
+  it('should throw when restoring a missing document', async () => {
+    mockDocument.findOne.mockResolvedValue(null);
+
+    await expect(
+      restoreDocument(
+        OWNER_ID,
+        'user',
+        DOCUMENT_ID,
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 404,
+      code: 'DOCUMENT_NOT_FOUND',
+    });
+  });
+
+  it('should throw when document id is invalid', async () => {
+    await expect(
+      restoreDocument(
+        OWNER_ID,
+        'user',
+        'invalid-document-id',
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 404,
+      code: 'DOCUMENT_NOT_FOUND',
+    });
+
+    expect(mockDocument.findOne).not.toHaveBeenCalled();
   });
 });
 

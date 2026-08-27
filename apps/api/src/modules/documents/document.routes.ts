@@ -16,6 +16,7 @@ import {
   getDocumentByIdController,
   updateDocumentController,
   deleteDocumentController,
+  restoreDocumentController,
   downloadDocumentController,
   viewDocumentController,
 } from './document.controller.js';
@@ -81,6 +82,13 @@ documentRouter.delete(
   authenticate,
   validateParams(documentIdParamsSchema),
   deleteDocumentController,
+);
+
+documentRouter.patch(
+  '/:id/restore',
+  authenticate,
+  validateParams(documentIdParamsSchema),
+  restoreDocumentController,
 );
 
 export { documentRouter };
