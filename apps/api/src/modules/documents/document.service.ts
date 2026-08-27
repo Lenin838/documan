@@ -185,6 +185,12 @@ export async function updateDocument(
   ownerId: string,
   documentId: string,
   input: UpdateDocumentInput,
+  file?: {
+    originalname: string;
+    path: string;
+    mimetype: string;
+    size: number;
+  },
 ) {
   const document = await Document.findOne({
     _id: documentId,
@@ -207,6 +213,13 @@ export async function updateDocument(
   if (input.description !== undefined) {
     document.description = input.description;
   }
+
+  if (file) {
+  document.fileName = file.originalname;
+  document.filePath = file.path;
+  document.fileType = file.mimetype;
+  document.fileSize = file.size;
+}
 
   await document.save();
 

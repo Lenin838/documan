@@ -386,6 +386,107 @@ describe('updateDocument', () => {
     });
   });
 
+  it('should replace the document file', async () => {
+    const document = createDocumentMock();
+
+    mockDocument.findOne.mockResolvedValue(document);
+
+    const result = await updateDocument(
+      OWNER_ID,
+      DOCUMENT_ID,
+      {
+        title: 'Updated title',
+      },
+      {
+        originalname: 'new-document.pdf',
+        path: 'uploads/documents/new-document.pdf',
+        mimetype: 'application/pdf',
+        size: 2048,
+      },
+    );
+
+    expect(mockDocument.findOne).toHaveBeenCalledWith({
+      _id: DOCUMENT_ID,
+      ownerId: expect.any(Types.ObjectId),
+      isDeleted: false,
+    });
+
+    expect(document.title).toBe('Updated title');
+
+    expect(document.fileName).toBe(
+      'new-document.pdf',
+    );
+
+    expect(document.filePath).toBe(
+      'uploads/documents/new-document.pdf',
+    );
+
+    expect(document.fileType).toBe(
+      'application/pdf',
+    );
+
+    expect(document.fileSize).toBe(2048);
+
+    expect(document.save).toHaveBeenCalled();
+
+    expect(result).toMatchObject({
+      id: DOCUMENT_ID,
+      title: 'Updated title',
+      fileName: 'new-document.pdf',
+      filePath: 'uploads/documents/new-document.pdf',
+      fileType: 'application/pdf',
+      fileSize: 2048,
+    });
+  });
+
+  it('should replace the file without changing metadata', async () => {
+    const document = createDocumentMock();
+
+    mockDocument.findOne.mockResolvedValue(document);
+
+    const result = await updateDocument(
+      OWNER_ID,
+      DOCUMENT_ID,
+      {},
+      {
+        originalname: 'replacement.txt',
+        path: 'uploads/documents/replacement.txt',
+        mimetype: 'text/plain',
+        size: 512,
+      },
+    );
+
+    expect(document.title).toBe(
+      'Test Document',
+    );
+
+    expect(document.description).toBe(
+      'Test description',
+    );
+
+    expect(document.fileName).toBe(
+      'replacement.txt',
+    );
+
+    expect(document.filePath).toBe(
+      'uploads/documents/replacement.txt',
+    );
+
+    expect(document.fileType).toBe(
+      'text/plain',
+    );
+
+    expect(document.fileSize).toBe(512);
+
+    expect(document.save).toHaveBeenCalled();
+
+    expect(result).toMatchObject({
+      fileName: 'replacement.txt',
+      fileType: 'text/plain',
+      fileSize: 512,
+    });
+  });
+
   it('should throw when user does not own the document', async () => {
     mockDocument.findOne.mockResolvedValue(null);
 

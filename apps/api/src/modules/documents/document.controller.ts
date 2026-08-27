@@ -138,6 +138,14 @@ export const updateDocumentController: RequestHandler = async (
       req.user.userId,
       id,
       req.body,
+      req.file
+        ? {
+            originalname: req.file.originalname,
+            path: req.file.path,
+            mimetype: req.file.mimetype,
+            size: req.file.size,
+          }
+        : undefined,
     );
 
     return sendSuccess(res, document);
