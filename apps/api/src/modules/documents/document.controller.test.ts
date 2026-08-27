@@ -15,6 +15,7 @@ const {
   mockRestoreDocument,
   mockDownloadDocument,
   mockViewDocument,
+  mockGetDocumentAuditHistory,
 } = vi.hoisted(() => {
   process.env.MONGO_URI =
     'mongodb://127.0.0.1:27017/documan_test';
@@ -31,6 +32,7 @@ const {
     mockRestoreDocument: vi.fn(),
     mockDownloadDocument: vi.fn(),
     mockViewDocument: vi.fn(),
+    mockGetDocumentAuditHistory: vi.fn(),
   };
 });
 
@@ -45,6 +47,10 @@ vi.mock('./document.service.js', () => ({
   viewDocument: mockViewDocument,
 }));
 
+vi.mock('./document-audit.service.js', () => ({
+  getDocumentAuditHistory: mockGetDocumentAuditHistory,
+}));
+
 import {
   createDocumentController,
   getAllDocumentsController,
@@ -54,6 +60,7 @@ import {
   restoreDocumentController,
   downloadDocumentController,
   viewDocumentController,
+  getDocumentAuditHistoryController,
 } from './document.controller.js';
 
 function createMockResponse() {
@@ -885,6 +892,131 @@ describe('document controller', () => {
     mockRestoreDocument.mockRejectedValue(error);
 
     await restoreDocumentController(
+      req,
+      res,
+      next,
+    );
+
+    expect(next).toHaveBeenCalledWith(error);
+  });
+});
+
+describe('getDocumentAuditHistoryController', () => {
+  it('should reject when authentication is missing', async () => {
+    const req = createMockRequest();
+
+    const res = createMockResponse();
+
+    res.locals = {
+      validatedParams: {
+        id: 'document-123',
+      },
+    };
+
+    const next = createMockNext();
+
+    await getDocumentAuditHistoryController(
+      req,
+      res,
+      next,
+    );
+
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({
+        statusCode: 401,
+        code: 'AUTHENTICATION_REQUIRED',
+      }),
+    );
+
+    expect(
+      mockGetDocumentAuditHistory,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('should return audit history successfully', async () => {
+    const req = createMockRequest({
+      user: {
+        userId: 'user-123',
+        role: 'user',
+      },
+    });
+
+    const res = createMockResponse();
+
+    res.locals = {
+      validatedParams: {
+        id: 'document-123',
+      },
+    };
+
+    const next = createMockNext();
+
+    const history = [
+      {
+        action: 'CREATE',
+        userId: 'user-123',
+      },
+      {
+        action: 'UPDATE',
+        userId: 'user-123',
+      },
+    ];
+
+    mockGetDocumentAuditHistory.mockResolvedValue(
+      history,
+    );
+
+    await getDocumentAuditHistoryController(
+      req,
+      res,
+      next,
+    );
+
+    expect(
+      mockGetDocumentAuditHistory,
+    ).toHaveBeenCalledWith(
+      'user-123',
+      'user',
+      'document-123',
+    );
+
+    expect(res.status).toHaveBeenCalledWith(200);
+
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      data: history,
+    });
+
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('should pass service errors to next', async () => {
+    const req = createMockRequest({
+      user: {
+        userId: 'user-123',
+        role: 'user',
+      },
+    });
+
+    const res = createMockResponse();
+
+    res.locals = {
+      validatedParams: {
+        id: 'document-123',
+      },
+    };
+
+    const next = createMockNext();
+
+    const error = new Error(
+      'Audit history failed',
+    );
+
+    mockGetDocumentAuditHistory.mockRejectedValue(
+      error,
+    );
+
+    await getDocumentAuditHistoryController(
       req,
       res,
       next,

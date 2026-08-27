@@ -17,6 +17,7 @@ import {
   updateDocumentController,
   deleteDocumentController,
   restoreDocumentController,
+  getDocumentAuditHistoryController,
   downloadDocumentController,
   viewDocumentController,
 } from './document.controller.js';
@@ -45,6 +46,13 @@ documentRouter.get(
   authenticate,
   validateQuery(documentsQuerySchema),
   getAllDocumentsController,
+);
+
+documentRouter.get(
+  '/:id/audit-history',
+  authenticate,
+  validateParams(documentIdParamsSchema),
+  getDocumentAuditHistoryController,
 );
 
 documentRouter.get(

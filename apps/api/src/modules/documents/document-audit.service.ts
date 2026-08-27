@@ -5,6 +5,8 @@ import {
   type DocumentAuditAction,
 } from './document-audit.model.js';
 
+import { Document } from './document.model.js';
+
 import { AppError } from '../../errors/app-error.js';
 
 export async function createDocumentAudit(
@@ -37,4 +39,55 @@ export async function createDocumentAudit(
   });
 
   return audit;
+}
+
+export async function getDocumentAuditHistory(
+  ownerId: string,
+  role: 'user' | 'admin',
+  documentId: string,
+) {
+  if (!Types.ObjectId.isValid(documentId)) {
+    throw new AppError(
+      'Document not found',
+      404,
+      'DOCUMENT_NOT_FOUND',
+    );
+  }
+
+  if (!Types.ObjectId.isValid(ownerId)) {
+    throw new AppError(
+      'User not found',
+      404,
+      'USER_NOT_FOUND',
+    );
+  }
+
+  const documentFilter: {
+    _id: Types.ObjectId;
+    ownerId?: Types.ObjectId;
+    isDeleted: boolean;
+  } = {
+    _id: new Types.ObjectId(documentId),
+    isDeleted: false,
+  };
+
+  if (role !== 'admin') {
+    documentFilter.ownerId = new Types.ObjectId(ownerId);
+  }
+
+  const document = await Document.findOne(documentFilter);
+
+  if (!document) {
+    throw new AppError(
+      'Document not found',
+      404,
+      'DOCUMENT_NOT_FOUND',
+    );
+  }
+
+  const audits = await DocumentAudit.find({
+    documentId: new Types.ObjectId(documentId),
+  }).sort({ createdAt: -1 });
+
+  return audits;
 }
