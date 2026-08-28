@@ -6,6 +6,7 @@ const { mockDocumentAudit, mockDocument } = vi.hoisted(() => ({
   mockDocumentAudit: {
     create: vi.fn(),
     find: vi.fn(),
+    countDocuments: vi.fn(),
   },
 
   mockDocument: {
@@ -22,9 +23,9 @@ vi.mock('./document.model.js', () => ({
 }));
 
 import {
-    createDocumentAudit,
-    getDocumentAuditHistory,
- } from './document-audit.service.js';
+  createDocumentAudit,
+  getDocumentAuditHistory,
+} from './document-audit.service.js';
 
 const DOCUMENT_ID = new Types.ObjectId().toString();
 const USER_ID = new Types.ObjectId().toString();
@@ -126,7 +127,7 @@ describe('getDocumentAuditHistory', () => {
     vi.clearAllMocks();
   });
 
-  it('should return audit history for a document', async () => {
+  it('should return default paginated audit history for a document', async () => {
     const audits = [
       {
         documentId: new Types.ObjectId(DOCUMENT_ID),
@@ -143,60 +144,170 @@ describe('getDocumentAuditHistory', () => {
     ];
 
     mockDocument.findOne.mockResolvedValue({
-        _id: new Types.ObjectId(DOCUMENT_ID),
-        ownerId: new Types.ObjectId(USER_ID),
-        isDeleted: false,
+      _id: new Types.ObjectId(DOCUMENT_ID),
+      ownerId: new Types.ObjectId(USER_ID),
+      isDeleted: false,
     });
 
-    mockDocumentAudit.find.mockReturnValue({
-      sort: vi.fn().mockResolvedValue(audits),
-    });
+    const limitMock = vi.fn().mockResolvedValue(audits);
+    const skipMock = vi.fn().mockReturnValue({ limit: limitMock });
+    const sortMock = vi.fn().mockReturnValue({ skip: skipMock });
+
+    mockDocumentAudit.find.mockReturnValue({ sort: sortMock });
+    mockDocumentAudit.countDocuments.mockResolvedValue(2);
 
     const result = await getDocumentAuditHistory(
-        USER_ID,
-        'user',
-        DOCUMENT_ID,
-    )
+      USER_ID,
+      'user',
+      DOCUMENT_ID,
+    );
 
     expect(mockDocumentAudit.find).toHaveBeenCalledWith({
       documentId: expect.any(Types.ObjectId),
     });
 
-    expect(result).toEqual(audits);
+    expect(sortMock).toHaveBeenCalledWith({ createdAt: -1 });
+    expect(skipMock).toHaveBeenCalledWith(0);
+    expect(limitMock).toHaveBeenCalledWith(10);
+    expect(mockDocumentAudit.countDocuments).toHaveBeenCalledWith({
+      documentId: expect.any(Types.ObjectId),
+    });
+
+    expect(result).toEqual({
+      auditHistory: audits,
+      pagination: {
+        page: 1,
+        limit: 10,
+        total: 2,
+        totalPages: 1,
+      },
+    });
   });
 
-  it('should return an empty array when document has no audit history', async () => {
+  it('should apply custom pagination parameters', async () => {
+    const audits = [
+      {
+        documentId: new Types.ObjectId(DOCUMENT_ID),
+        userId: new Types.ObjectId(USER_ID),
+        action: 'UPDATE',
+      },
+    ];
+
     mockDocument.findOne.mockResolvedValue({
-        _id: new Types.ObjectId(DOCUMENT_ID),
-        ownerId: new Types.ObjectId(USER_ID),
-        isDeleted: false,
+      _id: new Types.ObjectId(DOCUMENT_ID),
+      ownerId: new Types.ObjectId(USER_ID),
+      isDeleted: false,
     });
 
-    mockDocumentAudit.find.mockReturnValue({
-      sort: vi.fn().mockResolvedValue([]),
-    });
+    const limitMock = vi.fn().mockResolvedValue(audits);
+    const skipMock = vi.fn().mockReturnValue({ limit: limitMock });
+    const sortMock = vi.fn().mockReturnValue({ skip: skipMock });
+
+    mockDocumentAudit.find.mockReturnValue({ sort: sortMock });
+    mockDocumentAudit.countDocuments.mockResolvedValue(15);
 
     const result = await getDocumentAuditHistory(
-        USER_ID,
-        'user',
-        DOCUMENT_ID,
-    )
+      USER_ID,
+      'user',
+      DOCUMENT_ID,
+      { page: 2, limit: 5 },
+    );
 
-    expect(result).toEqual([]);
+    expect(skipMock).toHaveBeenCalledWith(5);
+    expect(limitMock).toHaveBeenCalledWith(5);
+    expect(result.pagination).toEqual({
+      page: 2,
+      limit: 5,
+      total: 15,
+      totalPages: 3,
+    });
+  });
+
+  it('should filter audit history by action', async () => {
+    const audits = [
+      {
+        documentId: new Types.ObjectId(DOCUMENT_ID),
+        userId: new Types.ObjectId(USER_ID),
+        action: 'UPDATE',
+      },
+    ];
+
+    mockDocument.findOne.mockResolvedValue({
+      _id: new Types.ObjectId(DOCUMENT_ID),
+      ownerId: new Types.ObjectId(USER_ID),
+      isDeleted: false,
+    });
+
+    const limitMock = vi.fn().mockResolvedValue(audits);
+    const skipMock = vi.fn().mockReturnValue({ limit: limitMock });
+    const sortMock = vi.fn().mockReturnValue({ skip: skipMock });
+
+    mockDocumentAudit.find.mockReturnValue({ sort: sortMock });
+    mockDocumentAudit.countDocuments.mockResolvedValue(1);
+
+    const result = await getDocumentAuditHistory(
+      USER_ID,
+      'user',
+      DOCUMENT_ID,
+      { page: 1, limit: 10, action: 'UPDATE' },
+    );
+
+    expect(mockDocumentAudit.find).toHaveBeenCalledWith({
+      documentId: expect.any(Types.ObjectId),
+      action: 'UPDATE',
+    });
+
+    expect(mockDocumentAudit.countDocuments).toHaveBeenCalledWith({
+      documentId: expect.any(Types.ObjectId),
+      action: 'UPDATE',
+    });
+
+    expect(result.auditHistory).toEqual(audits);
+  });
+
+  it('should return empty paginated result when no audit history exists', async () => {
+    mockDocument.findOne.mockResolvedValue({
+      _id: new Types.ObjectId(DOCUMENT_ID),
+      ownerId: new Types.ObjectId(USER_ID),
+      isDeleted: false,
+    });
+
+    const limitMock = vi.fn().mockResolvedValue([]);
+    const skipMock = vi.fn().mockReturnValue({ limit: limitMock });
+    const sortMock = vi.fn().mockReturnValue({ skip: skipMock });
+
+    mockDocumentAudit.find.mockReturnValue({ sort: sortMock });
+    mockDocumentAudit.countDocuments.mockResolvedValue(0);
+
+    const result = await getDocumentAuditHistory(
+      USER_ID,
+      'user',
+      DOCUMENT_ID,
+    );
+
+    expect(result).toEqual({
+      auditHistory: [],
+      pagination: {
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 0,
+      },
+    });
   });
 
   it('should not allow a user to view another user document audit history', async () => {
     mockDocument.findOne.mockResolvedValue(null);
 
     await expect(
-        getDocumentAuditHistory(
+      getDocumentAuditHistory(
         USER_ID,
         'user',
         DOCUMENT_ID,
-        ),
+      ),
     ).rejects.toMatchObject({
-        statusCode: 404,
-        code: 'DOCUMENT_NOT_FOUND',
+      statusCode: 404,
+      code: 'DOCUMENT_NOT_FOUND',
     });
 
     expect(mockDocumentAudit.find).not.toHaveBeenCalled();
@@ -204,44 +315,45 @@ describe('getDocumentAuditHistory', () => {
 
   it('should allow an admin to view any document audit history', async () => {
     mockDocument.findOne.mockResolvedValue({
-        _id: new Types.ObjectId(DOCUMENT_ID),
-        ownerId: new Types.ObjectId(
-        '507f1f77bcf86cd799439012',
-        ),
-        isDeleted: false,
+      _id: new Types.ObjectId(DOCUMENT_ID),
+      ownerId: new Types.ObjectId('507f1f77bcf86cd799439012'),
+      isDeleted: false,
     });
 
     const audits = [
-        {
+      {
         documentId: new Types.ObjectId(DOCUMENT_ID),
         userId: new Types.ObjectId(USER_ID),
         action: 'CREATE',
-        },
+      },
     ];
 
-    mockDocumentAudit.find.mockReturnValue({
-        sort: vi.fn().mockResolvedValue(audits),
-    });
+    const limitMock = vi.fn().mockResolvedValue(audits);
+    const skipMock = vi.fn().mockReturnValue({ limit: limitMock });
+    const sortMock = vi.fn().mockReturnValue({ skip: skipMock });
+
+    mockDocumentAudit.find.mockReturnValue({ sort: sortMock });
+    mockDocumentAudit.countDocuments.mockResolvedValue(1);
 
     const result = await getDocumentAuditHistory(
-        USER_ID,
-        'admin',
-        DOCUMENT_ID,
+      USER_ID,
+      'admin',
+      DOCUMENT_ID,
     );
 
-    expect(result).toEqual(audits);
+    expect(result.auditHistory).toEqual(audits);
   });
 
   it('should throw when document id is invalid', async () => {
     await expect(
-        getDocumentAuditHistory(
+      getDocumentAuditHistory(
         USER_ID,
         'user',
         'invalid-document-id',
-        ),
+      ),
     ).rejects.toMatchObject({
-        statusCode: 404,
-        code: 'DOCUMENT_NOT_FOUND',
+      statusCode: 404,
+      code: 'DOCUMENT_NOT_FOUND',
     });
 
     expect(mockDocument.findOne).not.toHaveBeenCalled();

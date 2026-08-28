@@ -318,13 +318,14 @@ export const getDocumentAuditHistoryController: RequestHandler =
 
       const { id } = res.locals.validatedParams;
 
-      const audits = await getDocumentAuditHistory(
+      const result = await getDocumentAuditHistory(
         req.user.userId,
         req.user.role,
         id,
+        res.locals.validatedQuery,
       );
 
-      return sendSuccess(res, audits);
+      return sendSuccess(res, result);
     } catch (error) {
       return next(error);
     }

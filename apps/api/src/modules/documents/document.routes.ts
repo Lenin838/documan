@@ -27,6 +27,7 @@ import {
   documentsQuerySchema,
   updateDocumentSchema,
   documentIdParamsSchema,
+  documentAuditHistoryQuerySchema,
 } from './document.schema.js';
 
 import { documentUpload } from '../../middleware/uploads/document-upload.middleware.js';
@@ -52,6 +53,7 @@ documentRouter.get(
   '/:id/audit-history',
   authenticate,
   validateParams(documentIdParamsSchema),
+  validateQuery(documentAuditHistoryQuerySchema),
   getDocumentAuditHistoryController,
 );
 
