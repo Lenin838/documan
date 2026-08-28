@@ -1,5 +1,20 @@
 import { z } from 'zod';
 
+const tagsSchema = z.preprocess(
+  (val) => {
+    if (typeof val === 'string') {
+      try {
+        const parsed = JSON.parse(val);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {
+        return val.split(',').map((s) => s.trim()).filter(Boolean);
+      }
+    }
+    return val;
+  },
+  z.array(z.string().trim().min(1).max(50)).max(20).optional(),
+);
+
 export const createDocumentSchema = z
   .object({
     title: z
@@ -19,6 +34,8 @@ export const createDocumentSchema = z
       .trim()
       .nullable()
       .optional(),
+
+    tags: tagsSchema,
   })
   .strict();
 
@@ -46,6 +63,8 @@ export const updateDocumentSchema = z
       .trim()
       .nullable()
       .optional(),
+
+    tags: tagsSchema,
   })
   .strict()
   .refine(
@@ -106,6 +125,15 @@ export const documentsQuerySchema = z.object({
 
   view: z
     .enum(['all', 'mine', 'shared'])
+    .optional(),
+
+  tag: z
+    .union([z.string().trim(), z.array(z.string().trim())])
+    .optional(),
+
+  fileType: z
+    .string()
+    .trim()
     .optional(),
 });
 

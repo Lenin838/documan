@@ -19,6 +19,7 @@ interface DocumentResponse {
   title: string;
   description?: string | undefined;
   folderId?: string | null | undefined;
+  tags: string[];
   fileName: string;
   filePath: string;
   fileType: string;
@@ -29,12 +30,19 @@ interface DocumentResponse {
   updatedAt: Date;
 }
 
+function normalizeTags(tags?: string[]): string[] {
+  if (!tags) return [];
+  const clean = tags.map((t) => t.trim().toLowerCase()).filter(Boolean);
+  return Array.from(new Set(clean));
+}
+
 function toDocumentResponse(
   document: {
     _id: Types.ObjectId;
     title: string;
     description?: string;
     folderId?: Types.ObjectId | null;
+    tags?: string[];
     fileName: string;
     filePath: string;
     fileType: string;
@@ -50,6 +58,7 @@ function toDocumentResponse(
     title: document.title,
     description: document.description,
     folderId: document.folderId ? document.folderId.toString() : null,
+    tags: document.tags || [],
     fileName: document.fileName,
     filePath: document.filePath,
     fileType: document.fileType,
@@ -146,6 +155,7 @@ export async function createDocument(
       : {}),
 
     folderId: folderObjectId,
+    tags: normalizeTags(input.tags),
     fileName: file.originalname,
     filePath: file.path,
     fileType: file.mimetype,
@@ -176,6 +186,8 @@ export async function getAllDocuments(
     isDeleted,
     folderId,
     view,
+    tag,
+    fileType,
   } = query;
 
   const filter: any = {
@@ -207,6 +219,19 @@ export async function getAllDocuments(
     } else if (Types.ObjectId.isValid(folderId)) {
       filter.folderId = new Types.ObjectId(folderId);
     }
+  }
+
+  if (tag) {
+    const tagArray = (Array.isArray(tag) ? tag : [tag])
+      .map((t) => t.trim().toLowerCase())
+      .filter(Boolean);
+    if (tagArray.length > 0) {
+      filter.tags = { $in: tagArray };
+    }
+  }
+
+  if (fileType) {
+    filter.fileType = { $regex: fileType, $options: 'i' };
   }
 
   if (search) {
@@ -296,6 +321,10 @@ export async function updateDocument(
 
   if (input.description !== undefined) {
     document.description = input.description;
+  }
+
+  if (input.tags !== undefined) {
+    document.tags = normalizeTags(input.tags);
   }
 
   if (input.folderId !== undefined) {

@@ -424,6 +424,30 @@ export default function DocumentDetailsPage() {
           <dd style={{ margin: 0 }}>
             {doc.description || 'No description provided'}
           </dd>
+
+          <dt style={{ fontWeight: 'bold' }}>Tags</dt>
+          <dd style={{ margin: 0 }}>
+            {doc.tags && doc.tags.length > 0 ? (
+              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                {doc.tags.map((t) => (
+                  <span
+                    key={t}
+                    style={{
+                      background: '#e2e8f0',
+                      color: '#2d3748',
+                      padding: '0.2rem 0.5rem',
+                      borderRadius: '4px',
+                      fontSize: '0.85rem',
+                    }}
+                  >
+                    #{t}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              'No tags'
+            )}
+          </dd>
         </dl>
       </section>
 

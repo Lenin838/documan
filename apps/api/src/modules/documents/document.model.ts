@@ -4,6 +4,7 @@ export interface DocumentDocument {
   title: string;
   description?: string;
   folderId?: Types.ObjectId | null;
+  tags?: string[];
   fileName: string;
   filePath: string;
   fileType: string;
@@ -31,6 +32,12 @@ const documentSchema = new Schema<DocumentDocument>(
       type: Schema.Types.ObjectId,
       ref: 'Folder',
       default: null,
+      index: true,
+    },
+
+    tags: {
+      type: [String],
+      default: [],
       index: true,
     },
 

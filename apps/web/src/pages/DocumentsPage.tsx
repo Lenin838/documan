@@ -26,6 +26,8 @@ export default function DocumentsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
   const [documentView, setDocumentView] = useState<'mine' | 'shared'>('mine');
+  const [selectedTag, setSelectedTag] = useState('');
+  const [fileTypeFilter, setFileTypeFilter] = useState('');
 
   const [folders, setFolders] = useState<Folder[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState('');
@@ -68,6 +70,8 @@ export default function DocumentsPage() {
           search: search || undefined,
           folderId: selectedFolderId || undefined,
           view: documentView,
+          tag: selectedTag || undefined,
+          fileType: fileTypeFilter || undefined,
         });
 
         setDocuments(response.data.documents);
@@ -80,10 +84,20 @@ export default function DocumentsPage() {
     }
 
     void loadDocuments();
-  }, [page, search, selectedFolderId, documentView]);
+  }, [page, search, selectedFolderId, documentView, selectedTag, fileTypeFilter]);
 
   function handleSearchChange(value: string) {
     setSearch(value);
+    setPage(1);
+  }
+
+  function handleTagChange(value: string) {
+    setSelectedTag(value);
+    setPage(1);
+  }
+
+  function handleFileTypeChange(value: string) {
+    setFileTypeFilter(value);
     setPage(1);
   }
 
@@ -339,13 +353,35 @@ export default function DocumentsPage() {
         </section>
       )}
 
-      <section style={{ marginBottom: '1rem' }}>
+      {/* Advanced Search & Filtering Controls */}
+      <section style={{ marginBottom: '1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
         <input
           type="search"
           placeholder="Search title or file name"
           value={search}
           onChange={(event) => handleSearchChange(event.target.value)}
+          style={{ flex: '1 1 200px', padding: '0.5rem' }}
         />
+
+        <input
+          type="text"
+          placeholder="Filter by tag (e.g. spec)"
+          value={selectedTag}
+          onChange={(event) => handleTagChange(event.target.value)}
+          style={{ flex: '0 1 180px', padding: '0.5rem' }}
+        />
+
+        <select
+          value={fileTypeFilter}
+          onChange={(event) => handleFileTypeChange(event.target.value)}
+          style={{ padding: '0.5rem' }}
+        >
+          <option value="">All File Types</option>
+          <option value="pdf">PDF Documents</option>
+          <option value="image">Images</option>
+          <option value="text">Text / Markdown</option>
+          <option value="json">JSON / Code</option>
+        </select>
       </section>
 
       {loading && <p>Loading documents...</p>}
@@ -358,6 +394,7 @@ export default function DocumentsPage() {
             <thead>
               <tr>
                 <th>Title</th>
+                <th>Tags</th>
                 <th>File Name</th>
                 <th>File Type</th>
                 <th>File Size</th>
@@ -371,6 +408,30 @@ export default function DocumentsPage() {
                   <td>
                     <Link to={`/documents/${doc.id}`}>{doc.title}</Link>
                   </td>
+                  <td>
+                    {doc.tags && doc.tags.length > 0 ? (
+                      <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                        {doc.tags.map((t) => (
+                          <span
+                            key={t}
+                            onClick={() => handleTagChange(t)}
+                            style={{
+                              background: '#edf2f7',
+                              color: '#2b6cb0',
+                              cursor: 'pointer',
+                              padding: '0.1rem 0.4rem',
+                              borderRadius: '3px',
+                              fontSize: '0.8rem',
+                            }}
+                          >
+                            #{t}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span style={{ color: '#aaa', fontSize: '0.85rem' }}>—</span>
+                    )}
+                  </td>
                   <td>{doc.fileName}</td>
                   <td>{doc.fileType}</td>
                   <td>{formatFileSize(doc.fileSize)}</td>
@@ -380,7 +441,7 @@ export default function DocumentsPage() {
 
               {documents.length === 0 && (
                 <tr>
-                  <td colSpan={5}>
+                  <td colSpan={6}>
                     {documentView === 'shared'
                       ? 'No documents have been shared with you.'
                       : 'No documents found in this view.'}

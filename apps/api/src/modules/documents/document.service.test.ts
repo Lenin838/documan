@@ -56,6 +56,7 @@ function createDocumentMock(
     _id: new Types.ObjectId(DOCUMENT_ID),
     title: 'Test Document',
     description: 'Test description',
+    tags: ['engineering', 'spec'],
     fileName: 'test.pdf',
     filePath: '/uploads/test.pdf',
     fileType: 'application/pdf',
@@ -109,6 +110,7 @@ describe('createDocument', () => {
       title: 'Test Document',
       description: 'Test description',
       folderId: null,
+      tags: [],
       fileName: 'test.pdf',
       filePath: 'uploads/documents/test.pdf',
       fileType: 'application/pdf',
@@ -135,6 +137,42 @@ describe('createDocument', () => {
     );
   });
 
+  it('should create a document with normalized tags', async () => {
+    const document = createDocumentMock({
+      tags: ['engineering', 'spec'],
+    });
+
+    mockDocument.create.mockResolvedValue(document);
+
+    const result = await createDocument(
+      OWNER_ID,
+      {
+        title: 'Test Document',
+        tags: [' Engineering ', 'SPEC', 'engineering'],
+      },
+      {
+        originalname: 'test.pdf',
+        path: 'uploads/documents/test.pdf',
+        mimetype: 'application/pdf',
+        size: 1024,
+      },
+    );
+
+    expect(mockDocument.create).toHaveBeenCalledWith({
+      title: 'Test Document',
+      folderId: null,
+      tags: ['engineering', 'spec'],
+      fileName: 'test.pdf',
+      filePath: 'uploads/documents/test.pdf',
+      fileType: 'application/pdf',
+      fileSize: 1024,
+      ownerId: expect.any(Types.ObjectId),
+      isDeleted: false,
+    });
+
+    expect(result.tags).toEqual(['engineering', 'spec']);
+  });
+
   it('should create a document without description', async () => {
     const document = createDocumentMock({
       description: undefined,
@@ -158,6 +196,7 @@ describe('createDocument', () => {
     expect(mockDocument.create).toHaveBeenCalledWith({
       title: 'Test Document',
       folderId: null,
+      tags: [],
       fileName: 'test.pdf',
       filePath: 'uploads/documents/test.pdf',
       fileType: 'application/pdf',

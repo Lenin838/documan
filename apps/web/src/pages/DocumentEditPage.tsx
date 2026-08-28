@@ -26,6 +26,7 @@ export default function DocumentEditPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [folderId, setFolderId] = useState('');
+  const [tagsInput, setTagsInput] = useState('');
   const [file, setFile] = useState<File | null>(null);
 
   const [folders, setFolders] = useState<Folder[]>([]);
@@ -63,6 +64,7 @@ export default function DocumentEditPage() {
         setTitle(response.data.title);
         setDescription(response.data.description || '');
         setFolderId(response.data.folderId || '');
+        setTagsInput(response.data.tags ? response.data.tags.join(', ') : '');
       } catch {
         setError('Unable to load document.');
       } finally {
@@ -92,6 +94,11 @@ export default function DocumentEditPage() {
       return;
     }
 
+    const parsedTags = tagsInput
+      .split(',')
+      .map((t) => t.trim().toLowerCase())
+      .filter(Boolean);
+
     setSaving(true);
     setError('');
 
@@ -100,6 +107,7 @@ export default function DocumentEditPage() {
         title: trimmedTitle,
         description: description.trim(),
         folderId: folderId || null,
+        tags: parsedTags,
         file: file || undefined,
       });
 
@@ -224,6 +232,23 @@ export default function DocumentEditPage() {
               </option>
             ))}
           </select>
+        </div>
+
+        <div style={{ marginBottom: '1.25rem' }}>
+          <label
+            htmlFor="tags"
+            style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}
+          >
+            Tags (comma-separated)
+          </label>
+          <input
+            id="tags"
+            type="text"
+            value={tagsInput}
+            onChange={(e) => setTagsInput(e.target.value)}
+            placeholder="e.g. engineering, spec, v2"
+            style={{ width: '100%', padding: '0.5rem', boxSizing: 'border-box' }}
+          />
         </div>
 
         <div

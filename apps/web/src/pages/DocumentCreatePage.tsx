@@ -20,6 +20,7 @@ export default function DocumentCreatePage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [folderId, setFolderId] = useState('');
+  const [tagsInput, setTagsInput] = useState('');
   const [file, setFile] = useState<File | null>(null);
 
   const [folders, setFolders] = useState<Folder[]>([]);
@@ -58,6 +59,11 @@ export default function DocumentCreatePage() {
       return;
     }
 
+    const parsedTags = tagsInput
+      .split(',')
+      .map((t) => t.trim().toLowerCase())
+      .filter(Boolean);
+
     setCreating(true);
     setError('');
 
@@ -66,6 +72,7 @@ export default function DocumentCreatePage() {
         title: trimmedTitle,
         description: description.trim() || undefined,
         folderId: folderId || null,
+        tags: parsedTags.length > 0 ? parsedTags : undefined,
         file,
       });
 
@@ -161,6 +168,23 @@ export default function DocumentCreatePage() {
               </option>
             ))}
           </select>
+        </div>
+
+        <div style={{ marginBottom: '1.25rem' }}>
+          <label
+            htmlFor="tags"
+            style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}
+          >
+            Tags (comma-separated)
+          </label>
+          <input
+            id="tags"
+            type="text"
+            value={tagsInput}
+            onChange={(e) => setTagsInput(e.target.value)}
+            placeholder="e.g. engineering, spec, v2"
+            style={{ width: '100%', padding: '0.5rem', boxSizing: 'border-box' }}
+          />
         </div>
 
         <div style={{ marginBottom: '1.25rem' }}>
