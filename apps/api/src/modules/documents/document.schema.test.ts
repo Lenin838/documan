@@ -103,6 +103,26 @@ describe('createDocumentSchema', () => {
     expect(result.success).toBe(true);
   });
 
+  it('should accept valid tags array and comma-separated tags string', () => {
+    const result1 = createDocumentSchema.safeParse({
+      title: 'Valid Title',
+      tags: ['engineering', 'spec'],
+    });
+    expect(result1.success).toBe(true);
+    if (result1.success) {
+      expect(result1.data.tags).toEqual(['engineering', 'spec']);
+    }
+
+    const result2 = createDocumentSchema.safeParse({
+      title: 'Valid Title',
+      tags: 'engineering, spec',
+    });
+    expect(result2.success).toBe(true);
+    if (result2.success) {
+      expect(result2.data.tags).toEqual(['engineering', 'spec']);
+    }
+  });
+
   it('should reject short title', () => {
     const result = createDocumentSchema.safeParse({
       title: 'A',
@@ -121,6 +141,14 @@ describe('updateDocumentSchema', () => {
     expect(result.success).toBe(true);
   });
 
+  it('should accept valid tags update', () => {
+    const result = updateDocumentSchema.safeParse({
+      tags: ['v2', 'approved'],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
   it('should reject empty body', () => {
     const result = updateDocumentSchema.safeParse({});
 
@@ -134,9 +162,15 @@ describe('documentsQuerySchema', () => {
       page: '1',
       limit: '10',
       search: 'report',
+      tag: 'engineering',
+      fileType: 'pdf',
     });
 
     expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.tag).toBe('engineering');
+      expect(result.data.fileType).toBe('pdf');
+    }
   });
 });
 

@@ -3,6 +3,7 @@ export interface Document {
   title: string;
   description?: string;
   folderId?: string | null;
+  tags?: string[];
   fileName: string;
   filePath: string;
   fileType: string;
@@ -27,6 +28,8 @@ export interface GetDocumentsParams {
   isDeleted?: boolean;
   folderId?: string;
   view?: 'all' | 'mine' | 'shared';
+  tag?: string | string[];
+  fileType?: string;
 }
 
 export interface GetDocumentsResponse {
@@ -99,6 +102,7 @@ export interface UpdateDocumentParams {
   title?: string;
   description?: string;
   folderId?: string | null;
+  tags?: string[];
   file?: File;
 }
 
@@ -111,6 +115,7 @@ export interface CreateDocumentParams {
   title: string;
   description?: string;
   folderId?: string | null;
+  tags?: string[];
   file: File;
 }
 
