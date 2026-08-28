@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import {
@@ -9,11 +10,22 @@ import {
   deleteDocument,
 } from '../features/documents/document.api';
 import { getFolderById } from '../features/folders/folder.api';
+import {
+  createDocumentShare,
+  getDocumentShares,
+  revokeDocumentShare,
+  updateDocumentShare,
+} from '../features/document-shares/document-share.api';
+import type {
+  DocumentShare,
+  SharePermission,
+} from '../features/document-shares/document-share.types';
 import type {
   Document,
   DocumentAudit,
   DocumentAuditAction,
 } from '../features/documents/document.types';
+import { useAuthStore } from '../features/auth/auth.store';
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -83,6 +95,7 @@ function renderAuditMetadata(metadata?: Record<string, unknown>) {
 export default function DocumentDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const currentUser = useAuthStore((state) => state.user);
 
   const [doc, setDoc] = useState<Document | null>(null);
   const [folderName, setFolderName] = useState('');
@@ -103,6 +116,20 @@ export default function DocumentDetailsPage() {
   >('');
   const [auditLoading, setAuditLoading] = useState(true);
   const [auditError, setAuditError] = useState('');
+
+  // Sharing state
+  const [shares, setShares] = useState<DocumentShare[]>([]);
+  const [shareEmail, setShareEmail] = useState('');
+  const [sharePermission, setSharePermission] = useState<SharePermission>('READ');
+  const [sharingError, setSharingError] = useState('');
+  const [sharingSuccess, setSharingSuccess] = useState('');
+  const [creatingShare, setCreatingShare] = useState(false);
+
+  const isOwner =
+    Boolean(currentUser && doc && (doc.ownerId === currentUser.id || currentUser.role === 'admin'));
+
+  const userShare = shares.find((s) => s.sharedWithUser.id === currentUser?.id);
+  const canEdit = isOwner || userShare?.permission === 'EDIT';
 
   useEffect(() => {
     if (!id) {
@@ -138,6 +165,25 @@ export default function DocumentDetailsPage() {
   }, [id]);
 
   useEffect(() => {
+    if (!id || !isOwner) {
+      return;
+    }
+
+    const documentId = id;
+
+    async function loadShares() {
+      try {
+        const response = await getDocumentShares(documentId);
+        setShares(response.data.shares);
+      } catch {
+        // Ignore share load errors for non-owners
+      }
+    }
+
+    void loadShares();
+  }, [id, isOwner]);
+
+  useEffect(() => {
     if (!id) {
       return;
     }
@@ -168,7 +214,7 @@ export default function DocumentDetailsPage() {
   }, [id, auditPage, selectedAction]);
 
   async function handleView() {
-    if (!id || viewing || downloading) {
+    if (!id || viewing || downloading || deleting) {
       return;
     }
 
@@ -177,29 +223,17 @@ export default function DocumentDetailsPage() {
 
     try {
       const response = await viewDocument(id);
-      const contentType =
-        (response.headers['content-type'] as string | undefined) ||
-        'application/octet-stream';
-      const blob = new Blob([response.data], { type: contentType });
-      const url = URL.createObjectURL(blob);
-
-      const opened = window.open(url, '_blank');
-      if (!opened) {
-        window.location.href = url;
-      }
-
-      setTimeout(() => {
-        URL.revokeObjectURL(url);
-      }, 60000);
+      const url = URL.createObjectURL(response.data);
+      window.open(url, '_blank');
     } catch {
-      setActionError('Unable to open this document.');
+      setActionError('Unable to view document.');
     } finally {
       setViewing(false);
     }
   }
 
   async function handleDownload() {
-    if (!id || viewing || downloading) {
+    if (!id || viewing || downloading || deleting) {
       return;
     }
 
@@ -208,31 +242,13 @@ export default function DocumentDetailsPage() {
 
     try {
       const response = await downloadDocument(id);
-      const contentDisposition = response.headers[
-        'content-disposition'
-      ] as string | undefined;
-
-      let fileName = doc?.fileName || 'document';
-
-      if (contentDisposition) {
-        const match = contentDisposition.match(/filename="?([^";]+)"?/i);
-        if (match && match[1]) {
-          fileName = match[1];
-        }
-      }
-
-      const contentType =
-        (response.headers['content-type'] as string | undefined) ||
-        'application/octet-stream';
-      const blob = new Blob([response.data], { type: contentType });
-      const url = URL.createObjectURL(blob);
-
-      const link = window.document.createElement('a');
+      const url = URL.createObjectURL(response.data);
+      const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', fileName);
-      window.document.body.appendChild(link);
+      link.download = doc?.fileName || 'download';
+      document.body.appendChild(link);
       link.click();
-      window.document.body.removeChild(link);
+      document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch {
       setActionError('Unable to download this document.');
@@ -257,6 +273,85 @@ export default function DocumentDetailsPage() {
     } finally {
       setDeleting(false);
       setShowDeleteConfirm(false);
+    }
+  }
+
+  async function handleCreateShareSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!id) return;
+
+    const trimmedEmail = shareEmail.trim();
+    if (!trimmedEmail) {
+      setSharingError('Email is required');
+      return;
+    }
+
+    setCreatingShare(true);
+    setSharingError('');
+    setSharingSuccess('');
+
+    try {
+      const response = await createDocumentShare(id, {
+        email: trimmedEmail,
+        permission: sharePermission,
+      });
+
+      setShares((prev) => {
+        const filtered = prev.filter((s) => s.id !== response.data.id);
+        return [response.data, ...filtered];
+      });
+
+      setShareEmail('');
+      setSharingSuccess(`Shared with ${response.data.sharedWithUser.email} (${response.data.permission})`);
+    } catch (err: unknown) {
+      let msg = 'Failed to share document';
+      if (
+        err &&
+        typeof err === 'object' &&
+        'response' in err &&
+        err.response &&
+        typeof err.response === 'object' &&
+        'data' in err.response &&
+        err.response.data &&
+        typeof err.response.data === 'object' &&
+        'error' in err.response.data &&
+        typeof err.response.data.error === 'string'
+      ) {
+        msg = err.response.data.error;
+      }
+      setSharingError(msg);
+    } finally {
+      setCreatingShare(false);
+    }
+  }
+
+  async function handleUpdateShare(shareId: string, permission: SharePermission) {
+    if (!id) return;
+    setSharingError('');
+    setSharingSuccess('');
+
+    try {
+      const response = await updateDocumentShare(id, shareId, { permission });
+      setShares((prev) =>
+        prev.map((s) => (s.id === shareId ? response.data : s)),
+      );
+      setSharingSuccess(`Updated permission to ${permission}`);
+    } catch {
+      setSharingError('Failed to update share permission');
+    }
+  }
+
+  async function handleRevokeShare(shareId: string) {
+    if (!id) return;
+    setSharingError('');
+    setSharingSuccess('');
+
+    try {
+      await revokeDocumentShare(id, shareId);
+      setShares((prev) => prev.filter((s) => s.id !== shareId));
+      setSharingSuccess('Revoked share access');
+    } catch {
+      setSharingError('Failed to revoke share access');
     }
   }
 
@@ -312,6 +407,17 @@ export default function DocumentDetailsPage() {
           <dt style={{ fontWeight: 'bold' }}>Folder</dt>
           <dd style={{ margin: 0 }}>
             {doc.folderId ? folderName || 'Loading...' : 'Unfiled'}
+          </dd>
+
+          <dt style={{ fontWeight: 'bold' }}>Access Role</dt>
+          <dd style={{ margin: 0 }}>
+            {isOwner ? (
+              <span style={{ color: '#0056b3', fontWeight: 'bold' }}>Owner</span>
+            ) : userShare ? (
+              <span>Shared — {userShare.permission === 'EDIT' ? 'Edit Access' : 'Read Access'}</span>
+            ) : (
+              <span>Shared</span>
+            )}
           </dd>
 
           <dt style={{ fontWeight: 'bold' }}>Description</dt>
@@ -383,10 +489,9 @@ export default function DocumentDetailsPage() {
                   border: 'none',
                   padding: '0.5rem 1rem',
                   borderRadius: '4px',
-                  cursor: 'pointer',
                 }}
               >
-                {deleting ? 'Deleting...' : 'Delete'}
+                {deleting ? 'Deleting...' : 'Confirm Delete'}
               </button>
               <button
                 type="button"
@@ -413,23 +518,135 @@ export default function DocumentDetailsPage() {
             >
               {downloading ? 'Downloading...' : 'Download'}
             </button>
-            <button
-              type="button"
-              onClick={() => navigate(`/documents/${doc.id}/edit`)}
-              disabled={viewing || downloading || deleting}
-            >
-              Edit
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowDeleteConfirm(true)}
-              disabled={viewing || downloading || deleting}
-            >
-              Delete
-            </button>
+            {canEdit && (
+              <button
+                type="button"
+                onClick={() => navigate(`/documents/${doc.id}/edit`)}
+                disabled={viewing || downloading || deleting}
+              >
+                Edit
+              </button>
+            )}
+            {isOwner && (
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={viewing || downloading || deleting}
+              >
+                Delete
+              </button>
+            )}
           </div>
         )}
       </section>
+
+      {/* Share Document Section (Only visible to Owner or Admin) */}
+      {isOwner && (
+        <>
+          <hr
+            style={{
+              margin: '2rem 0',
+              borderColor: '#ccc',
+              borderStyle: 'solid',
+              borderWidth: '1px 0 0 0',
+            }}
+          />
+
+          <section style={{ marginBottom: '2rem' }}>
+            <h2>Share Document</h2>
+
+            <form
+              onSubmit={(e) => void handleCreateShareSubmit(e)}
+              style={{
+                display: 'flex',
+                gap: '0.75rem',
+                alignItems: 'center',
+                marginBottom: '1rem',
+                flexWrap: 'wrap',
+              }}
+            >
+              <input
+                type="email"
+                placeholder="Enter user email address"
+                value={shareEmail}
+                onChange={(e) => setShareEmail(e.target.value)}
+                required
+                style={{ flex: 1, minWidth: '220px', padding: '0.5rem' }}
+              />
+
+              <select
+                value={sharePermission}
+                onChange={(e) => setSharePermission(e.target.value as SharePermission)}
+                style={{ padding: '0.5rem' }}
+              >
+                <option value="READ">Read Access</option>
+                <option value="EDIT">Edit Access</option>
+              </select>
+
+              <button type="submit" disabled={creatingShare}>
+                {creatingShare ? 'Sharing...' : 'Share'}
+              </button>
+            </form>
+
+            {sharingError && (
+              <p style={{ color: 'red', margin: '0 0 1rem 0' }}>{sharingError}</p>
+            )}
+
+            {sharingSuccess && (
+              <p style={{ color: 'green', margin: '0 0 1rem 0' }}>{sharingSuccess}</p>
+            )}
+
+            <h3>Shared Access ({shares.length})</h3>
+
+            {shares.length === 0 ? (
+              <p style={{ color: '#666' }}>This document has not been shared with any users.</p>
+            ) : (
+              <table>
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Permission</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shares.map((share) => (
+                    <tr key={share.id}>
+                      <td>{share.sharedWithUser.name}</td>
+                      <td>{share.sharedWithUser.email}</td>
+                      <td>
+                        <select
+                          value={share.permission}
+                          onChange={(e) =>
+                            void handleUpdateShare(
+                              share.id,
+                              e.target.value as SharePermission,
+                            )
+                          }
+                          style={{ padding: '0.25rem 0.5rem' }}
+                        >
+                          <option value="READ">Read</option>
+                          <option value="EDIT">Edit</option>
+                        </select>
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          onClick={() => void handleRevokeShare(share.id)}
+                          style={{ color: 'red' }}
+                        >
+                          Revoke Access
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </section>
+        </>
+      )}
 
       <hr
         style={{

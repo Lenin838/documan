@@ -26,6 +26,7 @@ export interface GetDocumentsParams {
   search?: string;
   isDeleted?: boolean;
   folderId?: string;
+  view?: 'all' | 'mine' | 'shared';
 }
 
 export interface GetDocumentsResponse {

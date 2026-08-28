@@ -6,6 +6,7 @@ import {
 } from './document-audit.model.js';
 
 import { Document } from './document.model.js';
+import { DocumentShare } from '../document-shares/document-share.model.js';
 import type { DocumentAuditHistoryQueryInput } from './document.schema.js';
 
 import { AppError } from '../../errors/app-error.js';
@@ -64,20 +65,10 @@ export async function getDocumentAuditHistory(
     );
   }
 
-  const documentFilter: {
-    _id: Types.ObjectId;
-    ownerId?: Types.ObjectId;
-    isDeleted: boolean;
-  } = {
+  const document = await Document.findOne({
     _id: new Types.ObjectId(documentId),
     isDeleted: false,
-  };
-
-  if (role !== 'admin') {
-    documentFilter.ownerId = new Types.ObjectId(ownerId);
-  }
-
-  const document = await Document.findOne(documentFilter);
+  });
 
   if (!document) {
     throw new AppError(
@@ -85,6 +76,21 @@ export async function getDocumentAuditHistory(
       404,
       'DOCUMENT_NOT_FOUND',
     );
+  }
+
+  if (role !== 'admin' && document.ownerId.toString() !== ownerId) {
+    const share = await DocumentShare.findOne({
+      documentId: document._id,
+      sharedWithUserId: new Types.ObjectId(ownerId),
+    });
+
+    if (!share) {
+      throw new AppError(
+        'Document not found',
+        404,
+        'DOCUMENT_NOT_FOUND',
+      );
+    }
   }
 
   const {

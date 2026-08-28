@@ -151,6 +151,7 @@ export const updateDocumentController: RequestHandler = async (
             size: req.file.size,
           }
         : undefined,
+      req.user.role,
     );
 
     return sendSuccess(res, document);

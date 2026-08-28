@@ -103,6 +103,10 @@ export const documentsQuerySchema = z.object({
     .string()
     .trim()
     .optional(),
+
+  view: z
+    .enum(['all', 'mine', 'shared'])
+    .optional(),
 });
 
 export type DocumentsQueryInput = z.infer<
