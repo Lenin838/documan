@@ -6,6 +6,7 @@ import {
 } from './document-audit.model.js';
 
 import { Document } from './document.model.js';
+import type { DocumentAuditHistoryQueryInput } from './document.schema.js';
 
 import { AppError } from '../../errors/app-error.js';
 
@@ -45,6 +46,7 @@ export async function getDocumentAuditHistory(
   ownerId: string,
   role: 'user' | 'admin',
   documentId: string,
+  query: DocumentAuditHistoryQueryInput = { page: 1, limit: 10 },
 ) {
   if (!Types.ObjectId.isValid(documentId)) {
     throw new AppError(
@@ -85,9 +87,41 @@ export async function getDocumentAuditHistory(
     );
   }
 
-  const audits = await DocumentAudit.find({
-    documentId: new Types.ObjectId(documentId),
-  }).sort({ createdAt: -1 });
+  const {
+    page = 1,
+    limit = 10,
+    action,
+  } = query;
 
-  return audits;
+  const auditFilter: {
+    documentId: Types.ObjectId;
+    action?: DocumentAuditAction;
+  } = {
+    documentId: new Types.ObjectId(documentId),
+  };
+
+  if (action) {
+    auditFilter.action = action;
+  }
+
+  const skip = (page - 1) * limit;
+
+  const [audits, total] = await Promise.all([
+    DocumentAudit.find(auditFilter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+
+    DocumentAudit.countDocuments(auditFilter),
+  ]);
+
+  return {
+    auditHistory: audits,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 }

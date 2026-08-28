@@ -85,3 +85,34 @@ export const documentsQuerySchema = z.object({
 export type DocumentsQueryInput = z.infer<
   typeof documentsQuerySchema
 >;
+
+export const documentAuditHistoryQuerySchema = z.object({
+  page: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .default(1),
+
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .default(10),
+
+  action: z
+    .enum([
+      'CREATE',
+      'UPDATE',
+      'FILE_REPLACE',
+      'VIEW',
+      'DOWNLOAD',
+      'DELETE',
+      'RESTORE',
+    ])
+    .optional(),
+});
+
+export type DocumentAuditHistoryQueryInput = z.infer<
+  typeof documentAuditHistoryQuerySchema
+>;

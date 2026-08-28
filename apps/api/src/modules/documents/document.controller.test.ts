@@ -911,6 +911,10 @@ describe('getDocumentAuditHistoryController', () => {
       validatedParams: {
         id: 'document-123',
       },
+      validatedQuery: {
+        page: 1,
+        limit: 10,
+      },
     };
 
     const next = createMockNext();
@@ -933,7 +937,7 @@ describe('getDocumentAuditHistoryController', () => {
     ).not.toHaveBeenCalled();
   });
 
-  it('should return audit history successfully', async () => {
+  it('should return audit history successfully with validated query params', async () => {
     const req = createMockRequest({
       user: {
         userId: 'user-123',
@@ -943,27 +947,38 @@ describe('getDocumentAuditHistoryController', () => {
 
     const res = createMockResponse();
 
+    const query = {
+      page: 1,
+      limit: 10,
+      action: 'UPDATE' as const,
+    };
+
     res.locals = {
       validatedParams: {
         id: 'document-123',
       },
+      validatedQuery: query,
     };
 
     const next = createMockNext();
 
-    const history = [
-      {
-        action: 'CREATE',
-        userId: 'user-123',
+    const historyResult = {
+      auditHistory: [
+        {
+          action: 'UPDATE',
+          userId: 'user-123',
+        },
+      ],
+      pagination: {
+        page: 1,
+        limit: 10,
+        total: 1,
+        totalPages: 1,
       },
-      {
-        action: 'UPDATE',
-        userId: 'user-123',
-      },
-    ];
+    };
 
     mockGetDocumentAuditHistory.mockResolvedValue(
-      history,
+      historyResult,
     );
 
     await getDocumentAuditHistoryController(
@@ -978,13 +993,14 @@ describe('getDocumentAuditHistoryController', () => {
       'user-123',
       'user',
       'document-123',
+      query,
     );
 
     expect(res.status).toHaveBeenCalledWith(200);
 
     expect(res.json).toHaveBeenCalledWith({
       success: true,
-      data: history,
+      data: historyResult,
     });
 
     expect(next).not.toHaveBeenCalled();
@@ -1003,6 +1019,10 @@ describe('getDocumentAuditHistoryController', () => {
     res.locals = {
       validatedParams: {
         id: 'document-123',
+      },
+      validatedQuery: {
+        page: 1,
+        limit: 10,
       },
     };
 
