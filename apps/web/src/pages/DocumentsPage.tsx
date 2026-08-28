@@ -55,6 +55,7 @@ export default function DocumentsPage() {
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h1>Documents</h1>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <Link to="/documents/create">Create Document</Link>
           <Link to="/trash">View Trash</Link>
           <Link to="/dashboard">Back to Dashboard</Link>
         </div>

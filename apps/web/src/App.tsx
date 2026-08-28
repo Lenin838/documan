@@ -9,6 +9,7 @@ import {
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import DocumentsPage from './pages/DocumentsPage';
+import DocumentCreatePage from './pages/DocumentCreatePage';
 import DocumentDetailsPage from './pages/DocumentDetailsPage';
 import DocumentEditPage from './pages/DocumentEditPage';
 import TrashPage from './pages/TrashPage';
@@ -52,6 +53,10 @@ function App() {
         <Route
           path="/documents"
           element={<DocumentsPage />}
+        />
+        <Route
+          path="/documents/create"
+          element={<DocumentCreatePage />}
         />
         <Route
           path="/documents/:id"

@@ -102,3 +102,14 @@ export interface UpdateDocumentResponse {
   success: boolean;
   data: Document;
 }
+
+export interface CreateDocumentParams {
+  title: string;
+  description?: string;
+  file: File;
+}
+
+export interface CreateDocumentResponse {
+  success: boolean;
+  data: Document;
+}
