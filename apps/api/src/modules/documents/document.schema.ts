@@ -13,6 +13,12 @@ export const createDocumentSchema = z
       .trim()
       .max(1000, 'Description must not exceed 1000 characters')
       .optional(),
+
+    folderId: z
+      .string()
+      .trim()
+      .nullable()
+      .optional(),
   })
   .strict();
 
@@ -33,6 +39,12 @@ export const updateDocumentSchema = z
       .string()
       .trim()
       .max(1000, 'Description must not exceed 1000 characters')
+      .optional(),
+
+    folderId: z
+      .string()
+      .trim()
+      .nullable()
       .optional(),
   })
   .strict()
@@ -86,6 +98,11 @@ export const documentsQuerySchema = z.object({
       (val) => (val === 'true' ? true : val === 'false' ? false : val),
       z.boolean().optional(),
     ),
+
+  folderId: z
+    .string()
+    .trim()
+    .optional(),
 });
 
 export type DocumentsQueryInput = z.infer<

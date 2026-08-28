@@ -24,6 +24,10 @@ export async function createDocument(
     formData.append('description', params.description);
   }
 
+  if (params.folderId !== undefined && params.folderId !== null) {
+    formData.append('folderId', params.folderId);
+  }
+
   formData.append('file', params.file);
 
   const response = await apiClient.post<CreateDocumentResponse>(
@@ -119,6 +123,10 @@ export async function updateDocument(
 
   if (params.description !== undefined) {
     formData.append('description', params.description);
+  }
+
+  if (params.folderId !== undefined) {
+    formData.append('folderId', params.folderId === null ? 'none' : params.folderId);
   }
 
   if (params.file) {

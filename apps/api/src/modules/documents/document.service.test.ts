@@ -108,6 +108,7 @@ describe('createDocument', () => {
     expect(mockDocument.create).toHaveBeenCalledWith({
       title: 'Test Document',
       description: 'Test description',
+      folderId: null,
       fileName: 'test.pdf',
       filePath: 'uploads/documents/test.pdf',
       fileType: 'application/pdf',
@@ -156,6 +157,7 @@ describe('createDocument', () => {
 
     expect(mockDocument.create).toHaveBeenCalledWith({
       title: 'Test Document',
+      folderId: null,
       fileName: 'test.pdf',
       filePath: 'uploads/documents/test.pdf',
       fileType: 'application/pdf',

@@ -2,6 +2,11 @@ import express from 'express';
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 
+vi.hoisted(() => {
+  process.env.MONGO_URI = 'mongodb://127.0.0.1:27017/documan_test';
+  process.env.JWT_SECRET = 'test-secret-that-is-at-least-32-characters-long';
+});
+
 vi.mock('../modules/health/health.routes.js', () => {
   const router = express.Router();
 
@@ -47,6 +52,18 @@ vi.mock('../modules/documents/document.routes.js', () => {
 
   return {
     documentRouter: router,
+  };
+});
+
+vi.mock('../modules/folders/folder.routes.js', () => {
+  const router = express.Router();
+
+  router.get('/', (_req, res) => {
+    res.status(200).json({ route: 'folders' });
+  });
+
+  return {
+    folderRouter: router,
   };
 });
 
@@ -108,6 +125,18 @@ describe('apiRouter', () => {
 
     expect(response.body).toEqual({
       route: 'documents',
+    });
+  });
+
+  it('should mount the folders router', async () => {
+    const response = await request(app).get(
+      '/api/v1/folders',
+    );
+
+    expect(response.status).toBe(200);
+
+    expect(response.body).toEqual({
+      route: 'folders',
     });
   });
 
