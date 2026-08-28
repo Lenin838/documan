@@ -110,6 +110,7 @@ export async function getAllDocuments(
     page,
     limit,
     search,
+    isDeleted,
   } = query;
 
   const filter: {
@@ -120,7 +121,7 @@ export async function getAllDocuments(
       fileName?: { $regex: string; $options: string };
     }>;
   } = {
-    isDeleted: false,
+    isDeleted: isDeleted ?? false,
   };
 
   if (role !== 'admin') {

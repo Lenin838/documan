@@ -80,6 +80,12 @@ export const documentsQuerySchema = z.object({
     .min(1)
     .max(100)
     .optional(),
+
+  isDeleted: z
+    .preprocess(
+      (val) => (val === 'true' ? true : val === 'false' ? false : val),
+      z.boolean().optional(),
+    ),
 });
 
 export type DocumentsQueryInput = z.infer<
