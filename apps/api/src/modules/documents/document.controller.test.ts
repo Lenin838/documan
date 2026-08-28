@@ -569,11 +569,12 @@ describe('document controller', () => {
 
       expect(
         mockUpdateDocument,
-        ).toHaveBeenCalledWith(
+      ).toHaveBeenCalledWith(
         'user-123',
         'document-123',
         body,
         undefined,
+        'user',
       );
 
       expect(res.status).toHaveBeenCalledWith(200);
@@ -648,6 +649,7 @@ describe('document controller', () => {
             mimetype: 'application/pdf',
             size: 2048,
             },
+            'user',
         );
 
         expect(res.status).toHaveBeenCalledWith(200);

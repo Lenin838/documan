@@ -25,6 +25,7 @@ export default function DocumentsPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
+  const [documentView, setDocumentView] = useState<'mine' | 'shared'>('mine');
 
   const [folders, setFolders] = useState<Folder[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState('');
@@ -66,6 +67,7 @@ export default function DocumentsPage() {
           limit: 10,
           search: search || undefined,
           folderId: selectedFolderId || undefined,
+          view: documentView,
         });
 
         setDocuments(response.data.documents);
@@ -78,10 +80,15 @@ export default function DocumentsPage() {
     }
 
     void loadDocuments();
-  }, [page, search, selectedFolderId]);
+  }, [page, search, selectedFolderId, documentView]);
 
   function handleSearchChange(value: string) {
     setSearch(value);
+    setPage(1);
+  }
+
+  function handleViewChange(view: 'mine' | 'shared') {
+    setDocumentView(view);
     setPage(1);
   }
 
@@ -168,134 +175,169 @@ export default function DocumentsPage() {
         </div>
       </header>
 
-      {/* Folders Navigation / Filter Bar */}
-      <section
-        style={{
-          marginBottom: '1.5rem',
-          padding: '1rem',
-          background: '#fafafa',
-          border: '1px solid #eee',
-          borderRadius: '6px',
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-          <h2 style={{ margin: 0, fontSize: '1.1rem' }}>Folders</h2>
-          <button
-            type="button"
-            onClick={() => {
-              setShowCreateFolder(!showCreateFolder);
-              setFolderActionError('');
-            }}
-          >
-            {showCreateFolder ? 'Cancel' : '+ New Folder'}
-          </button>
-        </div>
+      {/* Main View Toggle: My Documents vs Shared with Me */}
+      <nav style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', borderBottom: '2px solid #eee', paddingBottom: '0.5rem' }}>
+        <button
+          type="button"
+          onClick={() => handleViewChange('mine')}
+          style={{
+            fontWeight: documentView === 'mine' ? 'bold' : 'normal',
+            borderBottom: documentView === 'mine' ? '3px solid #0056b3' : 'none',
+            borderRadius: 0,
+            background: 'none',
+            color: documentView === 'mine' ? '#0056b3' : '#555',
+            padding: '0.5rem 1rem',
+          }}
+        >
+          📄 My Documents
+        </button>
 
-        {showCreateFolder && (
-          <form onSubmit={(e) => void handleCreateFolderSubmit(e)} style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
-            <input
-              type="text"
-              placeholder="Folder name"
-              value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value)}
-              required
-              maxLength={100}
-            />
-            <button type="submit" disabled={creatingFolder}>
-              {creatingFolder ? 'Creating...' : 'Save Folder'}
-            </button>
-          </form>
-        )}
+        <button
+          type="button"
+          onClick={() => handleViewChange('shared')}
+          style={{
+            fontWeight: documentView === 'shared' ? 'bold' : 'normal',
+            borderBottom: documentView === 'shared' ? '3px solid #0056b3' : 'none',
+            borderRadius: 0,
+            background: 'none',
+            color: documentView === 'shared' ? '#0056b3' : '#555',
+            padding: '0.5rem 1rem',
+          }}
+        >
+          🤝 Shared with Me
+        </button>
+      </nav>
 
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <button
-            type="button"
-            onClick={() => handleFolderSelect('')}
-            style={{
-              fontWeight: selectedFolderId === '' ? 'bold' : 'normal',
-              background: selectedFolderId === '' ? '#0056b3' : undefined,
-              color: selectedFolderId === '' ? 'white' : undefined,
-            }}
-          >
-            All Documents
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleFolderSelect('none')}
-            style={{
-              fontWeight: selectedFolderId === 'none' ? 'bold' : 'normal',
-              background: selectedFolderId === 'none' ? '#0056b3' : undefined,
-              color: selectedFolderId === 'none' ? 'white' : undefined,
-            }}
-          >
-            Unfiled
-          </button>
-
-          {folders.map((folder) => (
+      {/* Folders Navigation / Filter Bar (Only shown in My Documents view) */}
+      {documentView === 'mine' && (
+        <section
+          style={{
+            marginBottom: '1.5rem',
+            padding: '1rem',
+            background: '#fafafa',
+            border: '1px solid #eee',
+            borderRadius: '6px',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <h2 style={{ margin: 0, fontSize: '1.1rem' }}>Folders</h2>
             <button
-              key={folder.id}
               type="button"
-              onClick={() => handleFolderSelect(folder.id)}
-              style={{
-                fontWeight: selectedFolderId === folder.id ? 'bold' : 'normal',
-                background: selectedFolderId === folder.id ? '#0056b3' : undefined,
-                color: selectedFolderId === folder.id ? 'white' : undefined,
+              onClick={() => {
+                setShowCreateFolder(!showCreateFolder);
+                setFolderActionError('');
               }}
             >
-              📁 {folder.name}
+              {showCreateFolder ? 'Cancel' : '+ New Folder'}
             </button>
-          ))}
-        </div>
-
-        {activeFolder && (
-          <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.9rem', color: '#666' }}>Selected Folder: <strong>{activeFolder.name}</strong></span>
-
-            {editingFolderId === activeFolder.id ? (
-              <form onSubmit={(e) => void handleUpdateFolderSubmit(e)} style={{ display: 'inline-flex', gap: '0.5rem' }}>
-                <input
-                  type="text"
-                  value={editingFolderName}
-                  onChange={(e) => setEditingFolderName(e.target.value)}
-                  required
-                  maxLength={100}
-                />
-                <button type="submit" disabled={savingFolder}>
-                  {savingFolder ? 'Saving...' : 'Save'}
-                </button>
-                <button type="button" onClick={() => setEditingFolderId(null)}>
-                  Cancel
-                </button>
-              </form>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingFolderId(activeFolder.id);
-                    setEditingFolderName(activeFolder.name);
-                  }}
-                >
-                  Rename
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => void handleDeleteFolder(activeFolder.id)}
-                  style={{ color: 'red' }}
-                >
-                  Delete Folder
-                </button>
-              </>
-            )}
           </div>
-        )}
 
-        {folderActionError && (
-          <p style={{ color: 'red', margin: '0.5rem 0 0 0', fontSize: '0.9rem' }}>{folderActionError}</p>
-        )}
-      </section>
+          {showCreateFolder && (
+            <form onSubmit={(e) => void handleCreateFolderSubmit(e)} style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
+              <input
+                type="text"
+                placeholder="Folder name"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                required
+                maxLength={100}
+              />
+              <button type="submit" disabled={creatingFolder}>
+                {creatingFolder ? 'Creating...' : 'Save Folder'}
+              </button>
+            </form>
+          )}
+
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <button
+              type="button"
+              onClick={() => handleFolderSelect('')}
+              style={{
+                fontWeight: selectedFolderId === '' ? 'bold' : 'normal',
+                background: selectedFolderId === '' ? '#0056b3' : undefined,
+                color: selectedFolderId === '' ? 'white' : undefined,
+              }}
+            >
+              All Documents
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleFolderSelect('none')}
+              style={{
+                fontWeight: selectedFolderId === 'none' ? 'bold' : 'normal',
+                background: selectedFolderId === 'none' ? '#0056b3' : undefined,
+                color: selectedFolderId === 'none' ? 'white' : undefined,
+              }}
+            >
+              Unfiled
+            </button>
+
+            {folders.map((folder) => (
+              <button
+                key={folder.id}
+                type="button"
+                onClick={() => handleFolderSelect(folder.id)}
+                style={{
+                  fontWeight: selectedFolderId === folder.id ? 'bold' : 'normal',
+                  background: selectedFolderId === folder.id ? '#0056b3' : undefined,
+                  color: selectedFolderId === folder.id ? 'white' : undefined,
+                }}
+              >
+                📁 {folder.name}
+              </button>
+            ))}
+          </div>
+
+          {activeFolder && (
+            <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.9rem', color: '#666' }}>Selected Folder: <strong>{activeFolder.name}</strong></span>
+
+              {editingFolderId === activeFolder.id ? (
+                <form onSubmit={(e) => void handleUpdateFolderSubmit(e)} style={{ display: 'inline-flex', gap: '0.5rem' }}>
+                  <input
+                    type="text"
+                    value={editingFolderName}
+                    onChange={(e) => setEditingFolderName(e.target.value)}
+                    required
+                    maxLength={100}
+                  />
+                  <button type="submit" disabled={savingFolder}>
+                    {savingFolder ? 'Saving...' : 'Save'}
+                  </button>
+                  <button type="button" onClick={() => setEditingFolderId(null)}>
+                    Cancel
+                  </button>
+                </form>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingFolderId(activeFolder.id);
+                      setEditingFolderName(activeFolder.name);
+                    }}
+                  >
+                    Rename
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => void handleDeleteFolder(activeFolder.id)}
+                    style={{ color: 'red' }}
+                  >
+                    Delete Folder
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
+          {folderActionError && (
+            <p style={{ color: 'red', margin: '0.5rem 0 0 0', fontSize: '0.9rem' }}>{folderActionError}</p>
+          )}
+        </section>
+      )}
 
       <section style={{ marginBottom: '1rem' }}>
         <input
@@ -338,7 +380,11 @@ export default function DocumentsPage() {
 
               {documents.length === 0 && (
                 <tr>
-                  <td colSpan={5}>No documents found in this view.</td>
+                  <td colSpan={5}>
+                    {documentView === 'shared'
+                      ? 'No documents have been shared with you.'
+                      : 'No documents found in this view.'}
+                  </td>
                 </tr>
               )}
             </tbody>

@@ -4,6 +4,7 @@ import path from 'node:path';
 
 import { Document } from './document.model.js';
 import { Folder } from '../folders/folder.model.js';
+import { DocumentShare } from '../document-shares/document-share.model.js';
 import { createDocumentAudit } from './document-audit.service.js';
 import type {
   CreateDocumentInput,
@@ -68,6 +69,43 @@ function validateDocumentId(documentId: string) {
       'DOCUMENT_NOT_FOUND',
     );
   }
+}
+
+async function verifyDocumentPermission(
+  userId: string,
+  role: 'user' | 'admin',
+  documentId: string,
+  requiredPermission: 'READ' | 'EDIT',
+) {
+  validateDocumentId(documentId);
+
+  const document = await Document.findOne({
+    _id: documentId,
+    isDeleted: false,
+  });
+
+  if (!document) {
+    throw new AppError('Document not found', 404, 'DOCUMENT_NOT_FOUND');
+  }
+
+  if (role === 'admin' || document.ownerId.toString() === userId) {
+    return { document, permission: 'EDIT' as const, isOwner: true };
+  }
+
+  const share = await DocumentShare.findOne({
+    documentId: document._id,
+    sharedWithUserId: new Types.ObjectId(userId),
+  });
+
+  if (!share) {
+    throw new AppError('Document not found', 404, 'DOCUMENT_NOT_FOUND');
+  }
+
+  if (requiredPermission === 'EDIT' && share.permission !== 'EDIT') {
+    throw new AppError('Forbidden', 403, 'FORBIDDEN');
+  }
+
+  return { document, permission: share.permission, isOwner: false };
 }
 
 export async function createDocument(
@@ -137,21 +175,29 @@ export async function getAllDocuments(
     search,
     isDeleted,
     folderId,
+    view,
   } = query;
 
-  const filter: {
-    ownerId?: Types.ObjectId;
-    isDeleted: boolean;
-    folderId?: Types.ObjectId | null;
-    $or?: Array<{
-      title?: { $regex: string; $options: string };
-      fileName?: { $regex: string; $options: string };
-    }>;
-  } = {
+  const filter: any = {
     isDeleted: isDeleted ?? false,
   };
 
-  if (role !== 'admin') {
+  if (view === 'shared') {
+    const shares = await DocumentShare.find({
+      sharedWithUserId: new Types.ObjectId(ownerId),
+    }).select('documentId');
+    const sharedDocIds = shares.map((s) => s.documentId);
+    filter._id = { $in: sharedDocIds };
+  } else if (view === 'all' && role !== 'admin') {
+    const shares = await DocumentShare.find({
+      sharedWithUserId: new Types.ObjectId(ownerId),
+    }).select('documentId');
+    const sharedDocIds = shares.map((s) => s.documentId);
+    filter.$or = [
+      { ownerId: new Types.ObjectId(ownerId) },
+      { _id: { $in: sharedDocIds } },
+    ];
+  } else if (role !== 'admin') {
     filter.ownerId = new Types.ObjectId(ownerId);
   }
 
@@ -164,7 +210,7 @@ export async function getAllDocuments(
   }
 
   if (search) {
-    filter.$or = [
+    const searchFilter = [
       {
         title: {
           $regex: search,
@@ -178,6 +224,13 @@ export async function getAllDocuments(
         },
       },
     ];
+
+    if (filter.$or) {
+      filter.$and = [{ $or: filter.$or }, { $or: searchFilter }];
+      delete filter.$or;
+    } else {
+      filter.$or = searchFilter;
+    }
   }
 
   const skip = (page - 1) * limit;
@@ -208,29 +261,12 @@ export async function getDocumentById(
   role: 'user' | 'admin',
   documentId: string,
 ) {
-  validateDocumentId(documentId)
-  const filter: {
-    _id: string;
-    isDeleted: boolean;
-    ownerId?: Types.ObjectId;
-  } = {
-    _id: documentId,
-    isDeleted: false,
-  };
-
-  if (role !== 'admin') {
-    filter.ownerId = new Types.ObjectId(ownerId);
-  }
-
-  const document = await Document.findOne(filter);
-
-  if (!document) {
-    throw new AppError(
-      'Document not found',
-      404,
-      'DOCUMENT_NOT_FOUND',
-    );
-  }
+  const { document } = await verifyDocumentPermission(
+    ownerId,
+    role,
+    documentId,
+    'READ',
+  );
 
   return toDocumentResponse(document);
 }
@@ -245,21 +281,14 @@ export async function updateDocument(
     mimetype: string;
     size: number;
   },
+  role: 'user' | 'admin' = 'user',
 ) {
-  validateDocumentId(documentId)
-  const document = await Document.findOne({
-    _id: documentId,
-    ownerId: new Types.ObjectId(ownerId),
-    isDeleted: false,
-  });
-
-  if (!document) {
-    throw new AppError(
-      'Document not found',
-      404,
-      'DOCUMENT_NOT_FOUND',
-    );
-  }
+  const { document, isOwner } = await verifyDocumentPermission(
+    ownerId,
+    role,
+    documentId,
+    'EDIT',
+  );
 
   if (input.title !== undefined) {
     document.title = input.title;
@@ -270,6 +299,10 @@ export async function updateDocument(
   }
 
   if (input.folderId !== undefined) {
+    if (!isOwner) {
+      throw new AppError('Forbidden', 403, 'FORBIDDEN');
+    }
+
     if (input.folderId && input.folderId !== 'none' && input.folderId !== 'null') {
       if (!Types.ObjectId.isValid(input.folderId)) {
         throw new AppError('Folder not found', 404, 'FOLDER_NOT_FOUND');
@@ -288,19 +321,19 @@ export async function updateDocument(
   }
 
   if (file) {
-  document.fileName = file.originalname;
-  document.filePath = file.path;
-  document.fileType = file.mimetype;
-  document.fileSize = file.size;
-}
+    document.fileName = file.originalname;
+    document.filePath = file.path;
+    document.fileType = file.mimetype;
+    document.fileSize = file.size;
+  }
 
   await document.save();
 
   await createDocumentAudit(
-  document._id.toString(),
-  ownerId,
-  'UPDATE',
-);
+    document._id.toString(),
+    ownerId,
+    'UPDATE',
+  );
 
   return toDocumentResponse(document);
 }
@@ -310,7 +343,7 @@ export async function deleteDocument(
   role: 'user' | 'admin',
   documentId: string,
 ) {
-  validateDocumentId(documentId)
+  validateDocumentId(documentId);
   const filter: {
     _id: string;
     isDeleted: boolean;
@@ -354,29 +387,12 @@ export async function downloadDocument(
   role: 'user' | 'admin',
   documentId: string,
 ) {
-  validateDocumentId(documentId)
-  const filter: {
-    _id: string;
-    isDeleted: boolean;
-    ownerId?: Types.ObjectId;
-  } = {
-    _id: documentId,
-    isDeleted: false,
-  };
-
-  if (role !== 'admin') {
-    filter.ownerId = new Types.ObjectId(ownerId);
-  }
-
-  const document = await Document.findOne(filter);
-
-  if (!document) {
-    throw new AppError(
-      'Document not found',
-      404,
-      'DOCUMENT_NOT_FOUND',
-    );
-  }
+  const { document } = await verifyDocumentPermission(
+    ownerId,
+    role,
+    documentId,
+    'READ',
+  );
 
   try {
     await fs.access(document.filePath);
@@ -400,29 +416,12 @@ export async function viewDocument(
   role: 'user' | 'admin',
   documentId: string,
 ) {
-  validateDocumentId(documentId)
-  const filter: {
-    _id: string;
-    isDeleted: boolean;
-    ownerId?: Types.ObjectId;
-  } = {
-    _id: documentId,
-    isDeleted: false,
-  };
-
-  if (role !== 'admin') {
-    filter.ownerId = new Types.ObjectId(ownerId);
-  }
-
-  const document = await Document.findOne(filter);
-
-  if (!document) {
-    throw new AppError(
-      'Document not found',
-      404,
-      'DOCUMENT_NOT_FOUND',
-    );
-  }
+  const { document } = await verifyDocumentPermission(
+    ownerId,
+    role,
+    documentId,
+    'READ',
+  );
 
   try {
     await fs.access(document.filePath);

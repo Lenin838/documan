@@ -321,7 +321,6 @@ describe('getDocumentById', () => {
     expect(mockDocument.findOne).toHaveBeenCalledWith({
       _id: DOCUMENT_ID,
       isDeleted: false,
-      ownerId: expect.any(Types.ObjectId),
     });
 
     expect(result).toMatchObject({
@@ -404,7 +403,6 @@ describe('updateDocument', () => {
 
     expect(mockDocument.findOne).toHaveBeenCalledWith({
       _id: DOCUMENT_ID,
-      ownerId: expect.any(Types.ObjectId),
       isDeleted: false,
     });
 
@@ -449,7 +447,6 @@ describe('updateDocument', () => {
 
     expect(mockDocument.findOne).toHaveBeenCalledWith({
       _id: DOCUMENT_ID,
-      ownerId: expect.any(Types.ObjectId),
       isDeleted: false,
     });
 
@@ -786,7 +783,6 @@ describe('downloadDocument', () => {
     expect(mockDocument.findOne).toHaveBeenCalledWith({
       _id: DOCUMENT_ID,
       isDeleted: false,
-      ownerId: expect.any(Types.ObjectId),
     });
 
     expect(fs.access).toHaveBeenCalledWith(
@@ -899,7 +895,6 @@ describe('viewDocument', () => {
     expect(mockDocument.findOne).toHaveBeenCalledWith({
       _id: DOCUMENT_ID,
       isDeleted: false,
-      ownerId: expect.any(Types.ObjectId),
     });
 
     expect(fs.access).toHaveBeenCalledWith(

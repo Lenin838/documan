@@ -31,8 +31,11 @@ import {
 } from './document.schema.js';
 
 import { documentUpload } from '../../middleware/uploads/document-upload.middleware.js';
+import { documentShareRouter } from '../document-shares/document-share.routes.js';
 
 const documentRouter = Router();
+
+documentRouter.use('/:id/shares', documentShareRouter);
 
 documentRouter.post(
   '/',
