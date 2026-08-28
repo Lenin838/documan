@@ -1,6 +1,8 @@
 import { apiClient } from '../../api/client';
 
 import type {
+  CreateDocumentParams,
+  CreateDocumentResponse,
   DeleteDocumentResponse,
   GetDocumentAuditHistoryParams,
   GetDocumentAuditHistoryResponse,
@@ -11,6 +13,31 @@ import type {
   UpdateDocumentParams,
   UpdateDocumentResponse,
 } from './document.types';
+
+export async function createDocument(
+  params: CreateDocumentParams,
+): Promise<CreateDocumentResponse> {
+  const formData = new FormData();
+  formData.append('title', params.title);
+
+  if (params.description !== undefined) {
+    formData.append('description', params.description);
+  }
+
+  formData.append('file', params.file);
+
+  const response = await apiClient.post<CreateDocumentResponse>(
+    '/documents',
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    },
+  );
+
+  return response.data;
+}
 
 export async function getDocuments(
   params: GetDocumentsParams = {},
