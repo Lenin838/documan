@@ -6,6 +6,8 @@ import type {
   GetDocumentResponse,
   GetDocumentsParams,
   GetDocumentsResponse,
+  UpdateDocumentParams,
+  UpdateDocumentResponse,
 } from './document.types';
 
 export async function getDocuments(
@@ -61,6 +63,37 @@ export async function getDocumentAuditHistory(
     `/documents/${documentId}/audit-history`,
     {
       params,
+    },
+  );
+
+  return response.data;
+}
+
+export async function updateDocument(
+  documentId: string,
+  params: UpdateDocumentParams,
+): Promise<UpdateDocumentResponse> {
+  const formData = new FormData();
+
+  if (params.title !== undefined) {
+    formData.append('title', params.title);
+  }
+
+  if (params.description !== undefined) {
+    formData.append('description', params.description);
+  }
+
+  if (params.file) {
+    formData.append('file', params.file);
+  }
+
+  const response = await apiClient.patch<UpdateDocumentResponse>(
+    `/documents/${documentId}`,
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     },
   );
 
