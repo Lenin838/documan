@@ -28,3 +28,25 @@ export async function getDocumentById(
 
   return response.data;
 }
+
+export async function viewDocument(documentId: string) {
+  const response = await apiClient.get<Blob>(
+    `/documents/${documentId}/view`,
+    {
+      responseType: 'blob',
+    },
+  );
+
+  return response;
+}
+
+export async function downloadDocument(documentId: string) {
+  const response = await apiClient.get<Blob>(
+    `/documents/${documentId}/download`,
+    {
+      responseType: 'blob',
+    },
+  );
+
+  return response;
+}
