@@ -3,6 +3,7 @@ import { Schema, model, Types } from 'mongoose';
 export interface DocumentDocument {
   title: string;
   description?: string;
+  folderId?: Types.ObjectId | null;
   fileName: string;
   filePath: string;
   fileType: string;
@@ -24,6 +25,13 @@ const documentSchema = new Schema<DocumentDocument>(
     description: {
       type: String,
       trim: true,
+    },
+
+    folderId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Folder',
+      default: null,
+      index: true,
     },
 
     fileName: {

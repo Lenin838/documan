@@ -8,6 +8,7 @@ import {
   viewDocument,
   deleteDocument,
 } from '../features/documents/document.api';
+import { getFolderById } from '../features/folders/folder.api';
 import type {
   Document,
   DocumentAudit,
@@ -84,6 +85,7 @@ export default function DocumentDetailsPage() {
   const navigate = useNavigate();
 
   const [doc, setDoc] = useState<Document | null>(null);
+  const [folderName, setFolderName] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -116,6 +118,15 @@ export default function DocumentDetailsPage() {
       try {
         const response = await getDocumentById(documentId);
         setDoc(response.data);
+
+        if (response.data.folderId) {
+          try {
+            const folderRes = await getFolderById(response.data.folderId);
+            setFolderName(folderRes.data.name);
+          } catch {
+            setFolderName('Unknown Folder');
+          }
+        }
       } catch {
         setError('Failed to load document');
       } finally {
@@ -297,6 +308,11 @@ export default function DocumentDetailsPage() {
         >
           <dt style={{ fontWeight: 'bold' }}>Title</dt>
           <dd style={{ margin: 0 }}>{doc.title}</dd>
+
+          <dt style={{ fontWeight: 'bold' }}>Folder</dt>
+          <dd style={{ margin: 0 }}>
+            {doc.folderId ? folderName || 'Loading...' : 'Unfiled'}
+          </dd>
 
           <dt style={{ fontWeight: 'bold' }}>Description</dt>
           <dd style={{ margin: 0 }}>

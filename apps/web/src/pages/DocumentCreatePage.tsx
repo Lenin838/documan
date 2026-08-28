@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { createDocument } from '../features/documents/document.api';
+import { getFolders } from '../features/folders/folder.api';
+import type { Folder } from '../features/folders/folder.types';
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -17,10 +19,25 @@ export default function DocumentCreatePage() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [folderId, setFolderId] = useState('');
   const [file, setFile] = useState<File | null>(null);
 
+  const [folders, setFolders] = useState<Folder[]>([]);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    async function loadFolders() {
+      try {
+        const response = await getFolders();
+        setFolders(response.data.folders);
+      } catch {
+        // Folders loading failed silently, user can still create unfiled document
+      }
+    }
+
+    void loadFolders();
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -48,6 +65,7 @@ export default function DocumentCreatePage() {
       const response = await createDocument({
         title: trimmedTitle,
         description: description.trim() || undefined,
+        folderId: folderId || null,
         file,
       });
 
@@ -121,6 +139,28 @@ export default function DocumentCreatePage() {
             placeholder="Enter document description (optional)"
             style={{ width: '100%', padding: '0.5rem', boxSizing: 'border-box' }}
           />
+        </div>
+
+        <div style={{ marginBottom: '1.25rem' }}>
+          <label
+            htmlFor="folder"
+            style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}
+          >
+            Folder
+          </label>
+          <select
+            id="folder"
+            value={folderId}
+            onChange={(e) => setFolderId(e.target.value)}
+            style={{ width: '100%', padding: '0.5rem', boxSizing: 'border-box' }}
+          >
+            <option value="">-- No Folder (Unfiled) --</option>
+            {folders.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div style={{ marginBottom: '1.25rem' }}>

@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import { Document } from './document.model.js';
+import { Folder } from '../folders/folder.model.js';
 import { createDocumentAudit } from './document-audit.service.js';
 import type {
   CreateDocumentInput,
@@ -16,6 +17,7 @@ interface DocumentResponse {
   id: string;
   title: string;
   description?: string | undefined;
+  folderId?: string | null | undefined;
   fileName: string;
   filePath: string;
   fileType: string;
@@ -31,6 +33,7 @@ function toDocumentResponse(
     _id: Types.ObjectId;
     title: string;
     description?: string;
+    folderId?: Types.ObjectId | null;
     fileName: string;
     filePath: string;
     fileType: string;
@@ -45,6 +48,7 @@ function toDocumentResponse(
     id: document._id.toString(),
     title: document.title,
     description: document.description,
+    folderId: document.folderId ? document.folderId.toString() : null,
     fileName: document.fileName,
     filePath: document.filePath,
     fileType: document.fileType,
@@ -76,6 +80,26 @@ export async function createDocument(
     size: number;
   },
 ) {
+  let folderObjectId: Types.ObjectId | null = null;
+
+  if (input.folderId) {
+    if (!Types.ObjectId.isValid(input.folderId)) {
+      throw new AppError('Folder not found', 404, 'FOLDER_NOT_FOUND');
+    }
+
+    const folderFilter: { _id: string; ownerId?: Types.ObjectId } = {
+      _id: input.folderId,
+    };
+
+    const folderExists = await Folder.findOne(folderFilter);
+
+    if (!folderExists) {
+      throw new AppError('Folder not found', 404, 'FOLDER_NOT_FOUND');
+    }
+
+    folderObjectId = new Types.ObjectId(input.folderId);
+  }
+
   const document = await Document.create({
     title: input.title,
 
@@ -83,6 +107,7 @@ export async function createDocument(
       ? { description: input.description }
       : {}),
 
+    folderId: folderObjectId,
     fileName: file.originalname,
     filePath: file.path,
     fileType: file.mimetype,
@@ -111,11 +136,13 @@ export async function getAllDocuments(
     limit,
     search,
     isDeleted,
+    folderId,
   } = query;
 
   const filter: {
     ownerId?: Types.ObjectId;
     isDeleted: boolean;
+    folderId?: Types.ObjectId | null;
     $or?: Array<{
       title?: { $regex: string; $options: string };
       fileName?: { $regex: string; $options: string };
@@ -126,6 +153,14 @@ export async function getAllDocuments(
 
   if (role !== 'admin') {
     filter.ownerId = new Types.ObjectId(ownerId);
+  }
+
+  if (folderId) {
+    if (folderId === 'none' || folderId === 'null') {
+      filter.folderId = null;
+    } else if (Types.ObjectId.isValid(folderId)) {
+      filter.folderId = new Types.ObjectId(folderId);
+    }
   }
 
   if (search) {
@@ -232,6 +267,24 @@ export async function updateDocument(
 
   if (input.description !== undefined) {
     document.description = input.description;
+  }
+
+  if (input.folderId !== undefined) {
+    if (input.folderId && input.folderId !== 'none' && input.folderId !== 'null') {
+      if (!Types.ObjectId.isValid(input.folderId)) {
+        throw new AppError('Folder not found', 404, 'FOLDER_NOT_FOUND');
+      }
+
+      const folderExists = await Folder.findOne({ _id: input.folderId });
+
+      if (!folderExists) {
+        throw new AppError('Folder not found', 404, 'FOLDER_NOT_FOUND');
+      }
+
+      document.folderId = new Types.ObjectId(input.folderId);
+    } else {
+      document.folderId = null;
+    }
   }
 
   if (file) {

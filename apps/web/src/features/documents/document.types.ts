@@ -2,6 +2,7 @@ export interface Document {
   id: string;
   title: string;
   description?: string;
+  folderId?: string | null;
   fileName: string;
   filePath: string;
   fileType: string;
@@ -24,6 +25,7 @@ export interface GetDocumentsParams {
   limit?: number;
   search?: string;
   isDeleted?: boolean;
+  folderId?: string;
 }
 
 export interface GetDocumentsResponse {
@@ -95,6 +97,7 @@ export interface GetDocumentAuditHistoryResponse {
 export interface UpdateDocumentParams {
   title?: string;
   description?: string;
+  folderId?: string | null;
   file?: File;
 }
 
@@ -106,6 +109,7 @@ export interface UpdateDocumentResponse {
 export interface CreateDocumentParams {
   title: string;
   description?: string;
+  folderId?: string | null;
   file: File;
 }
 
