@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import {
   getDocumentById,
@@ -80,6 +80,7 @@ function renderAuditMetadata(metadata?: Record<string, unknown>) {
 
 export default function DocumentDetailsPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
   const [doc, setDoc] = useState<Document | null>(null);
   const [loading, setLoading] = useState(true);
@@ -331,6 +332,13 @@ export default function DocumentDetailsPage() {
             disabled={viewing || downloading}
           >
             {downloading ? 'Downloading...' : 'Download'}
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate(`/documents/${doc.id}/edit`)}
+            disabled={viewing || downloading}
+          >
+            Edit
           </button>
         </div>
       </section>
