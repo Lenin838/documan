@@ -32,3 +32,8 @@ export interface GetDocumentsResponse {
     pagination: DocumentsPagination;
   };
 }
+
+export interface GetDocumentResponse {
+  success: boolean;
+  data: Document;
+}

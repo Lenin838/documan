@@ -86,7 +86,9 @@ export default function DocumentsPage() {
             <tbody>
               {documents.map((doc) => (
                 <tr key={doc.id}>
-                  <td>{doc.title}</td>
+                  <td>
+                    <Link to={`/documents/${doc.id}`}>{doc.title}</Link>
+                  </td>
                   <td>{doc.fileName}</td>
                   <td>{doc.fileType}</td>
                   <td>{formatFileSize(doc.fileSize)}</td>
