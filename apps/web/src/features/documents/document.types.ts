@@ -37,3 +37,42 @@ export interface GetDocumentResponse {
   success: boolean;
   data: Document;
 }
+
+export type DocumentAuditAction =
+  | 'CREATE'
+  | 'UPDATE'
+  | 'FILE_REPLACE'
+  | 'VIEW'
+  | 'DOWNLOAD'
+  | 'DELETE'
+  | 'RESTORE';
+
+export interface DocumentAudit {
+  id: string;
+  documentId: string;
+  userId: string;
+  action: DocumentAuditAction;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface AuditHistoryPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface GetDocumentAuditHistoryParams {
+  page?: number;
+  limit?: number;
+  action?: DocumentAuditAction;
+}
+
+export interface GetDocumentAuditHistoryResponse {
+  success: boolean;
+  data: {
+    auditHistory: DocumentAudit[];
+    pagination: AuditHistoryPagination;
+  };
+}

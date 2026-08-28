@@ -1,6 +1,8 @@
 import { apiClient } from '../../api/client';
 
 import type {
+  GetDocumentAuditHistoryParams,
+  GetDocumentAuditHistoryResponse,
   GetDocumentResponse,
   GetDocumentsParams,
   GetDocumentsResponse,
@@ -49,4 +51,18 @@ export async function downloadDocument(documentId: string) {
   );
 
   return response;
+}
+
+export async function getDocumentAuditHistory(
+  documentId: string,
+  params: GetDocumentAuditHistoryParams = {},
+): Promise<GetDocumentAuditHistoryResponse> {
+  const response = await apiClient.get<GetDocumentAuditHistoryResponse>(
+    `/documents/${documentId}/audit-history`,
+    {
+      params,
+    },
+  );
+
+  return response.data;
 }
