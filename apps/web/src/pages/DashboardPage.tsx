@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { useAuthStore } from '../features/auth/auth.store';
 
@@ -31,13 +31,20 @@ export default function DashboardPage() {
         </section>
       )}
 
-      <button type="button" onClick={handleLogout}>
-        Logout
-      </button>
+      <nav style={{ margin: '1rem 0', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+        <Link to="/documents">View Documents</Link>
+        {user?.role === 'admin' && <Link to="/users">Manage Users</Link>}
+      </nav>
 
-      <button type="button" onClick={handleLogoutAll}>
-        Logout All Sessions
-      </button>
+      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '1rem' }}>
+        <button type="button" onClick={handleLogout}>
+          Logout
+        </button>
+
+        <button type="button" onClick={handleLogoutAll}>
+          Logout All Sessions
+        </button>
+      </div>
     </main>
   );
 }
