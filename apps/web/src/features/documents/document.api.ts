@@ -1,11 +1,13 @@
 import { apiClient } from '../../api/client';
 
 import type {
+  DeleteDocumentResponse,
   GetDocumentAuditHistoryParams,
   GetDocumentAuditHistoryResponse,
   GetDocumentResponse,
   GetDocumentsParams,
   GetDocumentsResponse,
+  RestoreDocumentResponse,
   UpdateDocumentParams,
   UpdateDocumentResponse,
 } from './document.types';
@@ -21,6 +23,15 @@ export async function getDocuments(
   );
 
   return response.data;
+}
+
+export async function getDeletedDocuments(
+  params: GetDocumentsParams = {},
+): Promise<GetDocumentsResponse> {
+  return getDocuments({
+    ...params,
+    isDeleted: true,
+  });
 }
 
 export async function getDocumentById(
@@ -95,6 +106,26 @@ export async function updateDocument(
         'Content-Type': 'multipart/form-data',
       },
     },
+  );
+
+  return response.data;
+}
+
+export async function deleteDocument(
+  documentId: string,
+): Promise<DeleteDocumentResponse> {
+  const response = await apiClient.delete<DeleteDocumentResponse>(
+    `/documents/${documentId}`,
+  );
+
+  return response.data;
+}
+
+export async function restoreDocument(
+  documentId: string,
+): Promise<RestoreDocumentResponse> {
+  const response = await apiClient.patch<RestoreDocumentResponse>(
+    `/documents/${documentId}/restore`,
   );
 
   return response.data;

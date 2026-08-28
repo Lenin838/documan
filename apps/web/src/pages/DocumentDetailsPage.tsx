@@ -6,6 +6,7 @@ import {
   getDocumentAuditHistory,
   downloadDocument,
   viewDocument,
+  deleteDocument,
 } from '../features/documents/document.api';
 import type {
   Document,
@@ -88,6 +89,8 @@ export default function DocumentDetailsPage() {
 
   const [viewing, setViewing] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [actionError, setActionError] = useState('');
 
   const [auditHistory, setAuditHistory] = useState<DocumentAudit[]>([]);
@@ -227,6 +230,25 @@ export default function DocumentDetailsPage() {
     }
   }
 
+  async function handleDeleteConfirm() {
+    if (!id || deleting || viewing || downloading) {
+      return;
+    }
+
+    setDeleting(true);
+    setActionError('');
+
+    try {
+      await deleteDocument(id);
+      navigate('/documents');
+    } catch {
+      setActionError('Unable to delete this document.');
+    } finally {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  }
+
   if (!id) {
     return <main>Invalid document ID</main>;
   }
@@ -318,29 +340,79 @@ export default function DocumentDetailsPage() {
         {actionError && (
           <p style={{ color: 'red', marginBottom: '0.5rem' }}>{actionError}</p>
         )}
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <button
-            type="button"
-            onClick={() => void handleView()}
-            disabled={viewing || downloading}
+        {showDeleteConfirm ? (
+          <div
+            style={{
+              padding: '1rem',
+              border: '1px solid #e53e3e',
+              borderRadius: '4px',
+              background: '#fff5f5',
+            }}
           >
-            {viewing ? 'Opening...' : 'View Document'}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleDownload()}
-            disabled={viewing || downloading}
-          >
-            {downloading ? 'Downloading...' : 'Download'}
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate(`/documents/${doc.id}/edit`)}
-            disabled={viewing || downloading}
-          >
-            Edit
-          </button>
-        </div>
+            <h3 style={{ margin: '0 0 0.5rem 0', color: '#c53030' }}>
+              Delete Document?
+            </h3>
+            <p style={{ margin: '0 0 1rem 0' }}>
+              Are you sure you want to delete &quot;{doc.title}&quot;? The
+              document will be moved to Trash and can be restored later.
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button
+                type="button"
+                onClick={() => void handleDeleteConfirm()}
+                disabled={deleting}
+                style={{
+                  background: '#e53e3e',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                }}
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            <button
+              type="button"
+              onClick={() => void handleView()}
+              disabled={viewing || downloading || deleting}
+            >
+              {viewing ? 'Opening...' : 'View Document'}
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleDownload()}
+              disabled={viewing || downloading || deleting}
+            >
+              {downloading ? 'Downloading...' : 'Download'}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(`/documents/${doc.id}/edit`)}
+              disabled={viewing || downloading || deleting}
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={viewing || downloading || deleting}
+            >
+              Delete
+            </button>
+          </div>
+        )}
       </section>
 
       <hr

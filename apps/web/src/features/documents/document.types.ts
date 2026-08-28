@@ -23,6 +23,7 @@ export interface GetDocumentsParams {
   page?: number;
   limit?: number;
   search?: string;
+  isDeleted?: boolean;
 }
 
 export interface GetDocumentsResponse {
@@ -36,6 +37,20 @@ export interface GetDocumentsResponse {
 export interface GetDocumentResponse {
   success: boolean;
   data: Document;
+}
+
+export interface DeleteDocumentResponse {
+  success: boolean;
+  data: {
+    message: string;
+  };
+}
+
+export interface RestoreDocumentResponse {
+  success: boolean;
+  data: {
+    message: string;
+  };
 }
 
 export type DocumentAuditAction =
