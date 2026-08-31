@@ -103,7 +103,7 @@ Traceability
 Collaboration & Access Control
     ↓
 Developer / Productivity Workflows
-(Relationships | Project Context | Technical References | Review Workflow)
+(Relationships | Project Context | Technical References | Review Workflow | Templates & Scaffolding | Dependency Mapping & Impact Summaries)
     ↓
 Project / API Context
     ↓
@@ -281,6 +281,8 @@ Future phases are intentionally **research-driven**. They are product opportunit
 - **Project Context**: Project/workspace context boundaries connecting documents to projects with project-management authority (`Project` model, owner/admin management, project assignment/removal, project filtering).
 - **External Technical References**: Explicit links connecting documents to external technical resources (API documentation, code repositories, specifications, work items/issues, and external tools) with strict URL protocol validation, duplicate prevention, and permission isolation.
 - **Document Review Workflow**: Document-centric review lifecycle (`PENDING`, `APPROVED`, `CHANGES_REQUESTED`) supporting reviewer assignment, pending reviewer queue (`/reviews/pending`), resolution comments, single active review constraint, and full audit history.
+- **Document Templates & Scaffolding**: Static built-in templates (`ADR`, `Technical Specification`, `Troubleshooting / Runbook`) providing standardized document creation scaffolding, preview, field pre-filling, client-side `.md` file download, and audit metadata logging.
+- **Document-Level Dependency Mapping & Impact Summaries**: Multi-hop dependency mapping and downstream impact summaries leveraging `DEPENDS_ON` relationships (`maxDepth <= 3`, `maxNodes = 50`), deterministic summary metrics, relationship-based impact warnings, cycle detection, soft-delete filtering, and strict permission subtree pruning.
 
 ### User problem investigated
 
@@ -300,11 +302,11 @@ The opportunity is not to copy developer tools. It is to connect documents to th
 
 ### Remaining research opportunities
 
-While baseline productivity capabilities (Relationships, Project Context, Technical References, and Review Workflows) are complete, Phase 6 research continues into:
+While baseline productivity capabilities (Relationships, Project Context, Technical References, Review Workflows, Document Templates & Scaffolding, and Dependency Mapping & Impact Summaries) are complete, Phase 6 research continues into:
 
-- Automated workflow triggers based on document lifecycle events.
-- Template-driven document generation and standardized technical document scaffolding.
-- Workspace-level productivity summaries and cross-document dependency mapping.
+- Automated workflow triggers based on document lifecycle, review, and status events.
+- Developer tool integrations and webhook/event notification patterns.
+- Workspace-level productivity summaries and deeper cross-document analytics.
 - Integration opportunities with developer workflows without compromising server-side security boundaries.
 
 ### Do not assume yet
@@ -781,11 +783,11 @@ This keeps the roadmap understandable even as individual implementation details 
 
 Documan has established the foundations of a document-management and productivity platform through the intended progression of:
 
-**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows (Document Relationships, Project Context, External Technical References, Document Review Workflow).**
+**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows (Document Relationships, Project Context, External Technical References, Document Review Workflow, Document Templates & Scaffolding, Document-Level Dependency Mapping & Impact Summaries).**
 
 The strategic question now moves beyond baseline document workflows:
 
-> **How can Documan leverage established document relationships, project context, external technical references, and review workflows to deepen Project / API Context and provide Workflow Intelligence without becoming a clone of specialized developer tools?**
+> **How can Documan leverage established document relationships, project context, technical references, review workflows, templates, and dependency mappings to deepen Project / API Context and provide Workflow Intelligence without becoming a clone of specialized developer tools?**
 
 The answer must come from research, user problems, and differentiated product design—not from copying feature lists.
 
