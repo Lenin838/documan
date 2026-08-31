@@ -11,7 +11,10 @@ export type DocumentAuditAction =
   | 'RELATIONSHIP_CREATE'
   | 'RELATIONSHIP_DELETE'
   | 'PROJECT_ASSIGN'
-  | 'PROJECT_REMOVE';
+  | 'PROJECT_REMOVE'
+  | 'TECHNICAL_REFERENCE_CREATE'
+  | 'TECHNICAL_REFERENCE_UPDATE'
+  | 'TECHNICAL_REFERENCE_DELETE';
 
 export interface DocumentAuditDocument {
   documentId: Types.ObjectId;
@@ -52,6 +55,9 @@ const documentAuditSchema =
           'RELATIONSHIP_DELETE',
           'PROJECT_ASSIGN',
           'PROJECT_REMOVE',
+          'TECHNICAL_REFERENCE_CREATE',
+          'TECHNICAL_REFERENCE_UPDATE',
+          'TECHNICAL_REFERENCE_DELETE',
         ],
         required: true,
       },

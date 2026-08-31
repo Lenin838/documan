@@ -72,7 +72,10 @@ export type DocumentAuditAction =
   | 'RELATIONSHIP_CREATE'
   | 'RELATIONSHIP_DELETE'
   | 'PROJECT_ASSIGN'
-  | 'PROJECT_REMOVE';
+  | 'PROJECT_REMOVE'
+  | 'TECHNICAL_REFERENCE_CREATE'
+  | 'TECHNICAL_REFERENCE_UPDATE'
+  | 'TECHNICAL_REFERENCE_DELETE';
 
 export interface DocumentAudit {
   id: string;

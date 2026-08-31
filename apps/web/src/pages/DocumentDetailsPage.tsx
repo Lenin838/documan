@@ -23,10 +23,20 @@ import {
   deleteDocumentRelationship,
   getDocumentRelationships,
 } from '../features/document-relationships/document-relationship.api';
+import {
+  createDocumentReference,
+  deleteDocumentReference,
+  getDocumentReferences,
+  updateDocumentReference,
+} from '../features/document-references/document-reference.api';
 import type {
   DocumentRelationship,
   DocumentRelationshipType,
 } from '../features/document-relationships/document-relationship.types';
+import type {
+  DocumentReference,
+  TechnicalReferenceType,
+} from '../features/document-references/document-reference.types';
 import type {
   DocumentShare,
   SharePermission,
@@ -73,6 +83,12 @@ function formatAuditAction(action: DocumentAuditAction): {
       return { label: 'Assigned to Project', description: 'Document was assigned to project' };
     case 'PROJECT_REMOVE':
       return { label: 'Removed from Project', description: 'Document was removed from project' };
+    case 'TECHNICAL_REFERENCE_CREATE':
+      return { label: 'Technical Reference Created', description: 'External technical reference was created' };
+    case 'TECHNICAL_REFERENCE_UPDATE':
+      return { label: 'Technical Reference Updated', description: 'External technical reference was updated' };
+    case 'TECHNICAL_REFERENCE_DELETE':
+      return { label: 'Technical Reference Removed', description: 'External technical reference was removed' };
     default:
       return { label: action, description: '' };
   }
@@ -156,11 +172,48 @@ export default function DocumentDetailsPage() {
   const [creatingRelationship, setCreatingRelationship] = useState(false);
   const [deletingRelId, setDeletingRelId] = useState<string | null>(null);
 
+  // Technical references state
+  const [references, setReferences] = useState<DocumentReference[]>([]);
+  const [referencesLoading, setReferencesLoading] = useState(true);
+  const [referencesError, setReferencesError] = useState('');
+  const [referenceSuccess, setReferenceSuccess] = useState('');
+  const [creatingReference, setCreatingReference] = useState(false);
+  const [editingRefId, setEditingRefId] = useState<string | null>(null);
+  const [deletingRefId, setDeletingRefId] = useState<string | null>(null);
+
+  const [refType, setRefType] = useState<TechnicalReferenceType>('API');
+  const [refTitle, setRefTitle] = useState('');
+  const [refUrl, setRefUrl] = useState('');
+
   const isOwner =
     Boolean(currentUser && doc && (doc.ownerId === currentUser.id || currentUser.role === 'admin'));
 
   const userShare = shares.find((s) => s.sharedWithUser.id === currentUser?.id);
   const canEdit = isOwner || userShare?.permission === 'EDIT';
+
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+
+    const documentId = id;
+
+    async function loadReferences() {
+      setReferencesLoading(true);
+      setReferencesError('');
+
+      try {
+        const response = await getDocumentReferences(documentId);
+        setReferences(response.data.references);
+      } catch {
+        setReferencesError('Failed to load technical references.');
+      } finally {
+        setReferencesLoading(false);
+      }
+    }
+
+    void loadReferences();
+  }, [id]);
 
   useEffect(() => {
     if (!id) {
@@ -483,6 +536,121 @@ export default function DocumentDetailsPage() {
       setRelationshipsError('Failed to remove relationship');
     } finally {
       setDeletingRelId(null);
+    }
+  }
+
+  async function handleCreateReferenceSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!id) return;
+
+    if (!refTitle.trim()) {
+      setReferencesError('Title is required');
+      return;
+    }
+
+    if (!refUrl.trim()) {
+      setReferencesError('URL is required');
+      return;
+    }
+
+    setCreatingReference(true);
+    setReferencesError('');
+    setReferenceSuccess('');
+
+    try {
+      const response = await createDocumentReference(id, {
+        type: refType,
+        title: refTitle.trim(),
+        url: refUrl.trim(),
+      });
+
+      setReferences((prev) => [response.data, ...prev]);
+      setRefTitle('');
+      setRefUrl('');
+      setReferenceSuccess('Technical reference created successfully.');
+    } catch (err: unknown) {
+      const errorObj = err as {
+        response?: { data?: { error?: { message?: string } | string } };
+      };
+      const msg =
+        (typeof errorObj.response?.data?.error === 'string'
+          ? errorObj.response.data.error
+          : errorObj.response?.data?.error?.message) ||
+        'Failed to create technical reference.';
+      setReferencesError(msg);
+    } finally {
+      setCreatingReference(false);
+    }
+  }
+
+  function handleStartEditReference(ref: DocumentReference) {
+    setEditingRefId(ref.id);
+    setRefType(ref.type);
+    setRefTitle(ref.title);
+    setRefUrl(ref.url);
+    setReferencesError('');
+    setReferenceSuccess('');
+  }
+
+  async function handleUpdateReferenceSubmit(
+    event: FormEvent<HTMLFormElement>,
+    refId: string,
+  ) {
+    event.preventDefault();
+    if (!id) return;
+
+    setReferencesError('');
+    setReferenceSuccess('');
+
+    try {
+      const response = await updateDocumentReference(id, refId, {
+        type: refType,
+        title: refTitle.trim(),
+        url: refUrl.trim(),
+      });
+
+      setReferences((prev) =>
+        prev.map((r) => (r.id === refId ? response.data : r)),
+      );
+      setEditingRefId(null);
+      setRefTitle('');
+      setRefUrl('');
+      setReferenceSuccess('Technical reference updated successfully.');
+    } catch (err: unknown) {
+      const errorObj = err as {
+        response?: { data?: { error?: { message?: string } | string } };
+      };
+      const msg =
+        (typeof errorObj.response?.data?.error === 'string'
+          ? errorObj.response.data.error
+          : errorObj.response?.data?.error?.message) ||
+        'Failed to update technical reference.';
+      setReferencesError(msg);
+    }
+  }
+
+  async function handleDeleteReference(refId: string) {
+    if (!id) return;
+    setDeletingRefId(refId);
+    setReferencesError('');
+    setReferenceSuccess('');
+
+    try {
+      await deleteDocumentReference(id, refId);
+      setReferences((prev) => prev.filter((r) => r.id !== refId));
+      setReferenceSuccess('Technical reference removed successfully.');
+    } catch (err: unknown) {
+      const errorObj = err as {
+        response?: { data?: { error?: { message?: string } | string } };
+      };
+      const msg =
+        (typeof errorObj.response?.data?.error === 'string'
+          ? errorObj.response.data.error
+          : errorObj.response?.data?.error?.message) ||
+        'Failed to remove technical reference.';
+      setReferencesError(msg);
+    } finally {
+      setDeletingRefId(null);
     }
   }
 
@@ -1016,6 +1184,276 @@ export default function DocumentDetailsPage() {
         }}
       />
 
+      {/* External Technical References Section */}
+      <section style={{ marginBottom: '2rem' }}>
+        <h2>External Technical References</h2>
+
+        {canEdit && (
+          <form
+            onSubmit={(e) => void handleCreateReferenceSubmit(e)}
+            style={{
+              display: 'flex',
+              gap: '0.75rem',
+              alignItems: 'center',
+              marginBottom: '1rem',
+              flexWrap: 'wrap',
+              background: '#f8fafc',
+              padding: '1rem',
+              borderRadius: '6px',
+              border: '1px solid #e2e8f0',
+            }}
+          >
+            <select
+              value={refType}
+              onChange={(e) => setRefType(e.target.value as TechnicalReferenceType)}
+              aria-label="Select reference type"
+              style={{ padding: '0.5rem' }}
+            >
+              <option value="API">API</option>
+              <option value="REPOSITORY">REPOSITORY</option>
+              <option value="SPECIFICATION">SPECIFICATION</option>
+              <option value="ISSUE">ISSUE</option>
+              <option value="OTHER">OTHER</option>
+            </select>
+
+            <input
+              type="text"
+              placeholder="Title / Label (e.g. OpenAPI Spec)"
+              value={refTitle}
+              onChange={(e) => setRefTitle(e.target.value)}
+              required
+              minLength={2}
+              maxLength={150}
+              style={{ flex: '1 1 180px', padding: '0.5rem' }}
+            />
+
+            <input
+              type="url"
+              placeholder="External URL (e.g. https://api.example.com)"
+              value={refUrl}
+              onChange={(e) => setRefUrl(e.target.value)}
+              required
+              maxLength={2000}
+              style={{ flex: '2 1 250px', padding: '0.5rem' }}
+            />
+
+            <button type="submit" disabled={creatingReference}>
+              {creatingReference ? 'Adding...' : 'Add Reference'}
+            </button>
+          </form>
+        )}
+
+        {referencesError && (
+          <p style={{ color: 'red', marginBottom: '0.5rem' }}>{referencesError}</p>
+        )}
+
+        {referenceSuccess && (
+          <p style={{ color: 'green', marginBottom: '0.5rem' }}>{referenceSuccess}</p>
+        )}
+
+        {referencesLoading ? (
+          <p>Loading technical references...</p>
+        ) : references.length === 0 ? (
+          <p style={{ color: '#666' }}>No external technical references added.</p>
+        ) : (
+          <ul
+            style={{
+              listStyle: 'none',
+              padding: 0,
+              margin: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem',
+            }}
+          >
+            {references.map((ref) => (
+              <li
+                key={ref.id}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '0.75rem 1rem',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '4px',
+                  background: '#ffffff',
+                }}
+              >
+                {editingRefId === ref.id ? (
+                  <form
+                    onSubmit={(e) => void handleUpdateReferenceSubmit(e, ref.id)}
+                    style={{
+                      display: 'flex',
+                      gap: '0.5rem',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      width: '100%',
+                    }}
+                  >
+                    <select
+                      value={refType}
+                      onChange={(e) =>
+                        setRefType(e.target.value as TechnicalReferenceType)
+                      }
+                      style={{ padding: '0.4rem' }}
+                    >
+                      <option value="API">API</option>
+                      <option value="REPOSITORY">REPOSITORY</option>
+                      <option value="SPECIFICATION">SPECIFICATION</option>
+                      <option value="ISSUE">ISSUE</option>
+                      <option value="OTHER">OTHER</option>
+                    </select>
+
+                    <input
+                      type="text"
+                      value={refTitle}
+                      onChange={(e) => setRefTitle(e.target.value)}
+                      required
+                      style={{ flex: '1 1 150px', padding: '0.4rem' }}
+                    />
+
+                    <input
+                      type="url"
+                      value={refUrl}
+                      onChange={(e) => setRefUrl(e.target.value)}
+                      required
+                      style={{ flex: '2 1 200px', padding: '0.4rem' }}
+                    />
+
+                    <button type="submit">Save</button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingRefId(null);
+                        setRefTitle('');
+                        setRefUrl('');
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </form>
+                ) : (
+                  <>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      <span
+                        style={{
+                          background:
+                            ref.type === 'API'
+                              ? '#dbeafe'
+                              : ref.type === 'REPOSITORY'
+                                ? '#fef3c7'
+                                : ref.type === 'SPECIFICATION'
+                                  ? '#dcfce7'
+                                  : ref.type === 'ISSUE'
+                                    ? '#fee2e2'
+                                    : '#f1f5f9',
+                          color:
+                            ref.type === 'API'
+                              ? '#1e40af'
+                              : ref.type === 'REPOSITORY'
+                                ? '#92400e'
+                                : ref.type === 'SPECIFICATION'
+                                  ? '#166534'
+                                  : ref.type === 'ISSUE'
+                                    ? '#991b1b'
+                                    : '#475569',
+                          padding: '0.2rem 0.6rem',
+                          borderRadius: '4px',
+                          fontSize: '0.8rem',
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        {ref.type}
+                      </span>
+                      <strong>{ref.title}</strong>
+                      <a
+                        href={ref.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          color: '#0284c7',
+                          textDecoration: 'none',
+                          fontSize: '0.9rem',
+                          wordBreak: 'break-all',
+                        }}
+                      >
+                        {ref.url} ↗
+                      </a>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <a
+                        href={ref.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          fontSize: '0.85rem',
+                          padding: '0.25rem 0.6rem',
+                          border: '1px solid #0284c7',
+                          borderRadius: '4px',
+                          textDecoration: 'none',
+                          color: '#0284c7',
+                          background: '#f0f9ff',
+                        }}
+                      >
+                        Open ↗
+                      </a>
+                      {canEdit && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleStartEditReference(ref)}
+                            style={{
+                              fontSize: '0.85rem',
+                              padding: '0.25rem 0.6rem',
+                              borderRadius: '4px',
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleDeleteReference(ref.id)}
+                            disabled={deletingRefId === ref.id}
+                            style={{
+                              fontSize: '0.85rem',
+                              color: '#dc2626',
+                              background: 'transparent',
+                              border: '1px solid #fca5a5',
+                              borderRadius: '4px',
+                              padding: '0.25rem 0.6rem',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {deletingRefId === ref.id ? 'Removing...' : 'Remove'}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <hr
+        style={{
+          margin: '2rem 0',
+          borderColor: '#ccc',
+          borderStyle: 'solid',
+          borderWidth: '1px 0 0 0',
+        }}
+      />
+
       <section style={{ marginBottom: '2rem' }}>
         <header
           style={{
@@ -1040,6 +1478,9 @@ export default function DocumentDetailsPage() {
             <option value="CREATE">Document Created</option>
             <option value="UPDATE">Document Updated</option>
             <option value="FILE_REPLACE">File Replaced</option>
+            <option value="TECHNICAL_REFERENCE_CREATE">Reference Created</option>
+            <option value="TECHNICAL_REFERENCE_UPDATE">Reference Updated</option>
+            <option value="TECHNICAL_REFERENCE_DELETE">Reference Removed</option>
             <option value="VIEW">Document Viewed</option>
             <option value="DOWNLOAD">Document Downloaded</option>
             <option value="DELETE">Document Deleted</option>
