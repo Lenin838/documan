@@ -36,6 +36,10 @@ export async function createDocument(
     formData.append('tags', JSON.stringify(params.tags));
   }
 
+  if (params.templateId !== undefined) {
+    formData.append('templateId', params.templateId);
+  }
+
   formData.append('file', params.file);
 
   const response = await apiClient.post<CreateDocumentResponse>(

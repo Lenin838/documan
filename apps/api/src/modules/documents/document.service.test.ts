@@ -134,6 +134,62 @@ describe('createDocument', () => {
       DOCUMENT_ID,
       OWNER_ID,
       'CREATE',
+      undefined,
+    );
+  });
+
+  it('should log template metadata when created with valid templateId', async () => {
+    const document = createDocumentMock();
+    mockDocument.create.mockResolvedValue(document);
+
+    await createDocument(
+      OWNER_ID,
+      {
+        title: 'ADR Document',
+        templateId: 'adr',
+      },
+      {
+        originalname: 'adr.md',
+        path: 'uploads/documents/adr.md',
+        mimetype: 'text/markdown',
+        size: 512,
+      },
+    );
+
+    expect(mockCreateDocumentAudit).toHaveBeenCalledWith(
+      DOCUMENT_ID,
+      OWNER_ID,
+      'CREATE',
+      {
+        templateId: 'adr',
+        templateName: 'Architecture Decision Record',
+      },
+    );
+  });
+
+  it('should ignore template metadata when created with invalid templateId', async () => {
+    const document = createDocumentMock();
+    mockDocument.create.mockResolvedValue(document);
+
+    await createDocument(
+      OWNER_ID,
+      {
+        title: 'Document with Invalid Template',
+        templateId: 'invalid-template-id',
+      },
+      {
+        originalname: 'doc.md',
+        path: 'uploads/documents/doc.md',
+        mimetype: 'text/markdown',
+        size: 512,
+      },
+    );
+
+    expect(mockCreateDocumentAudit).toHaveBeenCalledWith(
+      DOCUMENT_ID,
+      OWNER_ID,
+      'CREATE',
+      undefined,
     );
   });
 
@@ -211,6 +267,7 @@ describe('createDocument', () => {
       DOCUMENT_ID,
       OWNER_ID,
       'CREATE',
+      undefined,
     );
   });
 });

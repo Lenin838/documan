@@ -130,6 +130,7 @@ export interface CreateDocumentParams {
   folderId?: string | null;
   projectId?: string | null;
   tags?: string[];
+  templateId?: string;
   file: File;
 }
 

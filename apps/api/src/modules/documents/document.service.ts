@@ -168,10 +168,22 @@ export async function createDocument(
     isDeleted: false,
   });
 
+  const BUILTIN_TEMPLATES: Record<string, string> = {
+    adr: 'Architecture Decision Record',
+    'tech-spec': 'Technical Specification',
+    runbook: 'Troubleshooting / Runbook',
+  };
+
+  const templateName = input.templateId ? BUILTIN_TEMPLATES[input.templateId] : undefined;
+  const auditMetadata = templateName && input.templateId
+    ? { templateId: input.templateId, templateName }
+    : undefined;
+
   await createDocumentAudit(
     document._id.toString(),
     ownerId,
     'CREATE',
+    auditMetadata,
   );
 
   return toDocumentResponse(document);

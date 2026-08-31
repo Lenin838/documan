@@ -42,6 +42,11 @@ export const createDocumentSchema = z
       .optional(),
 
     tags: tagsSchema,
+
+    templateId: z
+      .string()
+      .trim()
+      .optional(),
   })
   .strict();
 
