@@ -9,6 +9,7 @@ import {
   viewDocument,
   deleteDocument,
   getDocuments,
+  updateDocumentStatus,
 } from '../features/documents/document.api';
 import { getFolderById } from '../features/folders/folder.api';
 import { getProjectById } from '../features/projects/project.api';
@@ -105,6 +106,8 @@ function formatAuditAction(action: DocumentAuditAction): {
       return { label: 'Review Approved', description: 'Document review was approved' };
     case 'REVIEW_CHANGES_REQUESTED':
       return { label: 'Changes Requested', description: 'Changes were requested for document' };
+    case 'STATUS_CHANGE':
+      return { label: 'Status Changed', description: 'Document lifecycle status was updated' };
     default:
       return { label: action, description: '' };
   }
@@ -207,6 +210,40 @@ export default function DocumentDetailsPage() {
   const [refType, setRefType] = useState<TechnicalReferenceType>('API');
   const [refTitle, setRefTitle] = useState('');
   const [refUrl, setRefUrl] = useState('');
+
+  // Status Override state
+  const [selectedStatus, setSelectedStatus] = useState<'DRAFT' | 'STALE' | 'DEPRECATED'>('DRAFT');
+  const [statusReason, setStatusReason] = useState('');
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [statusError, setStatusError] = useState('');
+  const [statusSuccess, setStatusSuccess] = useState('');
+
+  const handleUpdateStatusSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!id || !canEdit) return;
+
+    setUpdatingStatus(true);
+    setStatusError('');
+    setStatusSuccess('');
+
+    try {
+      const response = await updateDocumentStatus(id, {
+        status: selectedStatus,
+        reason: statusReason || undefined,
+      });
+      setDoc(response.data);
+      setStatusSuccess(`Document status updated to ${selectedStatus}`);
+      setStatusReason('');
+      const updatedReviews = await getDocumentReviewsApi(id);
+      setReviews(updatedReviews);
+      setAuditPage(1);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to update status';
+      setStatusError(msg);
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
 
   // Document review state
   const [reviews, setReviews] = useState<DocumentReview[]>([]);
@@ -861,6 +898,40 @@ export default function DocumentDetailsPage() {
             gap: '0.5rem 1rem',
           }}
         >
+          <dt style={{ fontWeight: 'bold' }}>Status</dt>
+          <dd style={{ margin: 0 }}>
+            <span
+              style={{
+                background:
+                  doc.status === 'APPROVED'
+                    ? '#dcfce7'
+                    : doc.status === 'IN_REVIEW'
+                      ? '#fef3c7'
+                      : doc.status === 'STALE'
+                        ? '#ffedd5'
+                        : doc.status === 'DEPRECATED'
+                          ? '#fee2e2'
+                          : '#e2e8f0',
+                color:
+                  doc.status === 'APPROVED'
+                    ? '#166534'
+                    : doc.status === 'IN_REVIEW'
+                      ? '#92400e'
+                      : doc.status === 'STALE'
+                        ? '#c2410c'
+                        : doc.status === 'DEPRECATED'
+                          ? '#991b1b'
+                          : '#334155',
+                padding: '0.2rem 0.6rem',
+                borderRadius: '4px',
+                fontSize: '0.85rem',
+                fontWeight: 'bold',
+              }}
+            >
+              {doc.status || 'DRAFT'}
+            </span>
+          </dd>
+
           <dt style={{ fontWeight: 'bold' }}>Title</dt>
           <dd style={{ margin: 0 }}>{doc.title}</dd>
 
@@ -1032,6 +1103,48 @@ export default function DocumentDetailsPage() {
               </button>
             )}
           </div>
+        )}
+
+        {canEdit && (
+          <form
+            onSubmit={(e) => void handleUpdateStatusSubmit(e)}
+            style={{
+              marginTop: '1rem',
+              padding: '1rem',
+              background: '#f8fafc',
+              border: '1px solid #cbd5e1',
+              borderRadius: '6px',
+            }}
+          >
+            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem', color: '#1e293b' }}>
+              Manual Status Override
+            </h3>
+            {statusError && <p style={{ color: 'red', margin: '0 0 0.5rem 0' }}>{statusError}</p>}
+            {statusSuccess && <p style={{ color: 'green', margin: '0 0 0.5rem 0' }}>{statusSuccess}</p>}
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value as 'DRAFT' | 'STALE' | 'DEPRECATED')}
+                aria-label="Select document status"
+                style={{ padding: '0.4rem 0.6rem', borderRadius: '4px' }}
+              >
+                <option value="DRAFT">DRAFT</option>
+                <option value="STALE">STALE</option>
+                <option value="DEPRECATED">DEPRECATED</option>
+              </select>
+              <input
+                type="text"
+                placeholder="Reason / Comment (optional)"
+                value={statusReason}
+                onChange={(e) => setStatusReason(e.target.value)}
+                maxLength={500}
+                style={{ flex: '1 1 200px', padding: '0.4rem 0.6rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+              />
+              <button type="submit" disabled={updatingStatus}>
+                {updatingStatus ? 'Updating...' : 'Update Status'}
+              </button>
+            </div>
+          </form>
         )}
       </section>
 
@@ -2066,6 +2179,7 @@ export default function DocumentDetailsPage() {
             <option value="REVIEW_REQUEST">Review Requested</option>
             <option value="REVIEW_APPROVED">Review Approved</option>
             <option value="REVIEW_CHANGES_REQUESTED">Changes Requested</option>
+            <option value="STATUS_CHANGE">Status Changed</option>
             <option value="VIEW">Document Viewed</option>
             <option value="DOWNLOAD">Document Downloaded</option>
             <option value="DELETE">Document Deleted</option>

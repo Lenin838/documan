@@ -17,7 +17,8 @@ export type DocumentAuditAction =
   | 'TECHNICAL_REFERENCE_DELETE'
   | 'REVIEW_REQUEST'
   | 'REVIEW_APPROVED'
-  | 'REVIEW_CHANGES_REQUESTED';
+  | 'REVIEW_CHANGES_REQUESTED'
+  | 'STATUS_CHANGE';
 
 export interface DocumentAuditDocument {
   documentId: Types.ObjectId;
@@ -64,6 +65,7 @@ const documentAuditSchema =
           'REVIEW_REQUEST',
           'REVIEW_APPROVED',
           'REVIEW_CHANGES_REQUESTED',
+          'STATUS_CHANGE',
         ],
         required: true,
       },

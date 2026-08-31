@@ -2,7 +2,8 @@ import { Types } from 'mongoose';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { Document } from './document.model.js';
+import { Document, type DocumentStatus } from './document.model.js';
+import { DocumentReview } from './document-review.model.js';
 import { Folder } from '../folders/folder.model.js';
 import { DocumentShare } from '../document-shares/document-share.model.js';
 import { createDocumentAudit } from './document-audit.service.js';
@@ -10,6 +11,7 @@ import type {
   CreateDocumentInput,
   DocumentsQueryInput,
   UpdateDocumentInput,
+  UpdateDocumentStatusInput,
 } from './document.schema.js';
 
 import { AppError } from '../../errors/app-error.js';
@@ -21,6 +23,7 @@ interface DocumentResponse {
   folderId?: string | null | undefined;
   projectId?: string | null | undefined;
   tags: string[];
+  status: DocumentStatus;
   fileName: string;
   filePath: string;
   fileType: string;
@@ -45,6 +48,7 @@ function toDocumentResponse(
     folderId?: Types.ObjectId | null;
     projectId?: Types.ObjectId | null;
     tags?: string[];
+    status?: DocumentStatus;
     fileName: string;
     filePath: string;
     fileType: string;
@@ -62,6 +66,7 @@ function toDocumentResponse(
     folderId: document.folderId ? document.folderId.toString() : null,
     projectId: document.projectId ? document.projectId.toString() : null,
     tags: document.tags || [],
+    status: document.status || 'DRAFT',
     fileName: document.fileName,
     filePath: document.filePath,
     fileType: document.fileType,
@@ -380,6 +385,26 @@ export async function updateDocument(
     document.fileSize = file.size;
   }
 
+  const previousStatus = document.status || 'DRAFT';
+  if (
+    previousStatus === 'APPROVED' ||
+    previousStatus === 'DEPRECATED' ||
+    previousStatus === 'STALE'
+  ) {
+    document.status = 'DRAFT';
+    await createDocumentAudit(
+      document._id.toString(),
+      ownerId,
+      'STATUS_CHANGE',
+      {
+        previousStatus,
+        newStatus: 'DRAFT',
+        transitionType: 'AUTOMATIC',
+        triggerSource: file ? 'FILE_REPLACE' : 'DOCUMENT_EDIT',
+      },
+    );
+  }
+
   await document.save();
 
   await createDocumentAudit(
@@ -389,6 +414,112 @@ export async function updateDocument(
   );
 
   return toDocumentResponse(document);
+}
+
+export async function transitionDocumentStatusInternal(
+  documentId: string,
+  userId: string,
+  newStatus: DocumentStatus,
+  transitionType: 'AUTOMATIC' | 'MANUAL',
+  triggerSource: string,
+  reviewId?: string,
+  reason?: string,
+): Promise<{ previousStatus: DocumentStatus; updatedStatus: DocumentStatus }> {
+  if (!Types.ObjectId.isValid(documentId)) {
+    throw new AppError('Document not found', 404, 'DOCUMENT_NOT_FOUND');
+  }
+
+  const doc = await Document.findOne({
+    _id: new Types.ObjectId(documentId),
+    isDeleted: false,
+  });
+
+  if (!doc) {
+    throw new AppError('Document not found', 404, 'DOCUMENT_NOT_FOUND');
+  }
+
+  const previousStatus = doc.status || 'DRAFT';
+  if (previousStatus === newStatus) {
+    return { previousStatus, updatedStatus: newStatus };
+  }
+
+  doc.status = newStatus;
+  if (typeof doc.save === 'function') {
+    await doc.save();
+  }
+
+  // Cancel active PENDING review if transitioning away from IN_REVIEW via manual action
+  if (previousStatus === 'IN_REVIEW' && newStatus !== 'APPROVED') {
+    await DocumentReview.updateMany(
+      { documentId: doc._id, status: 'PENDING' },
+      {
+        $set: {
+          status: 'CANCELLED',
+          resolvedAt: new Date(),
+          comment: reason || 'Cancelled due to manual document status change',
+        },
+      },
+    );
+  }
+
+  await createDocumentAudit(documentId, userId, 'STATUS_CHANGE', {
+    previousStatus,
+    newStatus,
+    transitionType,
+    triggerSource,
+    ...(reviewId ? { reviewId } : {}),
+    ...(reason ? { reason } : {}),
+  });
+
+  return { previousStatus, updatedStatus: newStatus };
+}
+
+export async function updateDocumentStatus(
+  userId: string,
+  role: 'user' | 'admin',
+  documentId: string,
+  input: UpdateDocumentStatusInput,
+): Promise<DocumentResponse> {
+  if (!Types.ObjectId.isValid(documentId)) {
+    throw new AppError('Document not found', 404, 'DOCUMENT_NOT_FOUND');
+  }
+
+  const doc = await Document.findOne({
+    _id: new Types.ObjectId(documentId),
+    isDeleted: false,
+  });
+
+  if (!doc) {
+    throw new AppError('Document not found', 404, 'DOCUMENT_NOT_FOUND');
+  }
+
+  if (role !== 'admin' && doc.ownerId.toString() !== userId) {
+    const share = await DocumentShare.findOne({
+      documentId: doc._id,
+      sharedWithUserId: new Types.ObjectId(userId),
+    });
+
+    if (!share || share.permission !== 'EDIT') {
+      throw new AppError('Forbidden', 403, 'FORBIDDEN');
+    }
+  }
+
+  await transitionDocumentStatusInternal(
+    documentId,
+    userId,
+    input.status,
+    'MANUAL',
+    'MANUAL_OVERRIDE',
+    undefined,
+    input.reason,
+  );
+
+  const updatedDoc = await Document.findById(documentId);
+  if (!updatedDoc) {
+    throw new AppError('Document not found', 404, 'DOCUMENT_NOT_FOUND');
+  }
+
+  return toDocumentResponse(updatedDoc);
 }
 
 export async function deleteDocument(

@@ -1,3 +1,10 @@
+export type DocumentStatus =
+  | 'DRAFT'
+  | 'IN_REVIEW'
+  | 'APPROVED'
+  | 'DEPRECATED'
+  | 'STALE';
+
 export interface Document {
   id: string;
   title: string;
@@ -5,6 +12,7 @@ export interface Document {
   folderId?: string | null;
   projectId?: string | null;
   tags?: string[];
+  status?: DocumentStatus;
   fileName: string;
   filePath: string;
   fileType: string;
@@ -78,7 +86,8 @@ export type DocumentAuditAction =
   | 'TECHNICAL_REFERENCE_DELETE'
   | 'REVIEW_REQUEST'
   | 'REVIEW_APPROVED'
-  | 'REVIEW_CHANGES_REQUESTED';
+  | 'REVIEW_CHANGES_REQUESTED'
+  | 'STATUS_CHANGE';
 
 export interface DocumentAudit {
   id: string;

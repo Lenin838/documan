@@ -20,6 +20,7 @@ import {
   getDocumentAuditHistoryController,
   downloadDocumentController,
   viewDocumentController,
+  updateDocumentStatusController,
 } from './document.controller.js';
 
 import {
@@ -33,6 +34,7 @@ import {
   documentIdParamsSchema,
   documentAuditHistoryQuerySchema,
   getDocumentDependenciesQuerySchema,
+  updateDocumentStatusSchema,
 } from './document.schema.js';
 
 import { documentUpload } from '../../middleware/uploads/document-upload.middleware.js';
@@ -107,6 +109,14 @@ documentRouter.patch(
   validateParams(documentIdParamsSchema),
   validateBody(updateDocumentSchema),
   updateDocumentController,
+);
+
+documentRouter.patch(
+  '/:id/status',
+  authenticate,
+  validateParams(documentIdParamsSchema),
+  validateBody(updateDocumentStatusSchema),
+  updateDocumentStatusController,
 );
 
 documentRouter.delete(

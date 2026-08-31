@@ -1,11 +1,19 @@
 import { Schema, model, Types } from 'mongoose';
 
+export type DocumentStatus =
+  | 'DRAFT'
+  | 'IN_REVIEW'
+  | 'APPROVED'
+  | 'DEPRECATED'
+  | 'STALE';
+
 export interface DocumentDocument {
   title: string;
   description?: string;
   folderId?: Types.ObjectId | null;
   projectId?: Types.ObjectId | null;
   tags?: string[];
+  status: DocumentStatus;
   fileName: string;
   filePath: string;
   fileType: string;
@@ -46,6 +54,14 @@ const documentSchema = new Schema<DocumentDocument>(
     tags: {
       type: [String],
       default: [],
+      index: true,
+    },
+
+    status: {
+      type: String,
+      enum: ['DRAFT', 'IN_REVIEW', 'APPROVED', 'DEPRECATED', 'STALE'],
+      default: 'DRAFT',
+      required: true,
       index: true,
     },
 

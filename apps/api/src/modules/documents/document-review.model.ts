@@ -1,6 +1,10 @@
 import { Schema, model, Types } from 'mongoose';
 
-export type ReviewStatus = 'PENDING' | 'APPROVED' | 'CHANGES_REQUESTED';
+export type ReviewStatus =
+  | 'PENDING'
+  | 'APPROVED'
+  | 'CHANGES_REQUESTED'
+  | 'CANCELLED';
 
 export interface DocumentReviewDocument {
   documentId: Types.ObjectId;
@@ -34,7 +38,7 @@ const documentReviewSchema = new Schema<DocumentReviewDocument>(
     },
     status: {
       type: String,
-      enum: ['PENDING', 'APPROVED', 'CHANGES_REQUESTED'],
+      enum: ['PENDING', 'APPROVED', 'CHANGES_REQUESTED', 'CANCELLED'],
       default: 'PENDING',
       required: true,
       index: true,

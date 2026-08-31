@@ -421,6 +421,7 @@ export default function DocumentsPage() {
             <thead>
               <tr>
                 <th>Title</th>
+                <th>Status</th>
                 <th>Tags</th>
                 <th>File Name</th>
                 <th>File Type</th>
@@ -434,6 +435,38 @@ export default function DocumentsPage() {
                 <tr key={doc.id}>
                   <td>
                     <Link to={`/documents/${doc.id}`}>{doc.title}</Link>
+                  </td>
+                  <td>
+                    <span
+                      style={{
+                        background:
+                          doc.status === 'APPROVED'
+                            ? '#dcfce7'
+                            : doc.status === 'IN_REVIEW'
+                              ? '#fef3c7'
+                              : doc.status === 'STALE'
+                                ? '#ffedd5'
+                                : doc.status === 'DEPRECATED'
+                                  ? '#fee2e2'
+                                  : '#e2e8f0',
+                        color:
+                          doc.status === 'APPROVED'
+                            ? '#166534'
+                            : doc.status === 'IN_REVIEW'
+                              ? '#92400e'
+                              : doc.status === 'STALE'
+                                ? '#c2410c'
+                                : doc.status === 'DEPRECATED'
+                                  ? '#991b1b'
+                                  : '#334155',
+                        padding: '0.15rem 0.5rem',
+                        borderRadius: '4px',
+                        fontSize: '0.8rem',
+                        fontWeight: 'bold',
+                      }}
+                    >
+                      {doc.status || 'DRAFT'}
+                    </span>
                   </td>
                   <td>
                     {doc.tags && doc.tags.length > 0 ? (

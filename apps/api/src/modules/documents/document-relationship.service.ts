@@ -4,7 +4,7 @@ import {
   DocumentRelationship,
   type DocumentRelationshipType,
 } from './document-relationship.model.js';
-import { Document, type DocumentDocument } from './document.model.js';
+import { Document, type DocumentDocument, type DocumentStatus } from './document.model.js';
 import { DocumentShare } from '../document-shares/document-share.model.js';
 import { createDocumentAudit } from './document-audit.service.js';
 import type { CreateDocumentRelationshipInput } from './document-relationship.schema.js';
@@ -36,6 +36,7 @@ export interface DocumentDependencyItem {
   title: string;
   fileName: string;
   fileType: string;
+  status: DocumentStatus;
   depth: number;
   direction: 'UPSTREAM' | 'DOWNSTREAM';
 }
@@ -406,7 +407,7 @@ export async function getDocumentDependencies(
       type: 'DEPENDS_ON',
     }).populate<{ targetDocumentId: DocumentDocument & { _id: Types.ObjectId } }>({
       path: 'targetDocumentId',
-      select: 'title fileName fileType isDeleted ownerId',
+      select: 'title fileName fileType status isDeleted ownerId',
     });
 
     const activeRels = relationships.filter(
@@ -442,6 +443,7 @@ export async function getDocumentDependencies(
         title: rel.targetDocumentId.title,
         fileName: rel.targetDocumentId.fileName,
         fileType: rel.targetDocumentId.fileType,
+        status: rel.targetDocumentId.status || 'DRAFT',
         depth,
         direction: 'UPSTREAM',
       });
@@ -471,7 +473,7 @@ export async function getDocumentDependencies(
       type: 'DEPENDS_ON',
     }).populate<{ sourceDocumentId: DocumentDocument & { _id: Types.ObjectId } }>({
       path: 'sourceDocumentId',
-      select: 'title fileName fileType isDeleted ownerId',
+      select: 'title fileName fileType status isDeleted ownerId',
     });
 
     const activeRels = relationships.filter(
@@ -507,6 +509,7 @@ export async function getDocumentDependencies(
         title: rel.sourceDocumentId.title,
         fileName: rel.sourceDocumentId.fileName,
         fileType: rel.sourceDocumentId.fileType,
+        status: rel.sourceDocumentId.status || 'DRAFT',
         depth,
         direction: 'DOWNSTREAM',
       });
