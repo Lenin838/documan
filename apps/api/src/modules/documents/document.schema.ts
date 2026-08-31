@@ -188,6 +188,9 @@ export const documentAuditHistoryQuerySchema = z.object({
       'TECHNICAL_REFERENCE_CREATE',
       'TECHNICAL_REFERENCE_UPDATE',
       'TECHNICAL_REFERENCE_DELETE',
+      'REVIEW_REQUEST',
+      'REVIEW_APPROVED',
+      'REVIEW_CHANGES_REQUESTED',
     ])
     .optional(),
 });

@@ -34,6 +34,7 @@ export default function DashboardPage() {
       <nav style={{ margin: '1rem 0', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
         <Link to="/documents">View Documents</Link>
         <Link to="/projects">Projects</Link>
+        <Link to="/reviews">My Reviews</Link>
         <Link to="/trash">Trash</Link>
         {user?.role === 'admin' && <Link to="/users">Manage Users</Link>}
       </nav>

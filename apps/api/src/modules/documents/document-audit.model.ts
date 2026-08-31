@@ -14,7 +14,10 @@ export type DocumentAuditAction =
   | 'PROJECT_REMOVE'
   | 'TECHNICAL_REFERENCE_CREATE'
   | 'TECHNICAL_REFERENCE_UPDATE'
-  | 'TECHNICAL_REFERENCE_DELETE';
+  | 'TECHNICAL_REFERENCE_DELETE'
+  | 'REVIEW_REQUEST'
+  | 'REVIEW_APPROVED'
+  | 'REVIEW_CHANGES_REQUESTED';
 
 export interface DocumentAuditDocument {
   documentId: Types.ObjectId;
@@ -58,6 +61,9 @@ const documentAuditSchema =
           'TECHNICAL_REFERENCE_CREATE',
           'TECHNICAL_REFERENCE_UPDATE',
           'TECHNICAL_REFERENCE_DELETE',
+          'REVIEW_REQUEST',
+          'REVIEW_APPROVED',
+          'REVIEW_CHANGES_REQUESTED',
         ],
         required: true,
       },

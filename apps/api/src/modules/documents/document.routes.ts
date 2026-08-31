@@ -34,12 +34,14 @@ import { documentUpload } from '../../middleware/uploads/document-upload.middlew
 import { documentShareRouter } from '../document-shares/document-share.routes.js';
 import { documentRelationshipRouter } from './document-relationship.routes.js';
 import { documentReferenceRouter } from './document-reference.routes.js';
+import { documentReviewRouter } from './document-review.routes.js';
 
 const documentRouter = Router();
 
 documentRouter.use('/:id/shares', documentShareRouter);
 documentRouter.use('/:id/relationships', documentRelationshipRouter);
 documentRouter.use('/:id/references', documentReferenceRouter);
+documentRouter.use('/:id/reviews', documentReviewRouter);
 
 documentRouter.post(
   '/',

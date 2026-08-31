@@ -15,6 +15,7 @@ import DocumentEditPage from './pages/DocumentEditPage';
 import TrashPage from './pages/TrashPage';
 import ProjectsPage from './pages/ProjectsPage';
 import ProjectDetailsPage from './pages/ProjectDetailsPage';
+import { ReviewsPage } from './pages/ReviewsPage';
 import ProtectedRoute from './routes/ProtectedRoute';
 import UsersPage from './pages/UsersPage';
 import UserDetailsPage from './pages/UserDetailsPage';
@@ -79,6 +80,10 @@ function App() {
         <Route
           path="/trash"
           element={<TrashPage />}
+        />
+        <Route
+          path="/reviews"
+          element={<ReviewsPage />}
         />
       </Route>
 

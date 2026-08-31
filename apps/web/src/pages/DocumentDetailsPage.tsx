@@ -29,6 +29,12 @@ import {
   getDocumentReferences,
   updateDocumentReference,
 } from '../features/document-references/document-reference.api';
+import {
+  createDocumentReviewApi,
+  getDocumentReviewsApi,
+  approveDocumentReviewApi,
+  requestChangesDocumentReviewApi,
+} from '../features/document-reviews/document-review.api';
 import type {
   DocumentRelationship,
   DocumentRelationshipType,
@@ -37,6 +43,7 @@ import type {
   DocumentReference,
   TechnicalReferenceType,
 } from '../features/document-references/document-reference.types';
+import type { DocumentReview } from '../features/document-reviews/document-review.types';
 import type {
   DocumentShare,
   SharePermission,
@@ -89,6 +96,12 @@ function formatAuditAction(action: DocumentAuditAction): {
       return { label: 'Technical Reference Updated', description: 'External technical reference was updated' };
     case 'TECHNICAL_REFERENCE_DELETE':
       return { label: 'Technical Reference Removed', description: 'External technical reference was removed' };
+    case 'REVIEW_REQUEST':
+      return { label: 'Review Requested', description: 'Review was requested for document' };
+    case 'REVIEW_APPROVED':
+      return { label: 'Review Approved', description: 'Document review was approved' };
+    case 'REVIEW_CHANGES_REQUESTED':
+      return { label: 'Changes Requested', description: 'Changes were requested for document' };
     default:
       return { label: action, description: '' };
   }
@@ -184,6 +197,17 @@ export default function DocumentDetailsPage() {
   const [refType, setRefType] = useState<TechnicalReferenceType>('API');
   const [refTitle, setRefTitle] = useState('');
   const [refUrl, setRefUrl] = useState('');
+
+  // Document review state
+  const [reviews, setReviews] = useState<DocumentReview[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [reviewsError, setReviewsError] = useState('');
+  const [reviewSuccess, setReviewSuccess] = useState('');
+  const [selectedReviewerId, setSelectedReviewerId] = useState('');
+  const [requestComment, setRequestComment] = useState('');
+  const [requestingReview, setRequestingReview] = useState(false);
+  const [resolveComment, setResolveComment] = useState('');
+  const [resolvingReview, setResolvingReview] = useState(false);
 
   const isOwner =
     Boolean(currentUser && doc && (doc.ownerId === currentUser.id || currentUser.role === 'admin'));
@@ -653,6 +677,97 @@ export default function DocumentDetailsPage() {
       setDeletingRefId(null);
     }
   }
+
+  useEffect(() => {
+    if (!id) return;
+    async function loadReviews() {
+      setReviewsLoading(true);
+      setReviewsError('');
+      try {
+        const data = await getDocumentReviewsApi(id!);
+        setReviews(data);
+      } catch (err) {
+        setReviewsError(
+          err instanceof Error ? err.message : 'Failed to load reviews',
+        );
+      } finally {
+        setReviewsLoading(false);
+      }
+    }
+    void loadReviews();
+  }, [id]);
+
+  const handleRequestReviewSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!id || !selectedReviewerId) return;
+    try {
+      setRequestingReview(true);
+      setReviewsError('');
+      setReviewSuccess('');
+      await createDocumentReviewApi(id, {
+        reviewerId: selectedReviewerId,
+        comment: requestComment || undefined,
+      });
+      setReviewSuccess('Review requested successfully');
+      setSelectedReviewerId('');
+      setRequestComment('');
+      const updated = await getDocumentReviewsApi(id);
+      setReviews(updated);
+      setAuditPage(1);
+    } catch (err) {
+      setReviewsError(
+        err instanceof Error ? err.message : 'Failed to request review',
+      );
+    } finally {
+      setRequestingReview(false);
+    }
+  };
+
+  const handleApproveReview = async (reviewId: string) => {
+    if (!id) return;
+    try {
+      setResolvingReview(true);
+      setReviewsError('');
+      setReviewSuccess('');
+      await approveDocumentReviewApi(id, reviewId, {
+        comment: resolveComment || undefined,
+      });
+      setReviewSuccess('Review approved successfully');
+      setResolveComment('');
+      const updated = await getDocumentReviewsApi(id);
+      setReviews(updated);
+      setAuditPage(1);
+    } catch (err) {
+      setReviewsError(
+        err instanceof Error ? err.message : 'Failed to approve review',
+      );
+    } finally {
+      setResolvingReview(false);
+    }
+  };
+
+  const handleRequestChangesReview = async (reviewId: string) => {
+    if (!id) return;
+    try {
+      setResolvingReview(true);
+      setReviewsError('');
+      setReviewSuccess('');
+      await requestChangesDocumentReviewApi(id, reviewId, {
+        comment: resolveComment || undefined,
+      });
+      setReviewSuccess('Requested changes successfully');
+      setResolveComment('');
+      const updated = await getDocumentReviewsApi(id);
+      setReviews(updated);
+      setAuditPage(1);
+    } catch (err) {
+      setReviewsError(
+        err instanceof Error ? err.message : 'Failed to request changes',
+      );
+    } finally {
+      setResolvingReview(false);
+    }
+  };
 
   if (!id) {
     return <main>Invalid document ID</main>;
@@ -1454,6 +1569,210 @@ export default function DocumentDetailsPage() {
         }}
       />
 
+      {/* Document Review Workflow Section */}
+      <section style={{ marginBottom: '2rem' }}>
+        <h2>Document Review Workflow</h2>
+
+        {canEdit && !reviews.some((r) => r.status === 'PENDING') && (
+          <form
+            onSubmit={(e) => void handleRequestReviewSubmit(e)}
+            style={{
+              display: 'flex',
+              gap: '0.75rem',
+              alignItems: 'center',
+              marginBottom: '1.5rem',
+              flexWrap: 'wrap',
+              background: '#f8fafc',
+              padding: '1rem',
+              borderRadius: '6px',
+              border: '1px solid #e2e8f0',
+            }}
+          >
+            <label style={{ fontWeight: 'bold' }}>Assign Reviewer:</label>
+            <select
+              value={selectedReviewerId}
+              onChange={(e) => setSelectedReviewerId(e.target.value)}
+              required
+              aria-label="Select reviewer"
+              style={{ padding: '0.5rem', minWidth: '220px' }}
+            >
+              <option value="">Select a user with READ access...</option>
+              {shares.map((share) => (
+                <option key={share.id} value={share.sharedWithUser.id}>
+                  {share.sharedWithUser.name} ({share.sharedWithUser.email}) - [{share.permission}]
+                </option>
+              ))}
+            </select>
+
+            <input
+              type="text"
+              placeholder="Optional review notes / context..."
+              value={requestComment}
+              onChange={(e) => setRequestComment(e.target.value)}
+              maxLength={1000}
+              style={{ flex: '1 1 200px', padding: '0.5rem' }}
+            />
+
+            <button type="submit" disabled={requestingReview}>
+              {requestingReview ? 'Requesting...' : 'Request Review'}
+            </button>
+          </form>
+        )}
+
+        {reviewsError && (
+          <p style={{ color: 'red', marginBottom: '0.5rem' }}>{reviewsError}</p>
+        )}
+
+        {reviewSuccess && (
+          <p style={{ color: 'green', marginBottom: '0.5rem' }}>{reviewSuccess}</p>
+        )}
+
+        {reviewsLoading ? (
+          <p>Loading review history...</p>
+        ) : reviews.length === 0 ? (
+          <p style={{ color: '#666' }}>No review requested yet for this document.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {reviews.map((rev) => {
+              const isAssignedReviewer =
+                currentUser &&
+                (currentUser.id === rev.reviewerId || currentUser.role === 'admin');
+              const isPending = rev.status === 'PENDING';
+
+              return (
+                <div
+                  key={rev.id}
+                  style={{
+                    padding: '1rem',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '6px',
+                    background: isPending ? '#fefce8' : '#ffffff',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '0.5rem',
+                    }}
+                  >
+                    <div>
+                      <span
+                        style={{
+                          background:
+                            rev.status === 'APPROVED'
+                              ? '#dcfce7'
+                              : rev.status === 'CHANGES_REQUESTED'
+                                ? '#fee2e2'
+                                : '#fef3c7',
+                          color:
+                            rev.status === 'APPROVED'
+                              ? '#166534'
+                              : rev.status === 'CHANGES_REQUESTED'
+                                ? '#991b1b'
+                                : '#92400e',
+                          padding: '0.2rem 0.6rem',
+                          borderRadius: '4px',
+                          fontSize: '0.8rem',
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        {rev.status}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                      Requested {new Date(rev.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+
+                  <div style={{ fontSize: '0.9rem', marginBottom: '0.4rem' }}>
+                    <strong>Requester:</strong> {rev.requester?.name || 'Unknown'} |{' '}
+                    <strong>Assigned Reviewer:</strong> {rev.reviewer?.name || 'Unknown'}
+                  </div>
+
+                  {rev.comment && (
+                    <div
+                      style={{
+                        background: '#f8fafc',
+                        padding: '0.5rem 0.75rem',
+                        borderRadius: '4px',
+                        fontSize: '0.9rem',
+                        fontStyle: 'italic',
+                        marginBottom: '0.5rem',
+                      }}
+                    >
+                      &quot;{rev.comment}&quot;
+                    </div>
+                  )}
+
+                  {isPending && isAssignedReviewer && (
+                    <div
+                      style={{
+                        marginTop: '0.75rem',
+                        paddingTop: '0.75rem',
+                        borderTop: '1px solid #e2e8f0',
+                        display: 'flex',
+                        gap: '0.5rem',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      <input
+                        type="text"
+                        placeholder="Optional resolution comment..."
+                        value={resolveComment}
+                        onChange={(e) => setResolveComment(e.target.value)}
+                        style={{ flex: '1 1 200px', padding: '0.4rem' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void handleApproveReview(rev.id)}
+                        disabled={resolvingReview}
+                        style={{
+                          background: '#16a34a',
+                          color: 'white',
+                          border: 'none',
+                          padding: '0.4rem 0.8rem',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleRequestChangesReview(rev.id)}
+                        disabled={resolvingReview}
+                        style={{
+                          background: '#dc2626',
+                          color: 'white',
+                          border: 'none',
+                          padding: '0.4rem 0.8rem',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Request Changes
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <hr
+        style={{
+          margin: '2rem 0',
+          borderColor: '#ccc',
+          borderStyle: 'solid',
+          borderWidth: '1px 0 0 0',
+        }}
+      />
+
       <section style={{ marginBottom: '2rem' }}>
         <header
           style={{
@@ -1481,6 +1800,9 @@ export default function DocumentDetailsPage() {
             <option value="TECHNICAL_REFERENCE_CREATE">Reference Created</option>
             <option value="TECHNICAL_REFERENCE_UPDATE">Reference Updated</option>
             <option value="TECHNICAL_REFERENCE_DELETE">Reference Removed</option>
+            <option value="REVIEW_REQUEST">Review Requested</option>
+            <option value="REVIEW_APPROVED">Review Approved</option>
+            <option value="REVIEW_CHANGES_REQUESTED">Changes Requested</option>
             <option value="VIEW">Document Viewed</option>
             <option value="DOWNLOAD">Document Downloaded</option>
             <option value="DELETE">Document Deleted</option>
