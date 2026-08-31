@@ -50,3 +50,27 @@ export interface DeleteDocumentRelationshipResponse {
     message: string;
   };
 }
+
+export interface DocumentDependencyItem {
+  id: string;
+  title: string;
+  fileName: string;
+  fileType: string;
+  depth: number;
+  direction: 'UPSTREAM' | 'DOWNSTREAM';
+}
+
+export interface DocumentDependencySummary {
+  upstreamCount: number;
+  downstreamCount: number;
+  cycleDetected: boolean;
+}
+
+export interface GetDocumentDependenciesResponse {
+  success: boolean;
+  data: {
+    summary: DocumentDependencySummary;
+    upstream: DocumentDependencyItem[];
+    downstream: DocumentDependencyItem[];
+  };
+}

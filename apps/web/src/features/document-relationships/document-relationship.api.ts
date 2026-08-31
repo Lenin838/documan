@@ -4,6 +4,7 @@ import type {
   CreateDocumentRelationshipResponse,
   DeleteDocumentRelationshipResponse,
   GetDocumentRelationshipsResponse,
+  GetDocumentDependenciesResponse,
 } from './document-relationship.types';
 
 export async function getDocumentRelationships(
@@ -32,6 +33,19 @@ export async function deleteDocumentRelationship(
 ): Promise<DeleteDocumentRelationshipResponse> {
   const response = await apiClient.delete<DeleteDocumentRelationshipResponse>(
     `/documents/${documentId}/relationships/${relationshipId}`,
+  );
+  return response.data;
+}
+
+export async function getDocumentDependenciesApi(
+  documentId: string,
+  maxDepth = 3,
+): Promise<GetDocumentDependenciesResponse> {
+  const response = await apiClient.get<GetDocumentDependenciesResponse>(
+    `/documents/${documentId}/dependencies`,
+    {
+      params: { maxDepth },
+    },
   );
   return response.data;
 }

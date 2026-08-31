@@ -203,3 +203,13 @@ export const documentAuditHistoryQuerySchema = z.object({
 export type DocumentAuditHistoryQueryInput = z.infer<
   typeof documentAuditHistoryQuerySchema
 >;
+
+export const getDocumentDependenciesQuerySchema = z
+  .object({
+    maxDepth: z.coerce.number().int().min(1).max(3).default(3),
+  })
+  .strict();
+
+export type GetDocumentDependenciesQueryInput = z.infer<
+  typeof getDocumentDependenciesQuerySchema
+>;

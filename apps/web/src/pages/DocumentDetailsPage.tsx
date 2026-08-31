@@ -22,6 +22,7 @@ import {
   createDocumentRelationship,
   deleteDocumentRelationship,
   getDocumentRelationships,
+  getDocumentDependenciesApi,
 } from '../features/document-relationships/document-relationship.api';
 import {
   createDocumentReference,
@@ -38,6 +39,8 @@ import {
 import type {
   DocumentRelationship,
   DocumentRelationshipType,
+  DocumentDependencySummary,
+  DocumentDependencyItem,
 } from '../features/document-relationships/document-relationship.types';
 import type {
   DocumentReference,
@@ -185,6 +188,13 @@ export default function DocumentDetailsPage() {
   const [creatingRelationship, setCreatingRelationship] = useState(false);
   const [deletingRelId, setDeletingRelId] = useState<string | null>(null);
 
+  // Dependency & Impact state
+  const [dependenciesSummary, setDependenciesSummary] = useState<DocumentDependencySummary | null>(null);
+  const [upstreamDeps, setUpstreamDeps] = useState<DocumentDependencyItem[]>([]);
+  const [downstreamDeps, setDownstreamDeps] = useState<DocumentDependencyItem[]>([]);
+  const [dependenciesLoading, setDependenciesLoading] = useState(true);
+  const [dependenciesError, setDependenciesError] = useState('');
+
   // Technical references state
   const [references, setReferences] = useState<DocumentReference[]>([]);
   const [referencesLoading, setReferencesLoading] = useState(true);
@@ -261,6 +271,42 @@ export default function DocumentDetailsPage() {
     }
 
     void loadRelationships();
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+
+    const documentId = id;
+    let ignore = false;
+
+    async function fetchDependencies() {
+      setDependenciesLoading(true);
+      setDependenciesError('');
+
+      try {
+        const response = await getDocumentDependenciesApi(documentId, 3);
+        if (!ignore) {
+          setDependenciesSummary(response.data.summary);
+          setUpstreamDeps(response.data.upstream);
+          setDownstreamDeps(response.data.downstream);
+        }
+      } catch {
+        if (!ignore) {
+          setDependenciesError('Failed to load dependency information.');
+        }
+      } finally {
+        if (!ignore) {
+          setDependenciesLoading(false);
+        }
+      }
+    }
+
+    void fetchDependencies();
+    return () => {
+      ignore = true;
+    };
   }, [id]);
 
   useEffect(() => {
@@ -1096,6 +1142,223 @@ export default function DocumentDetailsPage() {
           </section>
         </>
       )}
+
+      <hr
+        style={{
+          margin: '2rem 0',
+          borderColor: '#ccc',
+          borderStyle: 'solid',
+          borderWidth: '1px 0 0 0',
+        }}
+      />
+
+      {/* Dependency & Impact Mapping Section */}
+      <section style={{ marginBottom: '2rem' }}>
+        <h2>Dependency & Impact Mapping</h2>
+
+        {dependenciesLoading ? (
+          <p style={{ color: '#666' }}>Loading dependency information...</p>
+        ) : dependenciesError ? (
+          <p style={{ color: 'red' }}>{dependenciesError}</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {/* Deterministic Summary Card */}
+            <div
+              style={{
+                padding: '1rem',
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '6px',
+              }}
+            >
+              <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.05rem', color: '#1e293b' }}>
+                Dependency Overview
+              </h3>
+              <p style={{ margin: 0, fontSize: '0.95rem', color: '#334155' }}>
+                {dependenciesSummary &&
+                dependenciesSummary.upstreamCount === 0 &&
+                dependenciesSummary.downstreamCount === 0 ? (
+                  'No active dependencies found for this document.'
+                ) : (
+                  `This document depends on ${dependenciesSummary?.upstreamCount || 0} upstream document(s) and has ${dependenciesSummary?.downstreamCount || 0} downstream dependent(s).`
+                )}
+              </p>
+            </div>
+
+            {/* Cycle Warning Banner */}
+            {dependenciesSummary?.cycleDetected && (
+              <div
+                style={{
+                  padding: '0.75rem 1rem',
+                  background: '#fffbe6',
+                  border: '1px solid #ffe58f',
+                  borderRadius: '6px',
+                  color: '#d48806',
+                  fontSize: '0.9rem',
+                  fontWeight: 'bold',
+                }}
+              >
+                ⚠️ Informational: Some dependency relationships form a cycle.
+              </div>
+            )}
+
+            {/* Upstream Dependencies */}
+            <div
+              style={{
+                padding: '1rem',
+                border: '1px solid #e2e8f0',
+                borderRadius: '6px',
+                background: '#ffffff',
+              }}
+            >
+              <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e40af' }}>
+                ⬆️ Upstream Dependencies ({upstreamDeps.length})
+              </h4>
+              <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.85rem', color: '#64748b' }}>
+                Documents that this document depends on.
+              </p>
+              {upstreamDeps.length === 0 ? (
+                <p style={{ margin: 0, fontSize: '0.9rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                  No upstream dependencies.
+                </p>
+              ) : (
+                <ul
+                  style={{
+                    listStyle: 'none',
+                    padding: 0,
+                    margin: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.5rem',
+                  }}
+                >
+                  {upstreamDeps.map((dep) => (
+                    <li
+                      key={dep.id}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '0.6rem 0.8rem',
+                        background: '#f1f5f9',
+                        borderRadius: '4px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span
+                          style={{
+                            background: '#dbeafe',
+                            color: '#1e40af',
+                            padding: '0.15rem 0.5rem',
+                            borderRadius: '4px',
+                            fontSize: '0.75rem',
+                            fontWeight: 'bold',
+                          }}
+                        >
+                          Depth {dep.depth}
+                        </span>
+                        <Link
+                          to={`/documents/${dep.id}`}
+                          style={{ fontWeight: 'bold', color: '#0284c7', textDecoration: 'none' }}
+                        >
+                          {dep.title}
+                        </Link>
+                        <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                          ({dep.fileName})
+                        </span>
+                      </div>
+                      <Link
+                        to={`/documents/${dep.id}`}
+                        style={{ fontSize: '0.8rem', color: '#334155' }}
+                      >
+                        View
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Downstream Dependents & Impact Zone */}
+            <div
+              style={{
+                padding: '1rem',
+                border: '1px solid #fee2e2',
+                borderRadius: '6px',
+                background: '#fff5f5',
+              }}
+            >
+              <h4 style={{ margin: '0 0 0.5rem 0', color: '#991b1b' }}>
+                ⬇️ Downstream Dependents / Impact Zone ({downstreamDeps.length})
+              </h4>
+              <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.85rem', color: '#7f1d1d' }}>
+                Documents that explicitly depend on this document. Changes to this document may require reviewing these dependent documents.
+              </p>
+              {downstreamDeps.length === 0 ? (
+                <p style={{ margin: 0, fontSize: '0.9rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                  No downstream dependents.
+                </p>
+              ) : (
+                <ul
+                  style={{
+                    listStyle: 'none',
+                    padding: 0,
+                    margin: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.5rem',
+                  }}
+                >
+                  {downstreamDeps.map((dep) => (
+                    <li
+                      key={dep.id}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '0.6rem 0.8rem',
+                        background: '#ffffff',
+                        border: '1px solid #fca5a5',
+                        borderRadius: '4px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span
+                          style={{
+                            background: '#fee2e2',
+                            color: '#991b1b',
+                            padding: '0.15rem 0.5rem',
+                            borderRadius: '4px',
+                            fontSize: '0.75rem',
+                            fontWeight: 'bold',
+                          }}
+                        >
+                          Depth {dep.depth}
+                        </span>
+                        <Link
+                          to={`/documents/${dep.id}`}
+                          style={{ fontWeight: 'bold', color: '#b91c1c', textDecoration: 'none' }}
+                        >
+                          {dep.title}
+                        </Link>
+                        <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                          ({dep.fileName})
+                        </span>
+                      </div>
+                      <Link
+                        to={`/documents/${dep.id}`}
+                        style={{ fontSize: '0.8rem', color: '#991b1b' }}
+                      >
+                        View
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
+      </section>
 
       <hr
         style={{

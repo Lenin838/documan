@@ -23,11 +23,16 @@ import {
 } from './document.controller.js';
 
 import {
+  getDocumentDependenciesController,
+} from './document-relationship.controller.js';
+
+import {
   createDocumentSchema,
   documentsQuerySchema,
   updateDocumentSchema,
   documentIdParamsSchema,
   documentAuditHistoryQuerySchema,
+  getDocumentDependenciesQuerySchema,
 } from './document.schema.js';
 
 import { documentUpload } from '../../middleware/uploads/document-upload.middleware.js';
@@ -56,6 +61,14 @@ documentRouter.get(
   authenticate,
   validateQuery(documentsQuerySchema),
   getAllDocumentsController,
+);
+
+documentRouter.get(
+  '/:id/dependencies',
+  authenticate,
+  validateParams(documentIdParamsSchema),
+  validateQuery(getDocumentDependenciesQuerySchema),
+  getDocumentDependenciesController,
 );
 
 documentRouter.get(

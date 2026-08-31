@@ -31,6 +31,25 @@ export interface DocumentRelationshipResponse {
   updatedAt: Date;
 }
 
+export interface DocumentDependencyItem {
+  id: string;
+  title: string;
+  fileName: string;
+  fileType: string;
+  depth: number;
+  direction: 'UPSTREAM' | 'DOWNSTREAM';
+}
+
+export interface DocumentDependenciesResponse {
+  summary: {
+    upstreamCount: number;
+    downstreamCount: number;
+    cycleDetected: boolean;
+  };
+  upstream: DocumentDependencyItem[];
+  downstream: DocumentDependencyItem[];
+}
+
 function validateObjectId(id: string, errorMessage = 'Invalid document ID'): void {
   if (!Types.ObjectId.isValid(id)) {
     throw new AppError(errorMessage, 404, 'DOCUMENT_NOT_FOUND');
@@ -312,5 +331,211 @@ export async function deleteDocumentRelationship(
 
   return {
     message: 'Relationship deleted successfully',
+  };
+}
+
+export async function getDocumentDependencies(
+  userId: string,
+  role: 'user' | 'admin',
+  documentId: string,
+  maxDepth = 3,
+): Promise<DocumentDependenciesResponse> {
+  await verifyDocumentAccess(userId, role, documentId, 'READ');
+
+  const effectiveMaxDepth = Math.min(Math.max(maxDepth || 3, 1), 3);
+  const MAX_NODES = 50;
+  const userObjId = new Types.ObjectId(userId);
+  let cycleDetected = false;
+
+  async function getReadableDocIdsSet(
+    docObjectIds: Types.ObjectId[],
+  ): Promise<Set<string>> {
+    if (role === 'admin' || docObjectIds.length === 0) {
+      return new Set(docObjectIds.map((id) => id.toString()));
+    }
+
+    const docs = await Document.find({
+      _id: { $in: docObjectIds },
+      isDeleted: false,
+    }).select('_id ownerId');
+
+    const ownerDocIds = new Set(
+      docs
+        .filter((d) => d.ownerId.toString() === userId)
+        .map((d) => d._id.toString()),
+    );
+
+    const nonOwnerDocIds = docs
+      .filter((d) => d.ownerId.toString() !== userId)
+      .map((d) => d._id);
+
+    let sharedDocIds = new Set<string>();
+    if (nonOwnerDocIds.length > 0) {
+      const shares = await DocumentShare.find({
+        documentId: { $in: nonOwnerDocIds },
+        sharedWithUserId: userObjId,
+      }).select('documentId');
+      sharedDocIds = new Set(shares.map((s) => s.documentId.toString()));
+    }
+
+    const readableSet = new Set<string>();
+    for (const d of docs) {
+      const idStr = d._id.toString();
+      if (ownerDocIds.has(idStr) || sharedDocIds.has(idStr)) {
+        readableSet.add(idStr);
+      }
+    }
+
+    return readableSet;
+  }
+
+  // 1. UPSTREAM TRAVERSAL (sourceDocumentId -> targetDocumentId)
+  const upstreamItems: DocumentDependencyItem[] = [];
+  let currentUpstreamLevelDocIds: string[] = [documentId];
+  const visitedUpstreamNodes = new Set<string>([documentId]);
+
+  for (let depth = 1; depth <= effectiveMaxDepth; depth++) {
+    if (currentUpstreamLevelDocIds.length === 0 || upstreamItems.length >= MAX_NODES) {
+      break;
+    }
+
+    const relationships = await DocumentRelationship.find({
+      sourceDocumentId: {
+        $in: currentUpstreamLevelDocIds.map((id) => new Types.ObjectId(id)),
+      },
+      type: 'DEPENDS_ON',
+    }).populate<{ targetDocumentId: DocumentDocument & { _id: Types.ObjectId } }>({
+      path: 'targetDocumentId',
+      select: 'title fileName fileType isDeleted ownerId',
+    });
+
+    const activeRels = relationships.filter(
+      (rel) => rel.targetDocumentId && !rel.targetDocumentId.isDeleted,
+    );
+
+    if (activeRels.length === 0) {
+      break;
+    }
+
+    const candidateTargetObjIds = activeRels.map((rel) => rel.targetDocumentId._id);
+    const readableTargetIdsSet = await getReadableDocIdsSet(candidateTargetObjIds);
+    const nextLevelDocIds: string[] = [];
+
+    for (const rel of activeRels) {
+      const targetIdStr = rel.targetDocumentId._id.toString();
+
+      // STRICT AUTHORIZATION PRUNING: Stop traversal at unreadable node
+      if (!readableTargetIdsSet.has(targetIdStr)) {
+        continue;
+      }
+
+      if (visitedUpstreamNodes.has(targetIdStr)) {
+        cycleDetected = true;
+        continue;
+      }
+
+      visitedUpstreamNodes.add(targetIdStr);
+      nextLevelDocIds.push(targetIdStr);
+
+      upstreamItems.push({
+        id: targetIdStr,
+        title: rel.targetDocumentId.title,
+        fileName: rel.targetDocumentId.fileName,
+        fileType: rel.targetDocumentId.fileType,
+        depth,
+        direction: 'UPSTREAM',
+      });
+
+      if (upstreamItems.length >= MAX_NODES) {
+        break;
+      }
+    }
+
+    currentUpstreamLevelDocIds = nextLevelDocIds;
+  }
+
+  // 2. DOWNSTREAM TRAVERSAL (targetDocumentId <- sourceDocumentId)
+  const downstreamItems: DocumentDependencyItem[] = [];
+  let currentDownstreamLevelDocIds: string[] = [documentId];
+  const visitedDownstreamNodes = new Set<string>([documentId]);
+
+  for (let depth = 1; depth <= effectiveMaxDepth; depth++) {
+    if (currentDownstreamLevelDocIds.length === 0 || downstreamItems.length >= MAX_NODES) {
+      break;
+    }
+
+    const relationships = await DocumentRelationship.find({
+      targetDocumentId: {
+        $in: currentDownstreamLevelDocIds.map((id) => new Types.ObjectId(id)),
+      },
+      type: 'DEPENDS_ON',
+    }).populate<{ sourceDocumentId: DocumentDocument & { _id: Types.ObjectId } }>({
+      path: 'sourceDocumentId',
+      select: 'title fileName fileType isDeleted ownerId',
+    });
+
+    const activeRels = relationships.filter(
+      (rel) => rel.sourceDocumentId && !rel.sourceDocumentId.isDeleted,
+    );
+
+    if (activeRels.length === 0) {
+      break;
+    }
+
+    const candidateSourceObjIds = activeRels.map((rel) => rel.sourceDocumentId._id);
+    const readableSourceIdsSet = await getReadableDocIdsSet(candidateSourceObjIds);
+    const nextLevelDocIds: string[] = [];
+
+    for (const rel of activeRels) {
+      const sourceIdStr = rel.sourceDocumentId._id.toString();
+
+      // STRICT AUTHORIZATION PRUNING: Stop traversal at unreadable node
+      if (!readableSourceIdsSet.has(sourceIdStr)) {
+        continue;
+      }
+
+      if (visitedDownstreamNodes.has(sourceIdStr)) {
+        cycleDetected = true;
+        continue;
+      }
+
+      visitedDownstreamNodes.add(sourceIdStr);
+      nextLevelDocIds.push(sourceIdStr);
+
+      downstreamItems.push({
+        id: sourceIdStr,
+        title: rel.sourceDocumentId.title,
+        fileName: rel.sourceDocumentId.fileName,
+        fileType: rel.sourceDocumentId.fileType,
+        depth,
+        direction: 'DOWNSTREAM',
+      });
+
+      if (downstreamItems.length >= MAX_NODES) {
+        break;
+      }
+    }
+
+    currentDownstreamLevelDocIds = nextLevelDocIds;
+  }
+
+  const sortItems = (a: DocumentDependencyItem, b: DocumentDependencyItem) => {
+    if (a.depth !== b.depth) {
+      return a.depth - b.depth;
+    }
+    return a.title.localeCompare(b.title);
+  };
+
+  upstreamItems.sort(sortItems);
+  downstreamItems.sort(sortItems);
+
+  return {
+    summary: {
+      upstreamCount: upstreamItems.length,
+      downstreamCount: downstreamItems.length,
+      cycleDetected,
+    },
+    upstream: upstreamItems,
+    downstream: downstreamItems,
   };
 }
