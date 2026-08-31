@@ -103,13 +103,14 @@ Traceability
 Collaboration & Access Control
     ↓
 Developer / Productivity Workflows
+(Relationships | Project Context | Technical References | Review Workflow)
     ↓
 Project / API Context
     ↓
 Workflow Intelligence
 ```
 
-The first five areas establish the document-management foundation. The later areas are deliberately research-driven and must not become a generic feature wishlist.
+The first five areas established the document-management foundation. Developer and productivity workflows are actively expanding this foundation, while later areas remain research-driven.
 
 ---
 
@@ -272,33 +273,39 @@ Future phases are intentionally **research-driven**. They are product opportunit
 
 ## Phase 6 — Developer / Productivity Workflows
 
-**Status: RESEARCH**
+**Status: IN PROGRESS — Baseline Capabilities Implemented**
 
-### User problem to investigate
+### Completed baseline capabilities
 
-Developers and technical users often work across documents, implementation details, APIs, decisions, specifications, troubleshooting notes, and other project artifacts. Important context can become separated from the document that needs it.
+- **Document Relationships**: Directional document-to-document connections (`RELATED`, `REFERENCES`, `REPLACES`, `DEPENDS_ON`) with source and target directionality (`INCOMING` / `OUTGOING`), permission preservation, and full audit logging.
+- **Project Context**: Project/workspace context boundaries connecting documents to projects with project-management authority (`Project` model, owner/admin management, project assignment/removal, project filtering).
+- **External Technical References**: Explicit links connecting documents to external technical resources (API documentation, code repositories, specifications, work items/issues, and external tools) with strict URL protocol validation, duplicate prevention, and permission isolation.
+- **Document Review Workflow**: Document-centric review lifecycle (`PENDING`, `APPROVED`, `CHANGES_REQUESTED`) supporting reviewer assignment, pending reviewer queue (`/reviews/pending`), resolution comments, single active review constraint, and full audit history.
+
+### User problem investigated
+
+Developers and technical users often work across documents, implementation details, APIs, decisions, specifications, troubleshooting notes, and external artifacts. Important context can become separated from the document that needs it.
 
 ### Why it matters
 
-A document-management platform can become substantially more valuable when documents help users complete real work rather than merely store files.
+A document-management platform becomes substantially more valuable when documents help users complete real work and maintain technical context rather than merely storing files.
 
-### Why it could belong in Documan
+### Why it belongs in Documan
 
-Documan already has document lifecycle, metadata, organization, audit, and access-control foundations. These can provide a controlled base for productivity workflows without abandoning the document-management identity.
+Documan's document lifecycle, metadata, organization, audit, access-control, and relationship foundations provide a controlled base for productivity workflows without abandoning the document-management identity.
 
 ### Differentiated opportunity
 
-The opportunity is not to copy developer tools. It is to investigate how Documan can connect documents to the context developers already need while keeping documents as the central product object.
+The opportunity is not to copy developer tools. It is to connect documents to the context developers already need while keeping documents as the central product object.
 
-### Research required
+### Remaining research opportunities
 
-Investigate:
+While baseline productivity capabilities (Relationships, Project Context, Technical References, and Review Workflows) are complete, Phase 6 research continues into:
 
-- Which developer workflows lose important document context?
-- Which artifacts should be related to documents?
-- Which relationships provide real user value?
-- What context is useful without creating unnecessary complexity?
-- Which workflows are frequent enough to justify first-class product support?
+- Automated workflow triggers based on document lifecycle events.
+- Template-driven document generation and standardized technical document scaffolding.
+- Workspace-level productivity summaries and cross-document dependency mapping.
+- Integration opportunities with developer workflows without compromising server-side security boundaries.
 
 ### Do not assume yet
 
@@ -772,14 +779,14 @@ This keeps the roadmap understandable even as individual implementation details 
 
 # 20. Current Strategic Position
 
-Documan has established the foundations of a document-management platform through the intended progression of:
+Documan has established the foundations of a document-management and productivity platform through the intended progression of:
 
-**Foundation → Core Document Management → Organization → Traceability → Collaboration.**
+**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows (Document Relationships, Project Context, External Technical References, Document Review Workflow).**
 
-The strategic question now moves beyond basic document CRUD:
+The strategic question now moves beyond baseline document workflows:
 
-> **How can Documan turn managed documents and their context into useful developer and productivity workflows without becoming another existing category of tool?**
+> **How can Documan leverage established document relationships, project context, external technical references, and review workflows to deepen Project / API Context and provide Workflow Intelligence without becoming a clone of specialized developer tools?**
 
 The answer must come from research, user problems, and differentiated product design—not from copying feature lists.
 
-The immediate strategic research boundary is therefore **Developer / Productivity Workflows** followed by **Project / API Context**, and eventually **Workflow Intelligence** if those opportunities are validated.
+The immediate strategic research boundary is therefore the remaining **Developer / Productivity Workflow** opportunities followed by deeper **Project / API Context**, and eventually **Workflow Intelligence** as those opportunities are validated.
