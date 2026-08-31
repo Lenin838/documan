@@ -1,5 +1,17 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Types } from 'mongoose';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { Folder } from './folder.model.js';
+import {
+  createFolder,
+  deleteFolder,
+  getFolderById,
+  getFolders,
+  updateFolder,
+} from './folder.service.js';
+import { AppError } from '../../errors/app-error.js';
+import { Document } from '../documents/document.model.js';
 
 vi.mock('./folder.model.js', () => ({
   Folder: {
@@ -16,20 +28,9 @@ vi.mock('../documents/document.model.js', () => ({
   },
 }));
 
-import {
-  createFolder,
-  getFolders,
-  getFolderById,
-  updateFolder,
-  deleteFolder,
-} from './folder.service.js';
-import { Folder } from './folder.model.js';
-import { Document } from '../documents/document.model.js';
-import { AppError } from '../../errors/app-error.js';
-
-describe('folder.service', () => {
-  const mockOwnerId = new Types.ObjectId().toString();
-  const mockFolderId = new Types.ObjectId().toString();
+describe('Folder Service', () => {
+  const mockOwnerId = '507f1f77bcf86cd799439011';
+  const mockFolderId = '507f1f77bcf86cd799439022';
 
   const mockFolderDoc = {
     _id: new Types.ObjectId(mockFolderId),
@@ -138,7 +139,7 @@ describe('folder.service', () => {
   describe('deleteFolder', () => {
     it('deletes folder and unsets folderId on documents', async () => {
       vi.mocked(Folder.findOne).mockResolvedValue(mockFolderDoc as any);
-      vi.mocked(Folder.deleteOne).mockResolvedValue({ acknowledged: true, deletedCount: 1 });
+      vi.mocked(Folder.deleteOne).mockResolvedValue({ acknowledged: true, deletedCount: 1 } as any);
       vi.mocked(Document.updateMany).mockResolvedValue({ acknowledged: true, modifiedCount: 2 } as any);
 
       const result = await deleteFolder(mockOwnerId, 'user', mockFolderId);
@@ -148,7 +149,7 @@ describe('folder.service', () => {
         { folderId: mockFolderDoc._id },
         { $set: { folderId: null } },
       );
-      expect(result.message).toBe('Folder deleted successfully');
+      expect(result).toEqual({ message: 'Folder deleted successfully' });
     });
   });
 });

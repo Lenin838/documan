@@ -190,7 +190,7 @@ export async function getAllDocuments(
     fileType,
   } = query;
 
-  const filter: any = {
+  const filter: Record<string, unknown> = {
     isDeleted: isDeleted ?? false,
   };
 

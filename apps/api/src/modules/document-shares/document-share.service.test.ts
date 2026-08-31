@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Types } from 'mongoose';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -6,7 +7,6 @@ import {
   createDocumentShare,
   getDocumentShares,
   revokeDocumentShare,
-  updateDocumentShare,
 } from './document-share.service.js';
 import { AppError } from '../../errors/app-error.js';
 import { Document } from '../documents/document.model.js';

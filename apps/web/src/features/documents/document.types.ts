@@ -66,7 +66,9 @@ export type DocumentAuditAction =
   | 'VIEW'
   | 'DOWNLOAD'
   | 'DELETE'
-  | 'RESTORE';
+  | 'RESTORE'
+  | 'RELATIONSHIP_CREATE'
+  | 'RELATIONSHIP_DELETE';
 
 export interface DocumentAudit {
   id: string;

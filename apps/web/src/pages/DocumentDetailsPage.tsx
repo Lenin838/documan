@@ -8,6 +8,7 @@ import {
   downloadDocument,
   viewDocument,
   deleteDocument,
+  getDocuments,
 } from '../features/documents/document.api';
 import { getFolderById } from '../features/folders/folder.api';
 import {
@@ -16,6 +17,15 @@ import {
   revokeDocumentShare,
   updateDocumentShare,
 } from '../features/document-shares/document-share.api';
+import {
+  createDocumentRelationship,
+  deleteDocumentRelationship,
+  getDocumentRelationships,
+} from '../features/document-relationships/document-relationship.api';
+import type {
+  DocumentRelationship,
+  DocumentRelationshipType,
+} from '../features/document-relationships/document-relationship.types';
 import type {
   DocumentShare,
   SharePermission,
@@ -54,6 +64,10 @@ function formatAuditAction(action: DocumentAuditAction): {
       return { label: 'Document Deleted', description: 'Document was deleted' };
     case 'RESTORE':
       return { label: 'Document Restored', description: 'Document was restored' };
+    case 'RELATIONSHIP_CREATE':
+      return { label: 'Relationship Created', description: 'Document relationship was created' };
+    case 'RELATIONSHIP_DELETE':
+      return { label: 'Relationship Deleted', description: 'Document relationship was deleted' };
     default:
       return { label: action, description: '' };
   }
@@ -125,11 +139,63 @@ export default function DocumentDetailsPage() {
   const [sharingSuccess, setSharingSuccess] = useState('');
   const [creatingShare, setCreatingShare] = useState(false);
 
+  // Relationships state
+  const [relationships, setRelationships] = useState<DocumentRelationship[]>([]);
+  const [availableDocuments, setAvailableDocuments] = useState<Document[]>([]);
+  const [selectedTargetId, setSelectedTargetId] = useState('');
+  const [selectedRelType, setSelectedRelType] = useState<DocumentRelationshipType>('REFERENCES');
+  const [relationshipsLoading, setRelationshipsLoading] = useState(true);
+  const [relationshipsError, setRelationshipsError] = useState('');
+  const [relationshipSuccess, setRelationshipSuccess] = useState('');
+  const [creatingRelationship, setCreatingRelationship] = useState(false);
+  const [deletingRelId, setDeletingRelId] = useState<string | null>(null);
+
   const isOwner =
     Boolean(currentUser && doc && (doc.ownerId === currentUser.id || currentUser.role === 'admin'));
 
   const userShare = shares.find((s) => s.sharedWithUser.id === currentUser?.id);
   const canEdit = isOwner || userShare?.permission === 'EDIT';
+
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+
+    const documentId = id;
+
+    async function loadRelationships() {
+      setRelationshipsLoading(true);
+      setRelationshipsError('');
+
+      try {
+        const response = await getDocumentRelationships(documentId);
+        setRelationships(response.data.relationships);
+      } catch {
+        setRelationshipsError('Failed to load related documents.');
+      } finally {
+        setRelationshipsLoading(false);
+      }
+    }
+
+    void loadRelationships();
+  }, [id]);
+
+  useEffect(() => {
+    if (!id || !canEdit) {
+      return;
+    }
+
+    async function loadAvailableDocs() {
+      try {
+        const response = await getDocuments({ limit: 100 });
+        setAvailableDocuments(response.data.documents.filter((d) => d.id !== id));
+      } catch {
+        // Ignore
+      }
+    }
+
+    void loadAvailableDocs();
+  }, [id, canEdit]);
 
   useEffect(() => {
     if (!id) {
@@ -352,6 +418,56 @@ export default function DocumentDetailsPage() {
       setSharingSuccess('Revoked share access');
     } catch {
       setSharingError('Failed to revoke share access');
+    }
+  }
+
+  async function handleCreateRelationshipSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!id || !selectedTargetId) {
+      setRelationshipsError('Please select a target document.');
+      return;
+    }
+
+    setCreatingRelationship(true);
+    setRelationshipsError('');
+    setRelationshipSuccess('');
+
+    try {
+      const response = await createDocumentRelationship(id, {
+        targetDocumentId: selectedTargetId,
+        type: selectedRelType,
+      });
+
+      setRelationships((prev) => [response.data, ...prev]);
+      setRelationshipSuccess('Relationship created successfully');
+      setSelectedTargetId('');
+    } catch (err: unknown) {
+      const errorObj = err as {
+        response?: { data?: { error?: { message?: string } } };
+      };
+      const msg =
+        errorObj.response?.data?.error?.message ||
+        'Failed to create relationship';
+      setRelationshipsError(msg);
+    } finally {
+      setCreatingRelationship(false);
+    }
+  }
+
+  async function handleDeleteRelationship(relId: string) {
+    if (!id) return;
+    setDeletingRelId(relId);
+    setRelationshipsError('');
+    setRelationshipSuccess('');
+
+    try {
+      await deleteDocumentRelationship(id, relId);
+      setRelationships((prev) => prev.filter((r) => r.id !== relId));
+      setRelationshipSuccess('Relationship removed successfully');
+    } catch {
+      setRelationshipsError('Failed to remove relationship');
+    } finally {
+      setDeletingRelId(null);
     }
   }
 
@@ -682,6 +798,199 @@ export default function DocumentDetailsPage() {
       />
 
       <section style={{ marginBottom: '2rem' }}>
+        <h2>Related Documents</h2>
+
+        {canEdit && (
+          <form
+            onSubmit={(e) => void handleCreateRelationshipSubmit(e)}
+            style={{
+              display: 'flex',
+              gap: '0.75rem',
+              alignItems: 'center',
+              marginBottom: '1rem',
+              flexWrap: 'wrap',
+            }}
+          >
+            <select
+              value={selectedTargetId}
+              onChange={(e) => setSelectedTargetId(e.target.value)}
+              required
+              aria-label="Select target document"
+              style={{ flex: 1, minWidth: '220px', padding: '0.5rem' }}
+            >
+              <option value="">Select a document to relate...</option>
+              {availableDocuments.map((docItem) => (
+                <option key={docItem.id} value={docItem.id}>
+                  {docItem.title} ({docItem.fileName})
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={selectedRelType}
+              onChange={(e) =>
+                setSelectedRelType(e.target.value as DocumentRelationshipType)
+              }
+              aria-label="Select relationship type"
+              style={{ padding: '0.5rem' }}
+            >
+              <option value="REFERENCES">REFERENCES</option>
+              <option value="DEPENDS_ON">DEPENDS_ON</option>
+              <option value="REPLACES">REPLACES</option>
+              <option value="RELATED">RELATED</option>
+            </select>
+
+            <button type="submit" disabled={creatingRelationship}>
+              {creatingRelationship ? 'Adding...' : 'Add Relationship'}
+            </button>
+          </form>
+        )}
+
+        {relationshipsError && (
+          <p style={{ color: 'red', marginBottom: '0.5rem' }}>
+            {relationshipsError}
+          </p>
+        )}
+
+        {relationshipSuccess && (
+          <p style={{ color: 'green', marginBottom: '0.5rem' }}>
+            {relationshipSuccess}
+          </p>
+        )}
+
+        {relationshipsLoading ? (
+          <p>Loading related documents...</p>
+        ) : relationships.length === 0 ? (
+          <p style={{ color: '#666' }}>No related documents.</p>
+        ) : (
+          <ul
+            style={{
+              listStyle: 'none',
+              padding: 0,
+              margin: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem',
+            }}
+          >
+            {relationships.map((rel) => (
+              <li
+                key={rel.id}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '0.75rem 1rem',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '4px',
+                  background: '#f8fafc',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <span
+                    style={{
+                      background:
+                        rel.type === 'DEPENDS_ON'
+                          ? '#fef3c7'
+                          : rel.type === 'REPLACES'
+                            ? '#fee2e2'
+                            : rel.type === 'REFERENCES'
+                              ? '#dbeafe'
+                              : '#e2e8f0',
+                      color:
+                        rel.type === 'DEPENDS_ON'
+                          ? '#92400e'
+                          : rel.type === 'REPLACES'
+                            ? '#991b1b'
+                            : rel.type === 'REFERENCES'
+                              ? '#1e40af'
+                              : '#334155',
+                      padding: '0.2rem 0.6rem',
+                      borderRadius: '4px',
+                      fontSize: '0.8rem',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    {rel.direction === 'OUTGOING'
+                      ? `${rel.type} →`
+                      : `← ${rel.type}`}
+                  </span>
+                  <Link
+                    to={`/documents/${rel.relatedDocument.id}`}
+                    style={{
+                      fontWeight: 'bold',
+                      textDecoration: 'none',
+                      color: '#0056b3',
+                    }}
+                  >
+                    {rel.relatedDocument.title}
+                  </Link>
+                  <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                    ({rel.relatedDocument.fileName})
+                  </span>
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: '0.5rem',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Link
+                    to={`/documents/${rel.relatedDocument.id}`}
+                    style={{
+                      fontSize: '0.85rem',
+                      padding: '0.25rem 0.6rem',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '4px',
+                      textDecoration: 'none',
+                      color: '#334155',
+                    }}
+                  >
+                    View
+                  </Link>
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => void handleDeleteRelationship(rel.id)}
+                      disabled={deletingRelId === rel.id}
+                      style={{
+                        fontSize: '0.85rem',
+                        color: '#dc2626',
+                        background: 'transparent',
+                        border: '1px solid #fca5a5',
+                        borderRadius: '4px',
+                        padding: '0.25rem 0.6rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {deletingRelId === rel.id ? 'Removing...' : 'Remove'}
+                    </button>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <hr
+        style={{
+          margin: '2rem 0',
+          borderColor: '#ccc',
+          borderStyle: 'solid',
+          borderWidth: '1px 0 0 0',
+        }}
+      />
+
+      <section style={{ marginBottom: '2rem' }}>
         <header
           style={{
             display: 'flex',
@@ -709,6 +1018,8 @@ export default function DocumentDetailsPage() {
             <option value="DOWNLOAD">Document Downloaded</option>
             <option value="DELETE">Document Deleted</option>
             <option value="RESTORE">Document Restored</option>
+            <option value="RELATIONSHIP_CREATE">Relationship Created</option>
+            <option value="RELATIONSHIP_DELETE">Relationship Deleted</option>
           </select>
         </header>
 

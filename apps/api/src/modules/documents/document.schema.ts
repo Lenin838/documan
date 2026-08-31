@@ -164,6 +164,8 @@ export const documentAuditHistoryQuerySchema = z.object({
       'DOWNLOAD',
       'DELETE',
       'RESTORE',
+      'RELATIONSHIP_CREATE',
+      'RELATIONSHIP_DELETE',
     ])
     .optional(),
 });

@@ -4,8 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createDocumentShareController,
   getDocumentSharesController,
-  revokeDocumentShareController,
-  updateDocumentShareController,
 } from './document-share.controller.js';
 import * as documentShareService from './document-share.service.js';
 import { AppError } from '../../errors/app-error.js';

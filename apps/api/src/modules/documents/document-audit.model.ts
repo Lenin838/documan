@@ -7,7 +7,9 @@ export type DocumentAuditAction =
   | 'VIEW'
   | 'DOWNLOAD'
   | 'DELETE'
-  | 'RESTORE';
+  | 'RESTORE'
+  | 'RELATIONSHIP_CREATE'
+  | 'RELATIONSHIP_DELETE';
 
 export interface DocumentAuditDocument {
   documentId: Types.ObjectId;
@@ -44,6 +46,8 @@ const documentAuditSchema =
           'DOWNLOAD',
           'DELETE',
           'RESTORE',
+          'RELATIONSHIP_CREATE',
+          'RELATIONSHIP_DELETE',
         ],
         required: true,
       },
