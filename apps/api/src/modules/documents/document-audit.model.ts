@@ -9,7 +9,9 @@ export type DocumentAuditAction =
   | 'DELETE'
   | 'RESTORE'
   | 'RELATIONSHIP_CREATE'
-  | 'RELATIONSHIP_DELETE';
+  | 'RELATIONSHIP_DELETE'
+  | 'PROJECT_ASSIGN'
+  | 'PROJECT_REMOVE';
 
 export interface DocumentAuditDocument {
   documentId: Types.ObjectId;
@@ -48,6 +50,8 @@ const documentAuditSchema =
           'RESTORE',
           'RELATIONSHIP_CREATE',
           'RELATIONSHIP_DELETE',
+          'PROJECT_ASSIGN',
+          'PROJECT_REMOVE',
         ],
         required: true,
       },

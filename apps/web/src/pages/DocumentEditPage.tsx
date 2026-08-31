@@ -9,6 +9,8 @@ import {
 import { getFolders } from '../features/folders/folder.api';
 import type { Document } from '../features/documents/document.types';
 import type { Folder } from '../features/folders/folder.types';
+import { getProjects } from '../features/projects/project.api';
+import type { Project } from '../features/projects/project.types';
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -26,25 +28,31 @@ export default function DocumentEditPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [folderId, setFolderId] = useState('');
+  const [projectId, setProjectId] = useState('');
   const [tagsInput, setTagsInput] = useState('');
   const [file, setFile] = useState<File | null>(null);
 
   const [folders, setFolders] = useState<Folder[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    async function loadFolders() {
+    async function loadFoldersAndProjects() {
       try {
-        const response = await getFolders();
-        setFolders(response.data.folders);
+        const [foldersRes, projectsRes] = await Promise.all([
+          getFolders(),
+          getProjects(),
+        ]);
+        setFolders(foldersRes.data.folders);
+        setProjects(projectsRes.data.projects);
       } catch {
-        // Ignore folder loading error
+        // Ignore loading errors
       }
     }
 
-    void loadFolders();
+    void loadFoldersAndProjects();
   }, []);
 
   useEffect(() => {
@@ -64,6 +72,7 @@ export default function DocumentEditPage() {
         setTitle(response.data.title);
         setDescription(response.data.description || '');
         setFolderId(response.data.folderId || '');
+        setProjectId(response.data.projectId || '');
         setTagsInput(response.data.tags ? response.data.tags.join(', ') : '');
       } catch {
         setError('Unable to load document.');
@@ -107,6 +116,7 @@ export default function DocumentEditPage() {
         title: trimmedTitle,
         description: description.trim(),
         folderId: folderId || null,
+        projectId: projectId || null,
         tags: parsedTags,
         file: file || undefined,
       });
@@ -229,6 +239,28 @@ export default function DocumentEditPage() {
             {folders.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ marginBottom: '1.25rem' }}>
+          <label
+            htmlFor="project"
+            style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}
+          >
+            Project Context
+          </label>
+          <select
+            id="project"
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+            style={{ width: '100%', padding: '0.5rem', boxSizing: 'border-box' }}
+          >
+            <option value="">-- No Project --</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
               </option>
             ))}
           </select>

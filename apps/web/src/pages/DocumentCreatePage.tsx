@@ -5,6 +5,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { createDocument } from '../features/documents/document.api';
 import { getFolders } from '../features/folders/folder.api';
 import type { Folder } from '../features/folders/folder.types';
+import { getProjects } from '../features/projects/project.api';
+import type { Project } from '../features/projects/project.types';
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -20,24 +22,30 @@ export default function DocumentCreatePage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [folderId, setFolderId] = useState('');
+  const [projectId, setProjectId] = useState('');
   const [tagsInput, setTagsInput] = useState('');
   const [file, setFile] = useState<File | null>(null);
 
   const [folders, setFolders] = useState<Folder[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    async function loadFolders() {
+    async function loadFoldersAndProjects() {
       try {
-        const response = await getFolders();
-        setFolders(response.data.folders);
+        const [foldersRes, projectsRes] = await Promise.all([
+          getFolders(),
+          getProjects(),
+        ]);
+        setFolders(foldersRes.data.folders);
+        setProjects(projectsRes.data.projects);
       } catch {
-        // Folders loading failed silently, user can still create unfiled document
+        // Silent catch
       }
     }
 
-    void loadFolders();
+    void loadFoldersAndProjects();
   }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -72,6 +80,7 @@ export default function DocumentCreatePage() {
         title: trimmedTitle,
         description: description.trim() || undefined,
         folderId: folderId || null,
+        projectId: projectId || null,
         tags: parsedTags.length > 0 ? parsedTags : undefined,
         file,
       });
@@ -165,6 +174,28 @@ export default function DocumentCreatePage() {
             {folders.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ marginBottom: '1.25rem' }}>
+          <label
+            htmlFor="project"
+            style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}
+          >
+            Project Context (optional)
+          </label>
+          <select
+            id="project"
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+            style={{ width: '100%', padding: '0.5rem', boxSizing: 'border-box' }}
+          >
+            <option value="">-- No Project --</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
               </option>
             ))}
           </select>

@@ -11,6 +11,7 @@ import {
   getDocuments,
 } from '../features/documents/document.api';
 import { getFolderById } from '../features/folders/folder.api';
+import { getProjectById } from '../features/projects/project.api';
 import {
   createDocumentShare,
   getDocumentShares,
@@ -68,6 +69,10 @@ function formatAuditAction(action: DocumentAuditAction): {
       return { label: 'Relationship Created', description: 'Document relationship was created' };
     case 'RELATIONSHIP_DELETE':
       return { label: 'Relationship Deleted', description: 'Document relationship was deleted' };
+    case 'PROJECT_ASSIGN':
+      return { label: 'Assigned to Project', description: 'Document was assigned to project' };
+    case 'PROJECT_REMOVE':
+      return { label: 'Removed from Project', description: 'Document was removed from project' };
     default:
       return { label: action, description: '' };
   }
@@ -113,6 +118,7 @@ export default function DocumentDetailsPage() {
 
   const [doc, setDoc] = useState<Document | null>(null);
   const [folderName, setFolderName] = useState('');
+  const [projectName, setProjectName] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -218,6 +224,15 @@ export default function DocumentDetailsPage() {
             setFolderName(folderRes.data.name);
           } catch {
             setFolderName('Unknown Folder');
+          }
+        }
+
+        if (response.data.projectId) {
+          try {
+            const projectRes = await getProjectById(response.data.projectId);
+            setProjectName(projectRes.data.project.name);
+          } catch {
+            setProjectName('Project Context');
           }
         }
       } catch {
@@ -523,6 +538,17 @@ export default function DocumentDetailsPage() {
           <dt style={{ fontWeight: 'bold' }}>Folder</dt>
           <dd style={{ margin: 0 }}>
             {doc.folderId ? folderName || 'Loading...' : 'Unfiled'}
+          </dd>
+
+          <dt style={{ fontWeight: 'bold' }}>Project</dt>
+          <dd style={{ margin: 0 }}>
+            {doc.projectId ? (
+              <Link to={`/projects/${doc.projectId}`} style={{ color: '#0066cc', fontWeight: 'bold', textDecoration: 'none' }}>
+                📁 {projectName || 'Loading Project...'}
+              </Link>
+            ) : (
+              <span style={{ color: '#888', fontStyle: 'italic' }}>No Project</span>
+            )}
           </dd>
 
           <dt style={{ fontWeight: 'bold' }}>Access Role</dt>

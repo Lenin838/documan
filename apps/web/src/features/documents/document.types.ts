@@ -3,6 +3,7 @@ export interface Document {
   title: string;
   description?: string;
   folderId?: string | null;
+  projectId?: string | null;
   tags?: string[];
   fileName: string;
   filePath: string;
@@ -27,6 +28,7 @@ export interface GetDocumentsParams {
   search?: string;
   isDeleted?: boolean;
   folderId?: string;
+  projectId?: string;
   view?: 'all' | 'mine' | 'shared';
   tag?: string | string[];
   fileType?: string;
@@ -68,7 +70,9 @@ export type DocumentAuditAction =
   | 'DELETE'
   | 'RESTORE'
   | 'RELATIONSHIP_CREATE'
-  | 'RELATIONSHIP_DELETE';
+  | 'RELATIONSHIP_DELETE'
+  | 'PROJECT_ASSIGN'
+  | 'PROJECT_REMOVE';
 
 export interface DocumentAudit {
   id: string;
@@ -104,6 +108,7 @@ export interface UpdateDocumentParams {
   title?: string;
   description?: string;
   folderId?: string | null;
+  projectId?: string | null;
   tags?: string[];
   file?: File;
 }
@@ -117,6 +122,7 @@ export interface CreateDocumentParams {
   title: string;
   description?: string;
   folderId?: string | null;
+  projectId?: string | null;
   tags?: string[];
   file: File;
 }

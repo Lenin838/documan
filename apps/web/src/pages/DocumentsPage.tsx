@@ -11,6 +11,8 @@ import {
   updateFolder,
 } from '../features/folders/folder.api';
 import type { Folder } from '../features/folders/folder.types';
+import { getProjects } from '../features/projects/project.api';
+import type { Project } from '../features/projects/project.types';
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -32,6 +34,9 @@ export default function DocumentsPage() {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState('');
 
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState('');
+
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [creatingFolder, setCreatingFolder] = useState(false);
@@ -46,16 +51,20 @@ export default function DocumentsPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    async function loadFoldersList() {
+    async function loadFoldersAndProjects() {
       try {
-        const response = await getFolders();
-        setFolders(response.data.folders);
+        const [foldersRes, projectsRes] = await Promise.all([
+          getFolders(),
+          getProjects(),
+        ]);
+        setFolders(foldersRes.data.folders);
+        setProjects(projectsRes.data.projects);
       } catch {
-        // Ignore folder list fetch errors silently
+        // Ignore fetch errors silently
       }
     }
 
-    void loadFoldersList();
+    void loadFoldersAndProjects();
   }, []);
 
   useEffect(() => {
@@ -69,6 +78,7 @@ export default function DocumentsPage() {
           limit: 10,
           search: search || undefined,
           folderId: selectedFolderId || undefined,
+          projectId: selectedProjectId || undefined,
           view: documentView,
           tag: selectedTag || undefined,
           fileType: fileTypeFilter || undefined,
@@ -84,7 +94,7 @@ export default function DocumentsPage() {
     }
 
     void loadDocuments();
-  }, [page, search, selectedFolderId, documentView, selectedTag, fileTypeFilter]);
+  }, [page, search, selectedFolderId, selectedProjectId, documentView, selectedTag, fileTypeFilter]);
 
   function handleSearchChange(value: string) {
     setSearch(value);
@@ -381,6 +391,23 @@ export default function DocumentsPage() {
           <option value="image">Images</option>
           <option value="text">Text / Markdown</option>
           <option value="json">JSON / Code</option>
+        </select>
+
+        <select
+          value={selectedProjectId}
+          onChange={(event) => {
+            setSelectedProjectId(event.target.value);
+            setPage(1);
+          }}
+          style={{ padding: '0.5rem' }}
+        >
+          <option value="">All Projects</option>
+          <option value="none">No Project</option>
+          {projects.map((proj) => (
+            <option key={proj.id} value={proj.id}>
+              Project: {proj.name}
+            </option>
+          ))}
         </select>
       </section>
 

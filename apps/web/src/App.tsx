@@ -13,6 +13,8 @@ import DocumentCreatePage from './pages/DocumentCreatePage';
 import DocumentDetailsPage from './pages/DocumentDetailsPage';
 import DocumentEditPage from './pages/DocumentEditPage';
 import TrashPage from './pages/TrashPage';
+import ProjectsPage from './pages/ProjectsPage';
+import ProjectDetailsPage from './pages/ProjectDetailsPage';
 import ProtectedRoute from './routes/ProtectedRoute';
 import UsersPage from './pages/UsersPage';
 import UserDetailsPage from './pages/UserDetailsPage';
@@ -49,6 +51,14 @@ function App() {
         <Route
           path="/dashboard"
           element={<DashboardPage />}
+        />
+        <Route
+          path="/projects"
+          element={<ProjectsPage />}
+        />
+        <Route
+          path="/projects/:id"
+          element={<ProjectDetailsPage />}
         />
         <Route
           path="/documents"

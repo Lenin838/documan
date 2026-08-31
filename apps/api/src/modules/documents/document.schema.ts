@@ -35,6 +35,12 @@ export const createDocumentSchema = z
       .nullable()
       .optional(),
 
+    projectId: z
+      .string()
+      .trim()
+      .nullable()
+      .optional(),
+
     tags: tagsSchema,
   })
   .strict();
@@ -59,6 +65,12 @@ export const updateDocumentSchema = z
       .optional(),
 
     folderId: z
+      .string()
+      .trim()
+      .nullable()
+      .optional(),
+
+    projectId: z
       .string()
       .trim()
       .nullable()
@@ -123,6 +135,11 @@ export const documentsQuerySchema = z.object({
     .trim()
     .optional(),
 
+  projectId: z
+    .string()
+    .trim()
+    .optional(),
+
   view: z
     .enum(['all', 'mine', 'shared'])
     .optional(),
@@ -166,6 +183,8 @@ export const documentAuditHistoryQuerySchema = z.object({
       'RESTORE',
       'RELATIONSHIP_CREATE',
       'RELATIONSHIP_DELETE',
+      'PROJECT_ASSIGN',
+      'PROJECT_REMOVE',
     ])
     .optional(),
 });

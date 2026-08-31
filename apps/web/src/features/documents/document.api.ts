@@ -28,6 +28,10 @@ export async function createDocument(
     formData.append('folderId', params.folderId);
   }
 
+  if (params.projectId !== undefined && params.projectId !== null) {
+    formData.append('projectId', params.projectId);
+  }
+
   if (params.tags !== undefined) {
     formData.append('tags', JSON.stringify(params.tags));
   }
@@ -131,6 +135,10 @@ export async function updateDocument(
 
   if (params.folderId !== undefined) {
     formData.append('folderId', params.folderId === null ? 'none' : params.folderId);
+  }
+
+  if (params.projectId !== undefined) {
+    formData.append('projectId', params.projectId === null ? 'none' : params.projectId);
   }
 
   if (params.tags !== undefined) {

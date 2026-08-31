@@ -19,6 +19,7 @@ interface DocumentResponse {
   title: string;
   description?: string | undefined;
   folderId?: string | null | undefined;
+  projectId?: string | null | undefined;
   tags: string[];
   fileName: string;
   filePath: string;
@@ -42,6 +43,7 @@ function toDocumentResponse(
     title: string;
     description?: string;
     folderId?: Types.ObjectId | null;
+    projectId?: Types.ObjectId | null;
     tags?: string[];
     fileName: string;
     filePath: string;
@@ -58,6 +60,7 @@ function toDocumentResponse(
     title: document.title,
     description: document.description,
     folderId: document.folderId ? document.folderId.toString() : null,
+    projectId: document.projectId ? document.projectId.toString() : null,
     tags: document.tags || [],
     fileName: document.fileName,
     filePath: document.filePath,
@@ -185,6 +188,7 @@ export async function getAllDocuments(
     search,
     isDeleted,
     folderId,
+    projectId,
     view,
     tag,
     fileType,
@@ -218,6 +222,14 @@ export async function getAllDocuments(
       filter.folderId = null;
     } else if (Types.ObjectId.isValid(folderId)) {
       filter.folderId = new Types.ObjectId(folderId);
+    }
+  }
+
+  if (projectId) {
+    if (projectId === 'none' || projectId === 'null') {
+      filter.projectId = null;
+    } else if (Types.ObjectId.isValid(projectId)) {
+      filter.projectId = new Types.ObjectId(projectId);
     }
   }
 
