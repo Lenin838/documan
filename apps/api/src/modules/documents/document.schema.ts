@@ -196,12 +196,24 @@ export const documentAuditHistoryQuerySchema = z.object({
       'REVIEW_REQUEST',
       'REVIEW_APPROVED',
       'REVIEW_CHANGES_REQUESTED',
+      'STATUS_CHANGE',
     ])
     .optional(),
 });
 
 export type DocumentAuditHistoryQueryInput = z.infer<
   typeof documentAuditHistoryQuerySchema
+>;
+
+export const updateDocumentStatusSchema = z
+  .object({
+    status: z.enum(['DRAFT', 'STALE', 'DEPRECATED']),
+    reason: z.string().trim().max(500).optional(),
+  })
+  .strict();
+
+export type UpdateDocumentStatusInput = z.infer<
+  typeof updateDocumentStatusSchema
 >;
 
 export const getDocumentDependenciesQuerySchema = z

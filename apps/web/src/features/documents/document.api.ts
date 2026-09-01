@@ -185,3 +185,15 @@ export async function restoreDocument(
 
   return response.data;
 }
+
+export async function updateDocumentStatus(
+  documentId: string,
+  params: { status: 'DRAFT' | 'STALE' | 'DEPRECATED'; reason?: string },
+): Promise<UpdateDocumentResponse> {
+  const response = await apiClient.patch<UpdateDocumentResponse>(
+    `/documents/${documentId}/status`,
+    params,
+  );
+
+  return response.data;
+}

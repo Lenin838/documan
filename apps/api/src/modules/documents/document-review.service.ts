@@ -14,6 +14,7 @@ import type {
   ResolveDocumentReviewInput,
 } from './document-review.schema.js';
 import { AppError } from '../../errors/app-error.js';
+import { transitionDocumentStatusInternal } from './document.service.js';
 
 export interface UserSummary {
   id: string;
@@ -243,6 +244,16 @@ export async function createDocumentReview(
     },
   );
 
+  await transitionDocumentStatusInternal(
+    document._id.toString(),
+    userId,
+    'IN_REVIEW',
+    'AUTOMATIC',
+    'REVIEW_REQUEST',
+    review._id.toString(),
+    input.comment,
+  );
+
   const populatedReview = (await DocumentReview.findById(review._id)
     .populate('requesterId', 'name email')
     .populate('reviewerId', 'name email')) as unknown as RecordWithId;
@@ -330,6 +341,16 @@ export async function approveDocumentReview(
     },
   );
 
+  await transitionDocumentStatusInternal(
+    document._id.toString(),
+    userId,
+    'APPROVED',
+    'AUTOMATIC',
+    'REVIEW_APPROVED',
+    review._id.toString(),
+    input?.comment,
+  );
+
   const populatedReview = (await DocumentReview.findById(review._id)
     .populate('requesterId', 'name email')
     .populate('reviewerId', 'name email')) as unknown as RecordWithId;
@@ -393,6 +414,16 @@ export async function requestChangesDocumentReview(
       reviewerId: userId,
       comment: input?.comment,
     },
+  );
+
+  await transitionDocumentStatusInternal(
+    document._id.toString(),
+    userId,
+    'DRAFT',
+    'AUTOMATIC',
+    'REVIEW_CHANGES_REQUESTED',
+    review._id.toString(),
+    input?.comment,
   );
 
   const populatedReview = (await DocumentReview.findById(review._id)
