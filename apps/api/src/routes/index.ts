@@ -7,6 +7,7 @@ import { documentRouter } from '../modules/documents/document.routes.js';
 import { folderRouter } from '../modules/folders/folder.routes.js';
 import { projectRouter } from '../modules/projects/project.routes.js';
 import { reviewRouter } from '../modules/documents/document-review.routes.js';
+import { notificationRouter } from '../modules/notifications/notification.routes.js';
 
 const apiRouter = Router();
 
@@ -17,5 +18,6 @@ apiRouter.use('/documents', documentRouter);
 apiRouter.use('/folders', folderRouter);
 apiRouter.use('/projects', projectRouter);
 apiRouter.use('/reviews', reviewRouter);
+apiRouter.use('/notifications', notificationRouter);
 
 export { apiRouter };

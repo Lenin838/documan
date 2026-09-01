@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 
+import { NotificationBell } from '../components/NotificationBell';
 import { getDocuments } from '../features/documents/document.api';
 import type { Document } from '../features/documents/document.types';
 import {
@@ -193,6 +194,7 @@ export default function DocumentsPage() {
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h1>Documents</h1>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <NotificationBell />
           <Link to="/documents/create">Create Document</Link>
           <Link to="/trash">View Trash</Link>
           <Link to="/dashboard">Back to Dashboard</Link>

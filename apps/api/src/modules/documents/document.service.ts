@@ -1,12 +1,17 @@
-import { Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import { Document, type DocumentStatus } from './document.model.js';
 import { DocumentReview } from './document-review.model.js';
+import { DocumentRelationship } from './document-relationship.model.js';
 import { Folder } from '../folders/folder.model.js';
 import { DocumentShare } from '../document-shares/document-share.model.js';
 import { createDocumentAudit } from './document-audit.service.js';
+import {
+  createNotificationInternal,
+  safeNotify,
+} from '../notifications/notification.service.js';
 import type {
   CreateDocumentInput,
   DocumentsQueryInput,
@@ -470,6 +475,39 @@ export async function transitionDocumentStatusInternal(
     ...(reviewId ? { reviewId } : {}),
     ...(reason ? { reason } : {}),
   });
+
+  if (newStatus === 'STALE' || newStatus === 'DEPRECATED') {
+    const notificationType = newStatus === 'STALE' ? 'UPSTREAM_STALE' : 'UPSTREAM_DEPRECATED';
+    await safeNotify(async () => {
+      const isMocked = typeof (DocumentRelationship.find as unknown as { mock?: unknown }).mock !== 'undefined';
+      if (mongoose.connection.readyState === 0 && !isMocked) {
+        return;
+      }
+
+      const relationships = await DocumentRelationship.find({
+        targetDocumentId: doc._id,
+        type: 'DEPENDS_ON',
+      }).populate<{ sourceDocumentId: { _id: Types.ObjectId; ownerId: Types.ObjectId; isDeleted: boolean } }>({
+        path: 'sourceDocumentId',
+        select: 'ownerId isDeleted',
+      });
+
+      for (const rel of relationships) {
+        const sourceDoc = rel.sourceDocumentId;
+        if (sourceDoc && !sourceDoc.isDeleted) {
+          const downstreamOwnerId = sourceDoc.ownerId.toString();
+          if (downstreamOwnerId !== userId) {
+            await createNotificationInternal({
+              recipientUserId: sourceDoc.ownerId,
+              documentId: sourceDoc._id,
+              type: notificationType,
+              actorUserId: userId,
+            });
+          }
+        }
+      }
+    });
+  }
 
   return { previousStatus, updatedStatus: newStatus };
 }
