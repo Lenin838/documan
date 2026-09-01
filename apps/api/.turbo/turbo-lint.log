@@ -2,3 +2,10 @@
 > @documan/api@0.1.0 lint C:\MERN_STACK\Documan\documan\apps\api
 > eslint .
 
+
+C:\MERN_STACK\Documan\documan\apps\api\src\modules\governance\run_governance_qa.ts
+  1:1  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+
+✖ 1 problem (0 errors, 1 warning)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
+

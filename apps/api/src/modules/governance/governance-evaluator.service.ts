@@ -45,8 +45,9 @@ export async function evaluateProjectGovernanceInternal(
     isDeleted: false,
   });
 
-  const approvedDocsRaw = typeof (approvedQuery as any).limit === 'function'
-    ? await (approvedQuery as any).limit(50)
+  const queryObj = approvedQuery as unknown as Record<string, unknown>;
+  const approvedDocsRaw = typeof queryObj.limit === 'function'
+    ? await (queryObj.limit as (n: number) => Promise<unknown>)(50)
     : await approvedQuery;
 
   const approvedDocs = Array.isArray(approvedDocsRaw) ? approvedDocsRaw.slice(0, 50) : [];

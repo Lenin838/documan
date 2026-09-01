@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import mongoose, { Types } from 'mongoose';
 
 import { User } from '../users/user.model.js';
@@ -117,7 +118,7 @@ async function main() {
       permission: 'READ',
     });
     try {
-      await confirmDocumentFreshness(readUserId.toString(), 'user', docAuth._id.toString());
+      await confirmDocumentFreshness(readUser._id.toString(), 'user', docAuth._id.toString());
     } catch {
       console.log('QA Scenario 5 PASS: READ-only user blocked with 403 Forbidden on Confirm Freshness');
       passCount++;
