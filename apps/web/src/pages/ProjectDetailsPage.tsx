@@ -13,6 +13,7 @@ import type { Project } from '../features/projects/project.types';
 import { getDocuments } from '../features/documents/document.api';
 import type { Document } from '../features/documents/document.types';
 import { WebhooksSection } from '../components/WebhooksSection';
+import { GovernanceSection } from '../components/GovernanceSection';
 
 export default function ProjectDetailsPage() {
   const { id: projectId } = useParams<{ id: string }>();
@@ -204,7 +205,13 @@ export default function ProjectDetailsPage() {
         )}
       </div>
 
-      <section>
+      {projectId && (
+        <div style={{ marginBottom: '2rem' }}>
+          <GovernanceSection projectId={projectId} isOwnerOrAdmin={!!project.isOwner} />
+        </div>
+      )}
+
+      <section style={{ marginBottom: '2rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h2>Project Documents ({projectDocs.length})</h2>
         </div>

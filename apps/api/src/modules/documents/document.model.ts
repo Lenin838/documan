@@ -20,6 +20,7 @@ export interface DocumentDocument {
   fileSize: number;
   ownerId: Types.ObjectId;
   isDeleted: boolean;
+  lastReviewedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -101,11 +102,19 @@ const documentSchema = new Schema<DocumentDocument>(
       default: false,
       index: true,
     },
+
+    lastReviewedAt: {
+      type: Date,
+      default: null,
+      index: true,
+    },
   },
   {
     timestamps: true,
   },
 );
+
+documentSchema.index({ projectId: 1, status: 1, lastReviewedAt: 1 });
 
 export const Document = model<DocumentDocument>(
   'Document',

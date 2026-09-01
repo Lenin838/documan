@@ -1,10 +1,17 @@
 import { Schema, model, Types } from 'mongoose';
 
+export interface ProjectGovernanceSettings {
+  isGovernanceEnabled: boolean;
+  maxUnreviewedDays: number;
+  autoMarkStaleOnUpstreamChange: boolean;
+}
+
 export interface ProjectDocument {
   name: string;
   description?: string;
   ownerId: Types.ObjectId;
   isArchived: boolean;
+  governanceSettings: ProjectGovernanceSettings;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -33,6 +40,23 @@ const projectSchema = new Schema<ProjectDocument>(
       type: Boolean,
       default: false,
       index: true,
+    },
+
+    governanceSettings: {
+      isGovernanceEnabled: {
+        type: Boolean,
+        default: true,
+      },
+      maxUnreviewedDays: {
+        type: Number,
+        default: 90,
+        min: 7,
+        max: 365,
+      },
+      autoMarkStaleOnUpstreamChange: {
+        type: Boolean,
+        default: true,
+      },
     },
   },
   {

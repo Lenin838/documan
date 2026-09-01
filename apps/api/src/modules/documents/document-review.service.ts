@@ -354,6 +354,10 @@ export async function approveDocumentReview(
 
   review.status = 'APPROVED';
   review.resolvedAt = new Date();
+  document.lastReviewedAt = new Date();
+  if (typeof (document as any).save === 'function') {
+    await (document as any).save();
+  }
   if (input?.comment) {
     review.comment = input.comment;
   }

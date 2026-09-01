@@ -9,6 +9,7 @@ import { projectRouter } from '../modules/projects/project.routes.js';
 import { reviewRouter } from '../modules/documents/document-review.routes.js';
 import { notificationRouter } from '../modules/notifications/notification.routes.js';
 import webhookRouter from '../modules/webhooks/webhook.routes.js';
+import { projectGovernanceRouter } from '../modules/governance/governance.routes.js';
 
 const apiRouter = Router();
 
@@ -21,5 +22,6 @@ apiRouter.use('/projects', projectRouter);
 apiRouter.use('/reviews', reviewRouter);
 apiRouter.use('/notifications', notificationRouter);
 apiRouter.use('/projects/:projectId/webhooks', webhookRouter);
+apiRouter.use('/projects/:projectId/governance', projectGovernanceRouter);
 
 export { apiRouter };

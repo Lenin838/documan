@@ -23,6 +23,8 @@ import {
   updateDocumentStatusController,
 } from './document.controller.js';
 
+import { confirmDocumentFreshnessHandler } from '../governance/governance.controller.js';
+
 import {
   getDocumentDependenciesController,
 } from './document-relationship.controller.js';
@@ -131,6 +133,13 @@ documentRouter.patch(
   authenticate,
   validateParams(documentIdParamsSchema),
   restoreDocumentController,
+);
+
+documentRouter.post(
+  '/:id/confirm-freshness',
+  authenticate,
+  validateParams(documentIdParamsSchema),
+  confirmDocumentFreshnessHandler,
 );
 
 export { documentRouter };
