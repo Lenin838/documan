@@ -9,6 +9,10 @@ import type {
   UpdateDocumentShareInput,
 } from './document-share.schema.js';
 import { AppError } from '../../errors/app-error.js';
+import {
+  createNotificationInternal,
+  safeNotify,
+} from '../notifications/notification.service.js';
 
 interface DocumentShareResponse {
   id: string;
@@ -96,6 +100,17 @@ export async function createDocumentShare(
       setDefaultsOnInsert: true,
     },
   );
+
+  if (targetUser._id.toString() !== userId) {
+    await safeNotify(() =>
+      createNotificationInternal({
+        recipientUserId: targetUser._id,
+        documentId: document._id,
+        type: 'DOCUMENT_SHARED',
+        actorUserId: userId,
+      }),
+    );
+  }
 
   return {
     id: share._id.toString(),

@@ -14,6 +14,10 @@ import type {
   ResolveDocumentReviewInput,
 } from './document-review.schema.js';
 import { AppError } from '../../errors/app-error.js';
+import {
+  createNotificationInternal,
+  safeNotify,
+} from '../notifications/notification.service.js';
 import { transitionDocumentStatusInternal } from './document.service.js';
 
 export interface UserSummary {
@@ -254,6 +258,15 @@ export async function createDocumentReview(
     input.comment,
   );
 
+  await safeNotify(() =>
+    createNotificationInternal({
+      recipientUserId: reviewer._id,
+      documentId: document._id,
+      type: 'REVIEW_REQUESTED',
+      actorUserId: userId,
+    }),
+  );
+
   const populatedReview = (await DocumentReview.findById(review._id)
     .populate('requesterId', 'name email')
     .populate('reviewerId', 'name email')) as unknown as RecordWithId;
@@ -351,6 +364,15 @@ export async function approveDocumentReview(
     input?.comment,
   );
 
+  await safeNotify(() =>
+    createNotificationInternal({
+      recipientUserId: document.ownerId,
+      documentId: document._id,
+      type: 'REVIEW_APPROVED',
+      actorUserId: userId,
+    }),
+  );
+
   const populatedReview = (await DocumentReview.findById(review._id)
     .populate('requesterId', 'name email')
     .populate('reviewerId', 'name email')) as unknown as RecordWithId;
@@ -424,6 +446,15 @@ export async function requestChangesDocumentReview(
     'REVIEW_CHANGES_REQUESTED',
     review._id.toString(),
     input?.comment,
+  );
+
+  await safeNotify(() =>
+    createNotificationInternal({
+      recipientUserId: document.ownerId,
+      documentId: document._id,
+      type: 'CHANGES_REQUESTED',
+      actorUserId: userId,
+    }),
   );
 
   const populatedReview = (await DocumentReview.findById(review._id)

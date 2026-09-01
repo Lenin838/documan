@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 
 import { useAuthStore } from '../features/auth/auth.store';
+import { NotificationBell } from '../components/NotificationBell';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -21,7 +22,10 @@ export default function DashboardPage() {
 
   return (
     <main>
-      <h1>Documan Dashboard</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <h1>Documan Dashboard</h1>
+        <NotificationBell />
+      </div>
 
       {user && (
         <section>
