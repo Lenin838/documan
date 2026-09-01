@@ -27,3 +27,17 @@ export const refreshRateLimiter = rateLimit({
     },
   },
 });
+
+export const gateCheckRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 60,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: {
+      code: 'TOO_MANY_GATE_CHECK_REQUESTS',
+      message: 'Too many gate check requests. Please try again later.',
+    },
+  },
+});

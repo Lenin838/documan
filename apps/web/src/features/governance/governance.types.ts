@@ -4,6 +4,33 @@ export interface ProjectGovernanceSettings {
   autoMarkStaleOnUpstreamChange: boolean;
 }
 
+export interface ProjectReleaseGateSettings {
+  allowStale: boolean;
+  allowPendingReviews: boolean;
+  allowDeprecated: boolean;
+  minFreshnessPercentage: number;
+}
+
+export interface ProjectGateToken {
+  id: string;
+  name: string;
+  tokenPrefix: string;
+  createdBy: string;
+  expiresAt: string | null;
+  lastUsedAt: string | null;
+  revokedAt: string | null;
+  createdAt: string;
+}
+
+export interface CreateGateTokenResponse {
+  token: string; // Plaintext token shown ONCE
+  id: string;
+  name: string;
+  tokenPrefix: string;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
 export interface GovernanceHealthMetrics {
   totalDocuments: number;
   eligibleDocuments: number;
@@ -15,6 +42,8 @@ export interface GovernanceHealthMetrics {
 export interface ProjectGovernanceResponse {
   projectId: string;
   governanceSettings: ProjectGovernanceSettings;
+  releaseGateSettings: ProjectReleaseGateSettings;
+  gateTokens: ProjectGateToken[];
   health: GovernanceHealthMetrics;
 }
 

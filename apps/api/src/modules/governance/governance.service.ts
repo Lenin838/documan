@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { Types } from 'mongoose';
 
 import { AppError } from '../../errors/app-error.js';
@@ -5,7 +6,10 @@ import { Project } from '../projects/project.model.js';
 import { Document } from '../documents/document.model.js';
 import { DocumentShare } from '../document-shares/document-share.model.js';
 import { createDocumentAudit } from '../documents/document-audit.service.js';
-import type { UpdateGovernanceSettingsInput } from './governance.schema.js';
+import type {
+  UpdateGovernanceSettingsInput,
+  CreateGateTokenInput,
+} from './governance.schema.js';
 
 function validateObjectId(id: string, errorMessage = 'Resource not found', code = 'NOT_FOUND'): void {
   if (!Types.ObjectId.isValid(id)) {
@@ -49,7 +53,6 @@ export async function getProjectGovernance(
 
   // Access check: Admin, Owner, or Project Member
   if (role !== 'admin' && project.ownerId.toString() !== userId) {
-    // Check if user owns or has share access to any document in project
     const hasDocAccess = await Document.exists({
       projectId: project._id,
       isDeleted: false,
@@ -70,7 +73,6 @@ export async function getProjectGovernance(
     }
   }
 
-  // Calculate project documentation health metrics
   const now = new Date();
   const maxDays = project.governanceSettings?.maxUnreviewedDays ?? 90;
   const isEnabled = project.governanceSettings?.isGovernanceEnabled ?? true;
@@ -95,6 +97,24 @@ export async function getProjectGovernance(
   const eligibleCount = approvedDocs.length + staleDocs.length;
   const freshnessPercentage = eligibleCount > 0 ? Math.round((freshCount / eligibleCount) * 100) : 100;
 
+  const releaseGateSettings = {
+    allowStale: project.releaseGateSettings?.allowStale ?? false,
+    allowPendingReviews: project.releaseGateSettings?.allowPendingReviews ?? false,
+    allowDeprecated: project.releaseGateSettings?.allowDeprecated ?? false,
+    minFreshnessPercentage: project.releaseGateSettings?.minFreshnessPercentage ?? 80,
+  };
+
+  const gateTokens = (project.gateTokens || []).map((t) => ({
+    id: t._id.toString(),
+    name: t.name,
+    tokenPrefix: t.tokenPrefix,
+    createdBy: t.createdBy.toString(),
+    expiresAt: t.expiresAt || null,
+    lastUsedAt: t.lastUsedAt || null,
+    revokedAt: t.revokedAt || null,
+    createdAt: t.createdAt,
+  }));
+
   return {
     projectId: project._id.toString(),
     governanceSettings: {
@@ -102,6 +122,8 @@ export async function getProjectGovernance(
       maxUnreviewedDays: maxDays,
       autoMarkStaleOnUpstreamChange: project.governanceSettings?.autoMarkStaleOnUpstreamChange ?? true,
     },
+    releaseGateSettings,
+    gateTokens,
     health: {
       totalDocuments: totalDocs,
       eligibleDocuments: eligibleCount,
@@ -130,9 +152,119 @@ export async function updateProjectGovernance(
     project.governanceSettings.autoMarkStaleOnUpstreamChange = input.autoMarkStaleOnUpstreamChange;
   }
 
+  if (input.releaseGateSettings) {
+    if (!project.releaseGateSettings) {
+      project.releaseGateSettings = {
+        allowStale: false,
+        allowPendingReviews: false,
+        allowDeprecated: false,
+        minFreshnessPercentage: 80,
+      };
+    }
+    if (input.releaseGateSettings.allowStale !== undefined) {
+      project.releaseGateSettings.allowStale = input.releaseGateSettings.allowStale;
+    }
+    if (input.releaseGateSettings.allowPendingReviews !== undefined) {
+      project.releaseGateSettings.allowPendingReviews = input.releaseGateSettings.allowPendingReviews;
+    }
+    if (input.releaseGateSettings.allowDeprecated !== undefined) {
+      project.releaseGateSettings.allowDeprecated = input.releaseGateSettings.allowDeprecated;
+    }
+    if (input.releaseGateSettings.minFreshnessPercentage !== undefined) {
+      project.releaseGateSettings.minFreshnessPercentage = input.releaseGateSettings.minFreshnessPercentage;
+    }
+  }
+
   await project.save();
 
   return getProjectGovernance(userId, role, projectId);
+}
+
+export async function createProjectGateToken(
+  userId: string,
+  role: 'user' | 'admin',
+  projectId: string,
+  input: CreateGateTokenInput,
+) {
+  const project = await verifyProjectOwnerOrAdmin(projectId, userId, role);
+
+  const randomHex = crypto.randomBytes(32).toString('hex');
+  const rawToken = `documan_gate_${randomHex}`;
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+  const tokenPrefix = rawToken.substring(0, 16);
+
+  let expiresAt: Date | null = null;
+  if (input.expiresInDays) {
+    expiresAt = new Date(Date.now() + input.expiresInDays * 24 * 60 * 60 * 1000);
+  }
+
+  const tokenId = new Types.ObjectId();
+  const newToken = {
+    _id: tokenId,
+    name: input.name,
+    tokenHash,
+    tokenPrefix,
+    createdBy: new Types.ObjectId(userId),
+    expiresAt,
+    lastUsedAt: null,
+    revokedAt: null,
+    createdAt: new Date(),
+  };
+
+  project.gateTokens.push(newToken as unknown as import('../projects/project.model.js').ProjectGateTokenSubdocument);
+  await project.save();
+
+  return {
+    token: rawToken, // Plaintext shown ONCE
+    id: tokenId.toString(),
+    name: input.name,
+    tokenPrefix,
+    expiresAt,
+    createdAt: newToken.createdAt,
+  };
+}
+
+export async function getProjectGateTokens(
+  userId: string,
+  role: 'user' | 'admin',
+  projectId: string,
+) {
+  const project = await verifyProjectOwnerOrAdmin(projectId, userId, role);
+
+  return (project.gateTokens || []).map((t) => ({
+    id: t._id.toString(),
+    name: t.name,
+    tokenPrefix: t.tokenPrefix,
+    createdBy: t.createdBy.toString(),
+    expiresAt: t.expiresAt || null,
+    lastUsedAt: t.lastUsedAt || null,
+    revokedAt: t.revokedAt || null,
+    createdAt: t.createdAt,
+  }));
+}
+
+export async function revokeProjectGateToken(
+  userId: string,
+  role: 'user' | 'admin',
+  projectId: string,
+  tokenId: string,
+) {
+  const project = await verifyProjectOwnerOrAdmin(projectId, userId, role);
+  validateObjectId(tokenId, 'Token not found', 'TOKEN_NOT_FOUND');
+
+  const token = (project.gateTokens || []).find((t) => t._id.toString() === tokenId);
+  if (!token) {
+    throw new AppError('Token not found', 404, 'TOKEN_NOT_FOUND');
+  }
+
+  token.revokedAt = new Date();
+  await project.save();
+
+  return {
+    id: token._id.toString(),
+    name: token.name,
+    revokedAt: token.revokedAt,
+  };
 }
 
 export async function confirmDocumentFreshness(
@@ -147,7 +279,6 @@ export async function confirmDocumentFreshness(
     throw new AppError('Document not found', 404, 'DOCUMENT_NOT_FOUND');
   }
 
-  // Authorization: Owner, Admin, or Shared EDIT user required
   const hasEditPermission = role === 'admin' || document.ownerId.toString() === userId;
 
   if (!hasEditPermission) {
@@ -176,7 +307,6 @@ export async function confirmDocumentFreshness(
     }
   }
 
-  // Prohibited operations
   if (document.status === 'DEPRECATED') {
     throw new AppError(
       'Cannot confirm freshness of a DEPRECATED document',
@@ -204,7 +334,6 @@ export async function confirmDocumentFreshness(
 
   await document.save();
 
-  // Audit trail
   await createDocumentAudit(document._id.toString(), userId, 'STATUS_CHANGE', {
     previousStatus,
     newStatus: document.status,

@@ -103,7 +103,7 @@ Traceability
 Collaboration & Access Control
     ↓
 Developer / Productivity Workflows
-(Relationships | Project Context | Technical References | Review Workflow | Templates & Scaffolding | Dependency Mapping & Impact Summaries)
+(Relationships | Project Context | Technical References | Review Workflow | Templates & Scaffolding | Dependency Mapping & Impact Summaries | In-App Notifications | Project Webhooks | Documentation Drift & Automated Governance Engine)
     ↓
 Project / API Context
     ↓
@@ -285,6 +285,7 @@ Future phases are intentionally **research-driven**. They are product opportunit
 - **Document-Level Dependency Mapping & Impact Summaries**: Multi-hop dependency mapping and downstream impact summaries leveraging `DEPENDS_ON` relationships (`maxDepth <= 3`, `maxNodes = 50`), deterministic summary metrics, relationship-based impact warnings, cycle detection, soft-delete filtering, and strict permission subtree pruning.
 - **Document Review & Lifecycle Notifications**: In-App Notification Center and Activity Feed providing recipient isolation, unread counter badge, mark as read / mark all as read, anti-IDOR protection, and safe non-blocking dispatch (`safeNotify`) across review requests, approvals, change requests, document sharing, and upstream stale/deprecated events.
 - **Project Outbound Webhooks & Event Notification Subscriptions**: Project-level outbound webhook management and automated event subscriptions supporting Project Owner/Admin authority, HTTPS-only target validation, pure Node.js SSRF protection agent (`isPrivateOrRestrictedIp`), DNS rebinding mitigation, `maxRedirects: 0` redirect blocking, AES-256-GCM secret encryption, 24-hour dual-secret rotation window, HMAC-SHA256 request signing (`X-Documan-Signature`), asynchronous MongoDB-persisted retry worker (`setImmediate` + backoff schedule + max 4 attempts), 14-day TTL delivery history logs, and 50-failure circuit breaker auto-disabling.
+- **Documentation Drift & Automated Governance Engine**: Non-blocking in-process automated governance engine and freshness policy management supporting project-level governance settings (`isGovernanceEnabled`, `maxUnreviewedDays` threshold 14–365 days, `autoMarkStaleOnUpstreamChange`), real-time documentation health metrics (`X% Fresh`), deterministic `lastReviewedAt` semantics (updated ONLY on review approval or explicit Confirm Freshness), age-based staleness evaluation, explicit upstream lifecycle drift triggers (`STALE` / `DEPRECATED` targets only; metadata/title edits strictly ignored), deterministic Confirm Freshness status transition (`STALE` $\rightarrow$ `APPROVED`, EDIT authority required, `403 Forbidden` for READ users, `DEPRECATED`/`DRAFT` rejections), system audit logging (`STATUS_CHANGE` with `AUTOMATED_GOVERNANCE` or `CONFIRM_FRESHNESS` trigger), non-blocking in-app notification dispatch (`safeNotify`), non-blocking outbound webhook dispatch (`safeDispatchWebhook`), idempotent evaluation, strict project isolation, and Project Owner/Admin authority enforcement.
 
 ### User problem investigated
 
@@ -304,7 +305,7 @@ The opportunity is not to copy developer tools. It is to connect documents to th
 
 ### Remaining research opportunities
 
-While baseline productivity capabilities (Relationships, Project Context, Technical References, Review Workflows, Document Templates & Scaffolding, and Dependency Mapping & Impact Summaries) are complete, Phase 6 research continues into:
+While baseline productivity capabilities (Relationships, Project Context, Technical References, Review Workflows, Document Templates & Scaffolding, Dependency Mapping & Impact Summaries, Notifications, Webhooks, and Automated Governance) are complete, Phase 6 research continues into:
 
 - Automated workflow triggers based on document lifecycle, review, and status events.
 - Developer tool integrations and webhook/event notification patterns.
@@ -785,11 +786,11 @@ This keeps the roadmap understandable even as individual implementation details 
 
 Documan has established the foundations of a document-management and productivity platform through the intended progression of:
 
-**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows (Document Relationships, Project Context, External Technical References, Document Review Workflow, Document Templates & Scaffolding, Document-Level Dependency Mapping & Impact Summaries, Document Review & Lifecycle Notifications, Project Outbound Webhooks & Event Notification Subscriptions).**
+**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows (Document Relationships, Project Context, External Technical References, Document Review Workflow, Document Templates & Scaffolding, Document-Level Dependency Mapping & Impact Summaries, Document Review & Lifecycle Notifications, Project Outbound Webhooks & Event Notification Subscriptions, Documentation Drift & Automated Governance Engine).**
 
 The strategic question now moves beyond baseline document workflows:
 
-> **How can Documan leverage established document relationships, project context, technical references, review workflows, templates, dependency mappings, in-app notifications, and outbound webhooks to deepen Project / API Context and provide Workflow Intelligence without becoming a clone of specialized developer tools?**
+> **How can Documan leverage established document relationships, project context, technical references, review workflows, templates, dependency mappings, in-app notifications, outbound webhooks, and automated governance to deepen Project / API Context and provide Workflow Intelligence without becoming a clone of specialized developer tools?**
 
 The answer must come from research, user problems, and differentiated product design—not from copying feature lists.
 

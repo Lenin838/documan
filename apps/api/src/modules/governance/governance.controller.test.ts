@@ -46,6 +46,13 @@ describe('Governance API Endpoints (/api/v1/projects/:projectId/governance)', ()
           maxUnreviewedDays: 90,
           autoMarkStaleOnUpstreamChange: true,
         },
+        releaseGateSettings: {
+          allowStale: false,
+          allowPendingReviews: false,
+          allowDeprecated: false,
+          minFreshnessPercentage: 80,
+        },
+        gateTokens: [],
         health: {
           totalDocuments: 10,
           eligibleDocuments: 8,
@@ -71,6 +78,13 @@ describe('Governance API Endpoints (/api/v1/projects/:projectId/governance)', ()
           maxUnreviewedDays: 30,
           autoMarkStaleOnUpstreamChange: true,
         },
+        releaseGateSettings: {
+          allowStale: false,
+          allowPendingReviews: false,
+          allowDeprecated: false,
+          minFreshnessPercentage: 80,
+        },
+        gateTokens: [],
         health: {
           totalDocuments: 10,
           eligibleDocuments: 8,
