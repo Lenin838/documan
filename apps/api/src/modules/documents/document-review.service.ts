@@ -18,6 +18,10 @@ import {
   createNotificationInternal,
   safeNotify,
 } from '../notifications/notification.service.js';
+import {
+  dispatchWebhookEvent,
+  safeDispatchWebhook,
+} from '../webhooks/webhook-delivery.service.js';
 import { transitionDocumentStatusInternal } from './document.service.js';
 
 export interface UserSummary {
@@ -267,6 +271,19 @@ export async function createDocumentReview(
     }),
   );
 
+  if (document.projectId) {
+    const actorUser = await User.findById(userId).select('name email');
+    await safeDispatchWebhook(async () => {
+      await dispatchWebhookEvent({
+        projectId: document.projectId!,
+        eventType: 'REVIEW_REQUESTED',
+        document: { id: document._id.toString(), title: document.title },
+        actor: actorUser ? { id: actorUser._id.toString(), name: actorUser.name, email: actorUser.email } : null,
+        data: { reviewId: review._id.toString(), reviewerId: reviewer._id.toString(), comment: input.comment },
+      });
+    });
+  }
+
   const populatedReview = (await DocumentReview.findById(review._id)
     .populate('requesterId', 'name email')
     .populate('reviewerId', 'name email')) as unknown as RecordWithId;
@@ -373,6 +390,19 @@ export async function approveDocumentReview(
     }),
   );
 
+  if (document.projectId) {
+    const actorUser = await User.findById(userId).select('name email');
+    await safeDispatchWebhook(async () => {
+      await dispatchWebhookEvent({
+        projectId: document.projectId!,
+        eventType: 'REVIEW_APPROVED',
+        document: { id: document._id.toString(), title: document.title },
+        actor: actorUser ? { id: actorUser._id.toString(), name: actorUser.name, email: actorUser.email } : null,
+        data: { reviewId: review._id.toString(), comment: input?.comment },
+      });
+    });
+  }
+
   const populatedReview = (await DocumentReview.findById(review._id)
     .populate('requesterId', 'name email')
     .populate('reviewerId', 'name email')) as unknown as RecordWithId;
@@ -456,6 +486,19 @@ export async function requestChangesDocumentReview(
       actorUserId: userId,
     }),
   );
+
+  if (document.projectId) {
+    const actorUser = await User.findById(userId).select('name email');
+    await safeDispatchWebhook(async () => {
+      await dispatchWebhookEvent({
+        projectId: document.projectId!,
+        eventType: 'CHANGES_REQUESTED',
+        document: { id: document._id.toString(), title: document.title },
+        actor: actorUser ? { id: actorUser._id.toString(), name: actorUser.name, email: actorUser.email } : null,
+        data: { reviewId: review._id.toString(), comment: input?.comment },
+      });
+    });
+  }
 
   const populatedReview = (await DocumentReview.findById(review._id)
     .populate('requesterId', 'name email')

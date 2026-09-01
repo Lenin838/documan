@@ -12,6 +12,7 @@ import {
 import type { Project } from '../features/projects/project.types';
 import { getDocuments } from '../features/documents/document.api';
 import type { Document } from '../features/documents/document.types';
+import { WebhooksSection } from '../components/WebhooksSection';
 
 export default function ProjectDetailsPage() {
   const { id: projectId } = useParams<{ id: string }>();
@@ -274,6 +275,10 @@ export default function ProjectDetailsPage() {
           </ul>
         )}
       </section>
+
+      {project && (project.isOwner || project.ownerId) && projectId && (
+        <WebhooksSection projectId={projectId} />
+      )}
     </main>
   );
 }

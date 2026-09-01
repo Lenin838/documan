@@ -13,6 +13,10 @@ import {
   createNotificationInternal,
   safeNotify,
 } from '../notifications/notification.service.js';
+import {
+  dispatchWebhookEvent,
+  safeDispatchWebhook,
+} from '../webhooks/webhook-delivery.service.js';
 
 interface DocumentShareResponse {
   id: string;
@@ -110,6 +114,19 @@ export async function createDocumentShare(
         actorUserId: userId,
       }),
     );
+  }
+
+  if (document.projectId) {
+    const actorUser = await User.findById(userId).select('name email');
+    await safeDispatchWebhook(async () => {
+      await dispatchWebhookEvent({
+        projectId: document.projectId!,
+        eventType: 'DOCUMENT_SHARED',
+        document: { id: document._id.toString(), title: document.title },
+        actor: actorUser ? { id: actorUser._id.toString(), name: actorUser.name, email: actorUser.email } : null,
+        data: { targetUserId: targetUser._id.toString(), permission: input.permission },
+      });
+    });
   }
 
   return {
