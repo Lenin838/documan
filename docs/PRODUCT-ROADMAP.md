@@ -283,6 +283,8 @@ Future phases are intentionally **research-driven**. They are product opportunit
 - **Document Review Workflow**: Document-centric review lifecycle (`PENDING`, `APPROVED`, `CHANGES_REQUESTED`) supporting reviewer assignment, pending reviewer queue (`/reviews/pending`), resolution comments, single active review constraint, and full audit history.
 - **Document Templates & Scaffolding**: Static built-in templates (`ADR`, `Technical Specification`, `Troubleshooting / Runbook`) providing standardized document creation scaffolding, preview, field pre-filling, client-side `.md` file download, and audit metadata logging.
 - **Document-Level Dependency Mapping & Impact Summaries**: Multi-hop dependency mapping and downstream impact summaries leveraging `DEPENDS_ON` relationships (`maxDepth <= 3`, `maxNodes = 50`), deterministic summary metrics, relationship-based impact warnings, cycle detection, soft-delete filtering, and strict permission subtree pruning.
+- **Document Review & Lifecycle Notifications**: In-App Notification Center and Activity Feed providing recipient isolation, unread counter badge, mark as read / mark all as read, anti-IDOR protection, and safe non-blocking dispatch (`safeNotify`) across review requests, approvals, change requests, document sharing, and upstream stale/deprecated events.
+- **Project Outbound Webhooks & Event Notification Subscriptions**: Project-level outbound webhook management and automated event subscriptions supporting Project Owner/Admin authority, HTTPS-only target validation, pure Node.js SSRF protection agent (`isPrivateOrRestrictedIp`), DNS rebinding mitigation, `maxRedirects: 0` redirect blocking, AES-256-GCM secret encryption, 24-hour dual-secret rotation window, HMAC-SHA256 request signing (`X-Documan-Signature`), asynchronous MongoDB-persisted retry worker (`setImmediate` + backoff schedule + max 4 attempts), 14-day TTL delivery history logs, and 50-failure circuit breaker auto-disabling.
 
 ### User problem investigated
 
@@ -783,11 +785,11 @@ This keeps the roadmap understandable even as individual implementation details 
 
 Documan has established the foundations of a document-management and productivity platform through the intended progression of:
 
-**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows (Document Relationships, Project Context, External Technical References, Document Review Workflow, Document Templates & Scaffolding, Document-Level Dependency Mapping & Impact Summaries).**
+**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows (Document Relationships, Project Context, External Technical References, Document Review Workflow, Document Templates & Scaffolding, Document-Level Dependency Mapping & Impact Summaries, Document Review & Lifecycle Notifications, Project Outbound Webhooks & Event Notification Subscriptions).**
 
 The strategic question now moves beyond baseline document workflows:
 
-> **How can Documan leverage established document relationships, project context, technical references, review workflows, templates, and dependency mappings to deepen Project / API Context and provide Workflow Intelligence without becoming a clone of specialized developer tools?**
+> **How can Documan leverage established document relationships, project context, technical references, review workflows, templates, dependency mappings, in-app notifications, and outbound webhooks to deepen Project / API Context and provide Workflow Intelligence without becoming a clone of specialized developer tools?**
 
 The answer must come from research, user problems, and differentiated product design—not from copying feature lists.
 
