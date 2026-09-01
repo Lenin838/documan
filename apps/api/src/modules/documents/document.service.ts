@@ -12,6 +12,10 @@ import {
   createNotificationInternal,
   safeNotify,
 } from '../notifications/notification.service.js';
+import {
+  dispatchWebhookEvent,
+  safeDispatchWebhook,
+} from '../webhooks/webhook-delivery.service.js';
 import type {
   CreateDocumentInput,
   DocumentsQueryInput,
@@ -507,6 +511,19 @@ export async function transitionDocumentStatusInternal(
         }
       }
     });
+
+    if (doc.projectId) {
+      const userDoc = await mongoose.model('User').findById(userId).select('name email');
+      await safeDispatchWebhook(async () => {
+        await dispatchWebhookEvent({
+          projectId: doc.projectId!,
+          eventType: notificationType,
+          document: { id: doc._id.toString(), title: doc.title },
+          actor: userDoc ? { id: userDoc._id.toString(), name: userDoc.name, email: userDoc.email } : null,
+          data: { status: newStatus, reason },
+        });
+      });
+    }
   }
 
   return { previousStatus, updatedStatus: newStatus };
