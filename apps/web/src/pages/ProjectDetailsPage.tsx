@@ -14,6 +14,7 @@ import { getDocuments } from '../features/documents/document.api';
 import type { Document } from '../features/documents/document.types';
 import { WebhooksSection } from '../components/WebhooksSection';
 import { GovernanceSection } from '../components/GovernanceSection';
+import { ApiSpecsSection } from '../components/ApiSpecsSection';
 
 export default function ProjectDetailsPage() {
   const { id: projectId } = useParams<{ id: string }>();
@@ -204,6 +205,12 @@ export default function ProjectDetailsPage() {
           </form>
         )}
       </div>
+
+      {projectId && (
+        <div style={{ marginBottom: '2rem' }}>
+          <ApiSpecsSection projectId={projectId} isOwnerOrAdmin={!!project.isOwner} />
+        </div>
+      )}
 
       {projectId && (
         <div style={{ marginBottom: '2rem' }}>

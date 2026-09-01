@@ -58,6 +58,7 @@ import type {
   DocumentAuditAction,
 } from '../features/documents/document.types';
 import { useAuthStore } from '../features/auth/auth.store';
+import { DocumentApiEndpointsSection } from '../components/DocumentApiEndpointsSection';
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -2205,6 +2206,16 @@ export default function DocumentDetailsPage() {
           </div>
         )}
       </section>
+
+      {doc && doc.projectId && (
+        <section style={{ marginBottom: '2rem' }}>
+          <DocumentApiEndpointsSection
+            documentId={doc.id}
+            projectId={doc.projectId}
+            canEdit={canEdit}
+          />
+        </section>
+      )}
 
       <hr
         style={{
