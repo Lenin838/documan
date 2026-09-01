@@ -1315,6 +1315,40 @@ export default function DocumentDetailsPage() {
               </div>
             )}
 
+            {/* Upstream Stale Warning Banner */}
+            {upstreamDeps.some((dep) => dep.status === 'STALE') && (
+              <div
+                style={{
+                  padding: '0.75rem 1rem',
+                  background: '#fff7ed',
+                  border: '1px solid #ffedd5',
+                  borderRadius: '6px',
+                  color: '#c2410c',
+                  fontSize: '0.9rem',
+                  fontWeight: 'bold',
+                }}
+              >
+                ⚠️ Informational Upstream Warning: One or more upstream dependencies are marked as STALE. Reviewing upstream changes is recommended.
+              </div>
+            )}
+
+            {/* Upstream Deprecated Warning Banner */}
+            {upstreamDeps.some((dep) => dep.status === 'DEPRECATED') && (
+              <div
+                style={{
+                  padding: '0.75rem 1rem',
+                  background: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  borderRadius: '6px',
+                  color: '#991b1b',
+                  fontSize: '0.9rem',
+                  fontWeight: 'bold',
+                }}
+              >
+                ⛔ Upstream Deprecation Warning: One or more upstream dependencies are marked as DEPRECATED. Consider updating or replacing dependency references.
+              </div>
+            )}
+
             {/* Upstream Dependencies */}
             <div
               style={{
@@ -1357,7 +1391,7 @@ export default function DocumentDetailsPage() {
                         borderRadius: '4px',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                         <span
                           style={{
                             background: '#dbeafe',
@@ -1376,6 +1410,38 @@ export default function DocumentDetailsPage() {
                         >
                           {dep.title}
                         </Link>
+                        {dep.status && (
+                          <span
+                            style={{
+                              padding: '0.15rem 0.5rem',
+                              borderRadius: '12px',
+                              fontSize: '0.75rem',
+                              fontWeight: 'bold',
+                              background:
+                                dep.status === 'APPROVED'
+                                  ? '#dcfce7'
+                                  : dep.status === 'IN_REVIEW'
+                                    ? '#dbeafe'
+                                    : dep.status === 'STALE'
+                                      ? '#ffedd5'
+                                      : dep.status === 'DEPRECATED'
+                                        ? '#fee2e2'
+                                        : '#f1f5f9',
+                              color:
+                                dep.status === 'APPROVED'
+                                  ? '#166534'
+                                  : dep.status === 'IN_REVIEW'
+                                    ? '#1e40af'
+                                    : dep.status === 'STALE'
+                                      ? '#c2410c'
+                                      : dep.status === 'DEPRECATED'
+                                        ? '#991b1b'
+                                        : '#475569',
+                            }}
+                          >
+                            {dep.status}
+                          </span>
+                        )}
                         <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
                           ({dep.fileName})
                         </span>

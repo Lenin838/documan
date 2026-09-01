@@ -32,7 +32,7 @@ export const createDocumentReviewController: RequestHandler = async (
       req.user.userId,
       req.user.role,
       id,
-      res.locals.validatedBody,
+      req.body,
     );
 
     return sendSuccess(res, review, 201);
@@ -94,7 +94,7 @@ export const approveDocumentReviewController: RequestHandler = async (
       req.user.role,
       id,
       reviewId,
-      res.locals.validatedBody,
+      req.body,
     );
 
     return sendSuccess(res, review);
@@ -126,7 +126,7 @@ export const requestChangesDocumentReviewController: RequestHandler = async (
       req.user.role,
       id,
       reviewId,
-      res.locals.validatedBody,
+      req.body,
     );
 
     return sendSuccess(res, review);

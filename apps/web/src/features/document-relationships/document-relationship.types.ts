@@ -58,6 +58,7 @@ export interface DocumentDependencyItem {
   fileType: string;
   depth: number;
   direction: 'UPSTREAM' | 'DOWNSTREAM';
+  status?: string;
 }
 
 export interface DocumentDependencySummary {
