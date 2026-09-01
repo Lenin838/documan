@@ -44,6 +44,7 @@ import { documentShareRouter } from '../document-shares/document-share.routes.js
 import { documentRelationshipRouter } from './document-relationship.routes.js';
 import { documentReferenceRouter } from './document-reference.routes.js';
 import { documentReviewRouter } from './document-review.routes.js';
+import { documentApiEndpointRouter } from '../api-specs/api-spec.routes.js';
 
 const documentRouter = Router();
 
@@ -51,6 +52,7 @@ documentRouter.use('/:id/shares', documentShareRouter);
 documentRouter.use('/:id/relationships', documentRelationshipRouter);
 documentRouter.use('/:id/references', documentReferenceRouter);
 documentRouter.use('/:id/reviews', documentReviewRouter);
+documentRouter.use('/:id/api-endpoints', documentApiEndpointRouter);
 
 documentRouter.post(
   '/',

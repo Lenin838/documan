@@ -103,14 +103,14 @@ Traceability
 Collaboration & Access Control
     ↓
 Developer / Productivity Workflows
-(Relationships | Project Context | Technical References | Review Workflow | Templates & Scaffolding | Dependency Mapping & Impact Summaries | In-App Notifications | Project Webhooks | Documentation Drift & Automated Governance Engine)
+(Relationships | Project Context | Technical References | Review Workflow | Templates & Scaffolding | Dependency Mapping & Impact Summaries | In-App Notifications | Project Webhooks | Documentation Drift & Automated Governance | Programmatic CI/CD Release Gates)
     ↓
-Project / API Context
+Project / API Context (Phase 7 Transition)
     ↓
 Workflow Intelligence
 ```
 
-The first five areas established the document-management foundation. Developer and productivity workflows are actively expanding this foundation, while later areas remain research-driven.
+The first five areas established the document-management foundation. Developer and productivity workflows and governance automation have established a robust baseline, and Documan is now ready to research Phase 7 opportunities.
 
 ---
 
@@ -273,7 +273,7 @@ Future phases are intentionally **research-driven**. They are product opportunit
 
 ## Phase 6 — Developer / Productivity Workflows
 
-**Status: IN PROGRESS — Baseline Capabilities Implemented**
+**Status: COMPLETED — Baseline Capabilities Implemented**
 
 ### Completed baseline capabilities
 
@@ -286,6 +286,7 @@ Future phases are intentionally **research-driven**. They are product opportunit
 - **Document Review & Lifecycle Notifications**: In-App Notification Center and Activity Feed providing recipient isolation, unread counter badge, mark as read / mark all as read, anti-IDOR protection, and safe non-blocking dispatch (`safeNotify`) across review requests, approvals, change requests, document sharing, and upstream stale/deprecated events.
 - **Project Outbound Webhooks & Event Notification Subscriptions**: Project-level outbound webhook management and automated event subscriptions supporting Project Owner/Admin authority, HTTPS-only target validation, pure Node.js SSRF protection agent (`isPrivateOrRestrictedIp`), DNS rebinding mitigation, `maxRedirects: 0` redirect blocking, AES-256-GCM secret encryption, 24-hour dual-secret rotation window, HMAC-SHA256 request signing (`X-Documan-Signature`), asynchronous MongoDB-persisted retry worker (`setImmediate` + backoff schedule + max 4 attempts), 14-day TTL delivery history logs, and 50-failure circuit breaker auto-disabling.
 - **Documentation Drift & Automated Governance Engine**: Non-blocking in-process automated governance engine and freshness policy management supporting project-level governance settings (`isGovernanceEnabled`, `maxUnreviewedDays` threshold 14–365 days, `autoMarkStaleOnUpstreamChange`), real-time documentation health metrics (`X% Fresh`), deterministic `lastReviewedAt` semantics (updated ONLY on review approval or explicit Confirm Freshness), age-based staleness evaluation, explicit upstream lifecycle drift triggers (`STALE` / `DEPRECATED` targets only; metadata/title edits strictly ignored), deterministic Confirm Freshness status transition (`STALE` $\rightarrow$ `APPROVED`, EDIT authority required, `403 Forbidden` for READ users, `DEPRECATED`/`DRAFT` rejections), system audit logging (`STATUS_CHANGE` with `AUTOMATED_GOVERNANCE` or `CONFIRM_FRESHNESS` trigger), non-blocking in-app notification dispatch (`safeNotify`), non-blocking outbound webhook dispatch (`safeDispatchWebhook`), idempotent evaluation, strict project isolation, and Project Owner/Admin authority enforcement.
+- **Programmatic CI/CD Documentation Release Gates**: Programmatic documentation gate evaluation and CI authentication engine supporting project-scoped CI gate tokens (`documan_gate_...`), high-entropy random generation with one-time plaintext secret display, SHA-256 token hashing, Project Owner/Admin token administration, project release gate policy configuration (`allowStale`, `allowPendingReviews`, `allowDeprecated`, `minFreshnessPercentage`), documentation freshness evaluation, STALE / DEPRECATED / IN_REVIEW gating, minimum freshness threshold enforcement, governance-disabled status (`GOVERNANCE_DISABLED`), archived-project protection (`404 Not Found`), strict cross-project token isolation (`403 Forbidden`), dedicated `gateAuthMiddleware` authentication path (gate tokens strictly isolated from standard user/document APIs), in-memory rate limiting (`gateCheckRateLimiter`, 60 req/min), `HTTP 200 OK` (PASSED) vs `HTTP 412 Precondition Failed` (BLOCKED) status responses, audit logging (`DOCUMENT_GATE_BLOCKED` logged only on BLOCKED checks; 0 audit entries on routine PASSED polls), and Governance UI integration for token management and release gate policies.
 
 ### User problem investigated
 
@@ -303,24 +304,11 @@ Documan's document lifecycle, metadata, organization, audit, access-control, and
 
 The opportunity is not to copy developer tools. It is to connect documents to the context developers already need while keeping documents as the central product object.
 
-### Remaining research opportunities
-
-While baseline productivity capabilities (Relationships, Project Context, Technical References, Review Workflows, Document Templates & Scaffolding, Dependency Mapping & Impact Summaries, Notifications, Webhooks, and Automated Governance) are complete, Phase 6 research continues into:
-
-- Automated workflow triggers based on document lifecycle, review, and status events.
-- Developer tool integrations and webhook/event notification patterns.
-- Workspace-level productivity summaries and deeper cross-document analytics.
-- Integration opportunities with developer workflows without compromising server-side security boundaries.
-
-### Do not assume yet
-
-Do not assume that Documan should become an API client, IDE, issue tracker, or project-management system.
-
 ---
 
 ## Phase 7 — Project / API Context
 
-**Status: RESEARCH**
+**Status: RESEARCH — Active Opportunity Target**
 
 ### User problem to investigate
 
@@ -739,7 +727,11 @@ Traceability
         ↓
 Collaboration
         ↓
-Developer / Productivity Workflow
+Developer / Productivity Workflows
+        ↓
+Governance & Release Automation
+        ↓
+Project / API Context (Phase 7)
 ```
 
 The next concrete feature should emerge from research into the next meaningful user problem at this boundary.
@@ -786,12 +778,12 @@ This keeps the roadmap understandable even as individual implementation details 
 
 Documan has established the foundations of a document-management and productivity platform through the intended progression of:
 
-**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows (Document Relationships, Project Context, External Technical References, Document Review Workflow, Document Templates & Scaffolding, Document-Level Dependency Mapping & Impact Summaries, Document Review & Lifecycle Notifications, Project Outbound Webhooks & Event Notification Subscriptions, Documentation Drift & Automated Governance Engine).**
+**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows (Document Relationships, Project Context, External Technical References, Document Review Workflow, Document Templates & Scaffolding, Document-Level Dependency Mapping & Impact Summaries, Document Review & Lifecycle Notifications, Project Outbound Webhooks & Event Notification Subscriptions, Documentation Drift & Automated Governance Engine, Programmatic CI/CD Documentation Release Gates).**
 
-The strategic question now moves beyond baseline document workflows:
+With 10 baseline productivity and governance capabilities completed, Documan's strategic position transitions from Phase 6 (Developer / Productivity Workflows) into **Phase 7 (Project / API Context)**:
 
-> **How can Documan leverage established document relationships, project context, technical references, review workflows, templates, dependency mappings, in-app notifications, outbound webhooks, and automated governance to deepen Project / API Context and provide Workflow Intelligence without becoming a clone of specialized developer tools?**
+> **How can Documan leverage established document relationships, project context, technical references, review workflows, templates, dependency mappings, in-app notifications, outbound webhooks, automated governance, and CI release gates to bind technical documentation to real-world API & service specifications (OpenAPI/AsyncAPI) without becoming a generic API execution client?**
 
 The answer must come from research, user problems, and differentiated product design—not from copying feature lists.
 
-The immediate strategic research boundary is therefore the remaining **Developer / Productivity Workflow** opportunities followed by deeper **Project / API Context**, and eventually **Workflow Intelligence** as those opportunities are validated.
+The immediate strategic research focus is therefore **Phase 7 — OpenAPI / AsyncAPI Document Context Mapping & Endpoint Association**, connecting technical documentation directly to API endpoints and microservice schemas while preserving Documan's central document-management identity.
