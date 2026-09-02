@@ -11,6 +11,8 @@ export interface ProjectReleaseGateSettings {
   allowPendingReviews: boolean;
   allowDeprecated: boolean;
   minFreshnessPercentage: number;
+  allowOrphanedApiLinks?: boolean;
+  allowDeprecatedApiEndpoints?: boolean;
 }
 
 export interface ProjectGateTokenSubdocument {
@@ -136,6 +138,14 @@ const projectSchema = new Schema<ProjectDocument>(
         default: 80,
         min: 0,
         max: 100,
+      },
+      allowOrphanedApiLinks: {
+        type: Boolean,
+        default: false,
+      },
+      allowDeprecatedApiEndpoints: {
+        type: Boolean,
+        default: true,
       },
     },
 

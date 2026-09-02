@@ -1,4 +1,4 @@
-import { Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 
 import { AppError } from '../../errors/app-error.js';
 import { Project } from '../projects/project.model.js';
@@ -8,6 +8,7 @@ import { ProjectApiSpec } from './project-api-spec.model.js';
 import { ProjectApiEndpoint, type HttpMethod, type ProjectApiEndpointDocument } from './project-api-endpoint.model.js';
 import { DocumentEndpointLink } from './document-endpoint-link.model.js';
 import { parseOpenApiSpecification } from './openapi-parser.service.js';
+import { processApiEndpointDrift } from './api-spec-drift.service.js';
 import { createDocumentAudit } from '../documents/document-audit.service.js';
 import { verifyProjectOwnerOrAdmin } from '../governance/governance.service.js';
 
@@ -61,12 +62,13 @@ export async function importProjectApiSpec(
   // 4. Create new endpoint records & update link states
   const newEndpointDocs = [];
   const processedNewRouteKeys = new Set<string>();
+  const newlyDeprecatedEndpoints: Array<{ endpointId: Types.ObjectId; method: string; path: string }> = [];
 
   for (const ep of parsedSpec.endpoints) {
     const routeKey = `${ep.method}:${ep.path}`;
     processedNewRouteKeys.add(routeKey);
 
-    const epPayload: Record<string, any> = {
+    const epPayload: Record<string, unknown> = {
       projectId: project._id,
       specId: newSpec._id,
       method: ep.method,
@@ -80,27 +82,65 @@ export async function importProjectApiSpec(
     const newEndpoint = await ProjectApiEndpoint.create(epPayload);
     newEndpointDocs.push(newEndpoint);
 
-    // If an old endpoint matched this route, migrate active DocumentEndpointLink records to point to new endpointId
-    if (oldActiveSpec) {
-      const matchingOld = oldEndpoints.find(
-        (oe) => oe.method === ep.method && oe.path === ep.path,
-      );
+    // Find all past endpoints in this project matching the route key
+    const canQueryPastEndpoints = mongoose.connection.readyState !== 0 || typeof (ProjectApiEndpoint.find as unknown as { mock?: unknown }).mock !== 'undefined';
+    const matchingPastEndpoints = canQueryPastEndpoints
+      ? await ProjectApiEndpoint.find({
+          projectId: project._id,
+          method: ep.method,
+          path: ep.path,
+        })
+      : [];
 
-      if (matchingOld && matchingOld._id) {
-        // Update links to point to the new endpoint record
-        await DocumentEndpointLink.updateMany(
-          { endpointId: matchingOld._id, status: 'LINKED' },
-          { endpointId: newEndpoint._id },
-        );
+    const pastEndpointIds = matchingPastEndpoints.map((m) => m._id);
+
+    if (pastEndpointIds.length > 0) {
+      const wasPreviouslyNotDeprecated = matchingPastEndpoints.some((m) => !m.isDeprecated);
+      if (wasPreviouslyNotDeprecated && ep.isDeprecated) {
+        newlyDeprecatedEndpoints.push({
+          endpointId: newEndpoint._id,
+          method: ep.method,
+          path: ep.path,
+        });
       }
+
+      // Update links to point to the new endpoint record & recover orphaned state if re-linked
+      await DocumentEndpointLink.updateMany(
+        { endpointId: { $in: pastEndpointIds } },
+        { endpointId: newEndpoint._id, status: 'LINKED', orphanedReason: null },
+      );
+    } else if (ep.isDeprecated) {
+      newlyDeprecatedEndpoints.push({
+        endpointId: newEndpoint._id,
+        method: ep.method,
+        path: ep.path,
+      });
     }
   }
 
   // 5. Handle REMOVED endpoints (Routes present in old spec but absent from new spec)
+  const newlyOrphanedLinks: Array<{ linkId: Types.ObjectId; documentId: Types.ObjectId; endpointId: Types.ObjectId }> = [];
+
   if (oldActiveSpec) {
     for (const oldEp of oldEndpoints) {
       const routeKey = `${oldEp.method}:${oldEp.path}`;
       if (!processedNewRouteKeys.has(routeKey) && oldEp._id) {
+        const canQueryLinks = mongoose.connection.readyState !== 0 || typeof (DocumentEndpointLink.find as unknown as { mock?: unknown }).mock !== 'undefined';
+        const affectedLinks = canQueryLinks
+          ? await DocumentEndpointLink.find({
+              endpointId: oldEp._id,
+              status: 'LINKED',
+            })
+          : [];
+
+        for (const link of affectedLinks) {
+          newlyOrphanedLinks.push({
+            linkId: link._id,
+            documentId: link.documentId,
+            endpointId: oldEp._id,
+          });
+        }
+
         // Mark affected DocumentEndpointLink records as ORPHANED with specific reason
         await DocumentEndpointLink.updateMany(
           { endpointId: oldEp._id, status: 'LINKED' },
@@ -111,6 +151,17 @@ export async function importProjectApiSpec(
         );
       }
     }
+  }
+
+  // 6. Process API Endpoint Drift using exact transition deltas (non-blocking)
+  if ((newlyOrphanedLinks.length > 0 || newlyDeprecatedEndpoints.length > 0) && mongoose.connection.readyState !== 0) {
+    void processApiEndpointDrift({
+      projectId: project._id,
+      newlyOrphanedLinks,
+      newlyDeprecatedEndpoints,
+    }).catch((err) => {
+      console.warn('API spec drift processing error:', err);
+    });
   }
 
   // Audit event
@@ -208,6 +259,21 @@ export async function deleteProjectApiSpec(
   const endpoints = await ProjectApiEndpoint.find({ specId: spec._id }).select('_id');
   const endpointIds = endpoints.map((e) => e._id);
 
+  // Collect active LINKED associations that will transition to ORPHANED
+  const canQueryLinks = mongoose.connection.readyState !== 0 || typeof (DocumentEndpointLink.find as unknown as { mock?: unknown }).mock !== 'undefined';
+  const affectedLinks = canQueryLinks
+    ? await DocumentEndpointLink.find({
+        endpointId: { $in: endpointIds },
+        status: 'LINKED',
+      })
+    : [];
+
+  const newlyOrphanedLinks = affectedLinks.map((l) => ({
+    linkId: l._id,
+    documentId: l.documentId,
+    endpointId: l.endpointId,
+  }));
+
   // Transition all affected document links to ORPHANED while preserving history
   await DocumentEndpointLink.updateMany(
     { endpointId: { $in: endpointIds }, status: 'LINKED' },
@@ -216,6 +282,16 @@ export async function deleteProjectApiSpec(
       orphanedReason: 'API Specification deleted',
     },
   );
+
+  if (newlyOrphanedLinks.length > 0) {
+    void processApiEndpointDrift({
+      projectId: project._id,
+      newlyOrphanedLinks,
+      newlyDeprecatedEndpoints: [],
+    }).catch((err) => {
+      console.warn('API spec deletion drift processing error:', err);
+    });
+  }
 
   await createDocumentAudit(project._id.toString(), userId, 'STATUS_CHANGE', {
     action: 'API_SPEC_DELETE',

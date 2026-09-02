@@ -51,6 +51,8 @@ describe('Governance API Endpoints (/api/v1/projects/:projectId/governance)', ()
           allowPendingReviews: false,
           allowDeprecated: false,
           minFreshnessPercentage: 80,
+          allowOrphanedApiLinks: false,
+          allowDeprecatedApiEndpoints: true,
         },
         gateTokens: [],
         health: {
@@ -83,6 +85,8 @@ describe('Governance API Endpoints (/api/v1/projects/:projectId/governance)', ()
           allowPendingReviews: false,
           allowDeprecated: false,
           minFreshnessPercentage: 80,
+          allowOrphanedApiLinks: false,
+          allowDeprecatedApiEndpoints: true,
         },
         gateTokens: [],
         health: {
