@@ -336,7 +336,21 @@ The opportunity is not to copy developer tools. It is to connect documents to th
 - **Project Isolation & Security Enforcement**: Strict project boundary validation preventing cross-project endpoint link creation (IDOR protection) and enforcing Project Owner/Admin governance authority.
 - **UI Health Indicators & Governance Controls**: Added release gate policy checkboxes in `GovernanceSection.tsx` and visual status badges (`ORPHANED` red badge with reason tooltip, `Deprecated` orange badge) in `DocumentApiEndpointsSection.tsx`.
 - **System Audit Logging**: System audit tracking for document status transitions (`action: 'STATUS_CHANGE'`, `metadata.triggerSource: 'AUTOMATED_GOVERNANCE'`).
-- **Dedicated Service Architecture**: Built dedicated `api-spec-drift.service.ts` separating spec parsing/reconciliation from drift processing side effects.
+### Phase 7.5 — Documentation Health & Technical Knowledge Risk Radar (COMPLETED — Merge `be04b06`)
+
+#### Completed baseline capabilities
+
+- **Deterministic Pure Risk Calculator (`calculateKnowledgeRisk`)**: Pure in-memory calculator evaluating document risk across 5 factor categories: Impact Risk (Phase 7.3), Version Approval Risk (Phase 7.4), Freshness Risk (Phase 6), OpenAPI Endpoint Drift Risk (Phase 7.1), and Stewardship Continuity.
+- **Canonical Risk & Health Representation**: Calculates a canonical `riskScore` (0–100) and `riskLevel` (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`), deriving user-facing `healthScore` (`100 - riskScore`) dynamically without database persistence.
+- **Deterministic Evaluation Timestamp (`evaluationAt`)**: All time-based factor calculations (`impactAge`, `reviewAge`, `documentAge`) use an explicit `evaluationAt` context timestamp, guaranteeing 100% deterministic, testable output across runs.
+- **Operational Stewardship Continuity (`stewardId`)**: Adds `stewardId` as operational responsibility metadata on `Document`. Supports stewardship assignment, transfer, and clearing (`PATCH /api/v1/documents/:id/steward`) with audit logging (`DOCUMENT_STEWARD_CHANGED`) and non-blocking notifications (`STEWARD_ASSIGNED`).
+- **Owner Fallback Contact**: If no explicit steward is assigned (`stewardId === null`), `effectiveContact` dynamically displays `"Owner (Default Contact)"` without altering `ownerId` or copying creator metadata.
+- **Permission-Isolated Project Risk Radar**: `GET /api/v1/projects/:projectId/knowledge-risk` executes a single bulk MongoDB query matching ACL rules (`ownerId` / `DocumentShare` / `admin`), evaluating risks in-memory without N+1 queries and preventing aggregate information leaks.
+- **Structured Explainability & Remediation Guidance**: Returns machine-readable reason codes (`UNVERIFIED_IMPACT`, `UNAPPROVED_VERSION_DRIFT`, `REVIEW_OVERDUE`, `ORPHANED_API_ENDPOINT`, `STEWARD_UNASSIGNED`, `STEWARD_INACTIVE`) and deterministic text remediation actions.
+- **UI Integration**:
+  - Header **Knowledge Health Badge** & **`KnowledgeHealthDrawer`** on `DocumentDetailsPage`.
+  - **`KnowledgeRiskRadarPanel`** on `ProjectDetailsPage` displaying risk distribution, average score, and paginated high-risk document roster.
+- **Automated Verification Suite**: Validated via 22 Vitest unit tests, 25-scenario automated QA runner (`run_phase7_5_qa.ts`), full Vitest suite (74 files, 665 tests), typechecks, ESLint, production build, and manual browser QA.
 
 ---
 
