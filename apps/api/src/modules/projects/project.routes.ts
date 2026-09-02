@@ -9,6 +9,7 @@ import {
   getProjectDocumentsHandler,
   assignDocumentToProjectHandler,
   removeDocumentFromProjectHandler,
+  getProjectKnowledgeRiskHandler,
 } from './project.controller.js';
 import {
   createProjectSchema,
@@ -28,6 +29,10 @@ projectRouter
   .route('/')
   .post(validateBody(createProjectSchema), createProjectHandler)
   .get(getProjectsHandler);
+
+projectRouter
+  .route('/:id/knowledge-risk')
+  .get(validateParams(projectParamsSchema), getProjectKnowledgeRiskHandler);
 
 projectRouter
   .route('/:id')
