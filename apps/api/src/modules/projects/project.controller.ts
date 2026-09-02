@@ -94,6 +94,8 @@ export async function assignDocumentToProjectHandler(
   sendSuccess(res, result, 200);
 }
 
+import { getProjectKnowledgeRisk } from '../documents/knowledge-risk.service.js';
+
 export async function removeDocumentFromProjectHandler(
   req: Request<ProjectDocumentParamsInput>,
   res: Response,
@@ -105,4 +107,21 @@ export async function removeDocumentFromProjectHandler(
     req.params.documentId,
   );
   sendSuccess(res, result, 200);
+}
+
+export async function getProjectKnowledgeRiskHandler(
+  req: Request<ProjectParamsInput>,
+  res: Response,
+) {
+  const page = parseInt((req.query.page as string) || '1', 10);
+  const limit = parseInt((req.query.limit as string) || '20', 10);
+
+  const riskReport = await getProjectKnowledgeRisk(
+    req.user!.userId,
+    req.user!.role,
+    req.params.id,
+    page,
+    limit,
+  );
+  sendSuccess(res, riskReport, 200);
 }

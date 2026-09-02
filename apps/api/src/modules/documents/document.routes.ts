@@ -22,6 +22,8 @@ import {
   viewDocumentController,
   updateDocumentStatusController,
   verifyDocumentImpactController,
+  getDocumentHealthController,
+  updateDocumentStewardController,
 } from './document.controller.js';
 
 import { confirmDocumentFreshnessHandler } from '../governance/governance.controller.js';
@@ -69,6 +71,20 @@ documentRouter.get(
   authenticate,
   validateQuery(documentsQuerySchema),
   getAllDocumentsController,
+);
+
+documentRouter.get(
+  '/:id/health',
+  authenticate,
+  validateParams(documentIdParamsSchema),
+  getDocumentHealthController,
+);
+
+documentRouter.patch(
+  '/:id/steward',
+  authenticate,
+  validateParams(documentIdParamsSchema),
+  updateDocumentStewardController,
 );
 
 documentRouter.get(

@@ -15,6 +15,7 @@ import type { Document } from '../features/documents/document.types';
 import { WebhooksSection } from '../components/WebhooksSection';
 import { GovernanceSection } from '../components/GovernanceSection';
 import { ApiSpecsSection } from '../components/ApiSpecsSection';
+import { KnowledgeRiskRadarPanel } from '../components/KnowledgeRiskRadarPanel';
 
 export default function ProjectDetailsPage() {
   const { id: projectId } = useParams<{ id: string }>();
@@ -205,6 +206,12 @@ export default function ProjectDetailsPage() {
           </form>
         )}
       </div>
+
+      {projectId && (
+        <div style={{ marginBottom: '2rem' }}>
+          <KnowledgeRiskRadarPanel projectId={projectId} />
+        </div>
+      )}
 
       {projectId && (
         <div style={{ marginBottom: '2rem' }}>

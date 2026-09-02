@@ -22,6 +22,11 @@ import {
   getDocumentAuditHistory,
 } from './document-audit.service.js';
 
+import {
+  getDocumentKnowledgeHealth,
+  updateDocumentSteward,
+} from './knowledge-risk.service.js';
+
 export const createDocumentController: RequestHandler = async (
   req,
   res,
@@ -391,6 +396,68 @@ export const verifyDocumentImpactController: RequestHandler = async (
     );
 
     return sendSuccess(res, document);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const getDocumentHealthController: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    if (!req.user) {
+      return next(
+        new AppError(
+          'Authentication required',
+          401,
+          'AUTHENTICATION_REQUIRED',
+        ),
+      );
+    }
+
+    const { id } = res.locals.validatedParams;
+
+    const health = await getDocumentKnowledgeHealth(
+      req.user.userId,
+      req.user.role,
+      id,
+    );
+
+    return sendSuccess(res, health);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const updateDocumentStewardController: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    if (!req.user) {
+      return next(
+        new AppError(
+          'Authentication required',
+          401,
+          'AUTHENTICATION_REQUIRED',
+        ),
+      );
+    }
+
+    const { id } = res.locals.validatedParams;
+    const { stewardId } = req.body;
+
+    const result = await updateDocumentSteward(
+      req.user.userId,
+      req.user.role,
+      id,
+      stewardId !== undefined ? stewardId : null,
+    );
+
+    return sendSuccess(res, result);
   } catch (error) {
     return next(error);
   }

@@ -37,6 +37,7 @@ export interface DocumentDocument {
   fileType: string;
   fileSize: number;
   ownerId: Types.ObjectId;
+  stewardId?: Types.ObjectId | null;
   isDeleted: boolean;
   lastReviewedAt?: Date | null;
   impactVerification?: DocumentImpactVerification;
@@ -125,6 +126,12 @@ const documentSchema = new Schema<DocumentDocument>(
       ref: 'User',
       required: true,
       index: true,
+    },
+
+    stewardId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
     },
 
     isDeleted: {

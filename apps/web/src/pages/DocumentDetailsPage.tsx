@@ -39,6 +39,9 @@ import {
   requestChangesDocumentReviewApi,
 } from '../features/document-reviews/document-review.api';
 import { VersionHistorySection } from '../components/VersionHistorySection';
+import { KnowledgeHealthDrawer } from '../components/KnowledgeHealthDrawer';
+import { fetchDocumentHealth } from '../features/documents/health.api';
+import type { KnowledgeHealthData } from '../features/documents/health.types';
 import type {
   DocumentRelationship,
   DocumentRelationshipType,
@@ -159,6 +162,8 @@ export default function DocumentDetailsPage() {
   const currentUser = useAuthStore((state) => state.user);
 
   const [doc, setDoc] = useState<Document | null>(null);
+  const [healthData, setHealthData] = useState<KnowledgeHealthData | null>(null);
+  const [isHealthDrawerOpen, setIsHealthDrawerOpen] = useState(false);
   const [folderName, setFolderName] = useState('');
   const [projectName, setProjectName] = useState('');
   const [loading, setLoading] = useState(true);
@@ -414,6 +419,13 @@ export default function DocumentDetailsPage() {
       try {
         const response = await getDocumentById(documentId);
         setDoc(response.data);
+
+        try {
+          const healthRes = await fetchDocumentHealth(documentId);
+          setHealthData(healthRes);
+        } catch {
+          // Ignore health fetch failure
+        }
 
         if (response.data.folderId) {
           try {
@@ -967,6 +979,38 @@ export default function DocumentDetailsPage() {
             >
               {doc.status || 'DRAFT'}
             </span>
+            {healthData && (
+              <button
+                onClick={() => setIsHealthDrawerOpen(true)}
+                style={{
+                  marginLeft: '0.6rem',
+                  padding: '0.2rem 0.6rem',
+                  borderRadius: '4px',
+                  fontSize: '0.85rem',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  border: '1px solid #cbd5e1',
+                  background:
+                    healthData.riskLevel === 'LOW'
+                      ? '#ecfdf5'
+                      : healthData.riskLevel === 'MEDIUM'
+                        ? '#fffbeb'
+                        : healthData.riskLevel === 'HIGH'
+                          ? '#fff7ed'
+                          : '#fef2f2',
+                  color:
+                    healthData.riskLevel === 'LOW'
+                      ? '#047857'
+                      : healthData.riskLevel === 'MEDIUM'
+                        ? '#b45309'
+                        : healthData.riskLevel === 'HIGH'
+                          ? '#c2410c'
+                          : '#b91c1c',
+                }}
+              >
+                Health: {healthData.healthScore}/100 ({healthData.riskLevel} Risk)
+              </button>
+            )}
           </dd>
 
           <dt style={{ fontWeight: 'bold' }}>Title</dt>
@@ -2564,6 +2608,14 @@ export default function DocumentDetailsPage() {
           </div>
         </div>
       )}
+
+      <KnowledgeHealthDrawer
+        isOpen={isHealthDrawerOpen}
+        onClose={() => setIsHealthDrawerOpen(false)}
+        health={healthData}
+        canEdit={canEdit}
+        onHealthUpdated={(updated) => setHealthData(updated)}
+      />
     </main>
   );
 }

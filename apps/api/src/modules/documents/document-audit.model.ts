@@ -21,7 +21,8 @@ export type DocumentAuditAction =
   | 'STATUS_CHANGE'
   | 'DOCUMENT_IMPACT_FLAGGED'
   | 'DOCUMENT_IMPACT_VERIFIED'
-  | 'DOCUMENT_VERSION_CREATED';
+  | 'DOCUMENT_VERSION_CREATED'
+  | 'DOCUMENT_STEWARD_CHANGED';
 
 export interface DocumentAuditDocument {
   documentId: Types.ObjectId;
@@ -72,6 +73,7 @@ const documentAuditSchema =
           'DOCUMENT_IMPACT_FLAGGED',
           'DOCUMENT_IMPACT_VERIFIED',
           'DOCUMENT_VERSION_CREATED',
+          'DOCUMENT_STEWARD_CHANGED',
         ],
         required: true,
       },
