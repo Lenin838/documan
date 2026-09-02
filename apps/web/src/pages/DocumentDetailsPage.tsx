@@ -38,6 +38,7 @@ import {
   approveDocumentReviewApi,
   requestChangesDocumentReviewApi,
 } from '../features/document-reviews/document-review.api';
+import { VersionHistorySection } from '../components/VersionHistorySection';
 import type {
   DocumentRelationship,
   DocumentRelationshipType,
@@ -1640,6 +1641,16 @@ export default function DocumentDetailsPage() {
           </div>
         )}
       </section>
+
+      {/* Phase 7.4 Version History & Snapshot Provenance Section */}
+      {id && (
+        <VersionHistorySection
+          documentId={id}
+          currentVersion={doc.version || 1}
+          lastApprovedVersion={doc.lastApprovedVersion}
+          canEdit={canEdit}
+        />
+      )}
 
       <hr
         style={{

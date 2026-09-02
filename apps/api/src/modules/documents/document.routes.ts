@@ -146,12 +146,36 @@ documentRouter.post(
   confirmDocumentFreshnessHandler,
 );
 
+import {
+  listDocumentVersionsController,
+  getDocumentVersionController,
+  compareDocumentVersionsController,
+} from './document-version.controller.js';
+
 documentRouter.post(
   '/:id/verify-impact',
   authenticate,
   validateParams(documentIdParamsSchema),
   validateBody(verifyDocumentImpactSchema),
   verifyDocumentImpactController,
+);
+
+documentRouter.get(
+  '/:id/versions',
+  authenticate,
+  listDocumentVersionsController,
+);
+
+documentRouter.get(
+  '/:id/versions/:versionId',
+  authenticate,
+  getDocumentVersionController,
+);
+
+documentRouter.post(
+  '/:id/versions/compare',
+  authenticate,
+  compareDocumentVersionsController,
 );
 
 export { documentRouter };

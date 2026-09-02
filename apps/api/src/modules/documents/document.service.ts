@@ -17,6 +17,10 @@ import {
   safeDispatchWebhook,
 } from '../webhooks/webhook-delivery.service.js';
 import { processUpstreamDocumentImpact } from './document-impact-cascade.service.js';
+import {
+  createVersionSnapshot,
+  reserveNextVersionNumber,
+} from './document-version.service.js';
 import type {
   CreateDocumentInput,
   DocumentsQueryInput,
@@ -165,6 +169,14 @@ export async function createDocument(
     folderObjectId = new Types.ObjectId(input.folderId);
   }
 
+  let projectObjectId: Types.ObjectId | null = null;
+  if (input.projectId) {
+    if (!Types.ObjectId.isValid(input.projectId)) {
+      throw new AppError('Project not found', 404, 'PROJECT_NOT_FOUND');
+    }
+    projectObjectId = new Types.ObjectId(input.projectId);
+  }
+
   const document = await Document.create({
     title: input.title,
 
@@ -173,6 +185,7 @@ export async function createDocument(
       : {}),
 
     folderId: folderObjectId,
+    projectId: projectObjectId,
     tags: normalizeTags(input.tags),
     fileName: file.originalname,
     filePath: file.path,
@@ -181,7 +194,25 @@ export async function createDocument(
 
     ownerId: new Types.ObjectId(ownerId),
     isDeleted: false,
+    version: 1,
+    lastApprovedVersion: null,
   });
+
+  try {
+    await createVersionSnapshot({
+      document,
+      sourceFilePath: file.path,
+      fileName: file.originalname,
+      fileType: file.mimetype,
+      fileSize: file.size,
+      versionNumber: 1,
+      createdById: new Types.ObjectId(ownerId),
+      changeSummary: 'Initial document payload (v1)',
+    });
+  } catch (snapshotErr) {
+    await Document.findByIdAndDelete(document._id).catch(() => {});
+    throw snapshotErr;
+  }
 
   const BUILTIN_TEMPLATES: Record<string, string> = {
     adr: 'Architecture Decision Record',
@@ -388,9 +419,39 @@ export async function updateDocument(
     }
   }
 
+  let reservedVersion = document.version || 1;
+
   if (file) {
+    const updatedWithReservedVersion = await reserveNextVersionNumber(
+      document._id.toString(),
+      reservedVersion,
+    );
+
+    reservedVersion = updatedWithReservedVersion.version;
+    document.version = reservedVersion;
+
+    let versionSnapshot;
+    try {
+      versionSnapshot = await createVersionSnapshot({
+        document,
+        sourceFilePath: file.path,
+        fileName: file.originalname,
+        fileType: file.mimetype,
+        fileSize: file.size,
+        versionNumber: reservedVersion,
+        createdById: new Types.ObjectId(ownerId),
+        changeSummary: `Replaced file payload (v${reservedVersion})`,
+      });
+    } catch (snapshotErr) {
+      await Document.findOneAndUpdate(
+        { _id: document._id, version: reservedVersion },
+        { $inc: { version: -1 } },
+      ).catch(() => {});
+      throw snapshotErr;
+    }
+
     document.fileName = file.originalname;
-    document.filePath = file.path;
+    document.filePath = versionSnapshot.filePath;
     document.fileType = file.mimetype;
     document.fileSize = file.size;
   }
@@ -464,6 +525,10 @@ export async function transitionDocumentStatusInternal(
   }
 
   doc.status = newStatus;
+  if (newStatus === 'APPROVED') {
+    doc.lastApprovedVersion = doc.version || 1;
+  }
+
   if (typeof doc.save === 'function') {
     await doc.save();
   }
@@ -759,6 +824,7 @@ export async function verifyDocumentImpact(
   role: 'user' | 'admin',
   documentId: string,
   input?: { resolutionNote?: string },
+  upstreamDocumentId?: string,
 ) {
   validateDocumentId(documentId);
 
@@ -805,7 +871,24 @@ export async function verifyDocumentImpact(
       return toDocumentResponse(doc);
     }
 
-    const snapshotSources = [...activeSources];
+    let remainingSources = [...activeSources];
+    let resolvedSources = [...activeSources];
+    let verifiedUpstreamVersionNumber: number | null = null;
+
+    if (upstreamDocumentId) {
+      resolvedSources = activeSources.filter(
+        (s) => s.upstreamDocumentId.toString() === upstreamDocumentId,
+      );
+      remainingSources = activeSources.filter(
+        (s) => s.upstreamDocumentId.toString() !== upstreamDocumentId,
+      );
+      const targetResolved = activeSources.find(
+        (s) => s.upstreamDocumentId.toString() === upstreamDocumentId,
+      );
+      verifiedUpstreamVersionNumber = targetResolved?.upstreamVersionNumber || null;
+    }
+
+    const nextNeedsVerification = remainingSources.length > 0;
 
     const updatedDoc = await Document.findOneAndUpdate(
       {
@@ -814,8 +897,8 @@ export async function verifyDocumentImpact(
       },
       {
         $set: {
-          'impactVerification.needsVerification': false,
-          'impactVerification.activeImpactSources': [],
+          'impactVerification.needsVerification': nextNeedsVerification,
+          'impactVerification.activeImpactSources': remainingSources,
           'impactVerification.lastVerifiedAt': new Date(),
           'impactVerification.lastVerifiedBy': new Types.ObjectId(userId),
           'impactVerification.resolutionNote': input?.resolutionNote || null,
@@ -841,11 +924,13 @@ export async function verifyDocumentImpact(
       userId,
       'DOCUMENT_IMPACT_VERIFIED',
       {
-        resolvedImpactSources: snapshotSources.map((s) => ({
+        resolvedImpactSources: resolvedSources.map((s) => ({
           upstreamDocumentId: s.upstreamDocumentId.toString(),
+          upstreamVersionNumber: s.upstreamVersionNumber,
           changeType: s.changeType,
           flaggedAt: s.flaggedAt,
         })),
+        verifiedUpstreamVersionNumber,
         resolutionNote: input?.resolutionNote || null,
       },
     );

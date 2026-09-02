@@ -34,12 +34,14 @@ export async function processUpstreamDocumentImpact({
   }
 
   const upstreamDoc = await Document.findById(upstreamDocId).select(
-    '_id projectId ownerId title isDeleted',
+    '_id projectId ownerId title isDeleted version',
   );
 
   if (!upstreamDoc || upstreamDoc.isDeleted || !upstreamDoc.projectId) {
     return { impactedCount: 0 };
   }
+
+  const upstreamVersionNumber = upstreamDoc.version || 1;
 
   const projectIdStr = upstreamDoc.projectId.toString();
   let currentLevelDocIds: string[] = [upstreamDoc._id.toString()];
@@ -124,13 +126,15 @@ export async function processUpstreamDocumentImpact({
     let isDuplicateAlert = false;
 
     if (existingIndex >= 0) {
-      // Impact already active: update timestamp but suppress duplicate notification & webhook
+      // Impact already active: update timestamp & version but suppress duplicate notification & webhook
       existingImpacts[existingIndex]!.flaggedAt = new Date();
+      existingImpacts[existingIndex]!.upstreamVersionNumber = upstreamVersionNumber;
       isDuplicateAlert = true;
     } else {
       // New active impact source
       existingImpacts.push({
         upstreamDocumentId: upstreamDoc._id,
+        upstreamVersionNumber,
         changeType,
         flaggedAt: new Date(),
       });

@@ -9,6 +9,7 @@ export type DocumentStatus =
 
 export interface ActiveImpactSource {
   upstreamDocumentId: Types.ObjectId;
+  upstreamVersionNumber?: number;
   changeType: 'STALE' | 'DEPRECATED' | 'FILE_REPLACED';
   flaggedAt: Date;
 }
@@ -22,12 +23,15 @@ export interface DocumentImpactVerification {
 }
 
 export interface DocumentDocument {
+  _id: Types.ObjectId;
   title: string;
   description?: string;
   folderId?: Types.ObjectId | null;
   projectId?: Types.ObjectId | null;
   tags?: string[];
   status: DocumentStatus;
+  version: number;
+  lastApprovedVersion?: number | null;
   fileName: string;
   filePath: string;
   fileType: string;
@@ -79,6 +83,17 @@ const documentSchema = new Schema<DocumentDocument>(
       default: 'DRAFT',
       required: true,
       index: true,
+    },
+
+    version: {
+      type: Number,
+      default: 1,
+      required: true,
+    },
+
+    lastApprovedVersion: {
+      type: Number,
+      default: null,
     },
 
     fileName: {
@@ -136,6 +151,10 @@ const documentSchema = new Schema<DocumentDocument>(
             type: Schema.Types.ObjectId,
             ref: 'Document',
             required: true,
+          },
+          upstreamVersionNumber: {
+            type: Number,
+            default: null,
           },
           changeType: {
             type: String,
