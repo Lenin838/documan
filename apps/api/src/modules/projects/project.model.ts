@@ -13,6 +13,7 @@ export interface ProjectReleaseGateSettings {
   minFreshnessPercentage: number;
   allowOrphanedApiLinks?: boolean;
   allowDeprecatedApiEndpoints?: boolean;
+  allowUnverifiedImpacts?: boolean;
 }
 
 export interface ProjectGateTokenSubdocument {
@@ -144,6 +145,10 @@ const projectSchema = new Schema<ProjectDocument>(
         default: false,
       },
       allowDeprecatedApiEndpoints: {
+        type: Boolean,
+        default: true,
+      },
+      allowUnverifiedImpacts: {
         type: Boolean,
         default: true,
       },

@@ -6,7 +6,8 @@ export type NotificationType =
   | 'CHANGES_REQUESTED'
   | 'UPSTREAM_STALE'
   | 'UPSTREAM_DEPRECATED'
-  | 'DOCUMENT_SHARED';
+  | 'DOCUMENT_SHARED'
+  | 'UPSTREAM_DOCUMENT_CHANGED';
 
 export interface NotificationDocument extends MongooseDocument {
   recipientUserId: Types.ObjectId;
@@ -42,6 +43,7 @@ const notificationSchema = new Schema<NotificationDocument>(
         'UPSTREAM_STALE',
         'UPSTREAM_DEPRECATED',
         'DOCUMENT_SHARED',
+        'UPSTREAM_DOCUMENT_CHANGED',
       ],
       required: true,
       index: true,

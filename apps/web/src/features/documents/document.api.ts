@@ -197,3 +197,15 @@ export async function updateDocumentStatus(
 
   return response.data;
 }
+
+export async function verifyDocumentImpactApi(
+  documentId: string,
+  resolutionNote?: string,
+): Promise<GetDocumentResponse> {
+  const response = await apiClient.post<GetDocumentResponse>(
+    `/documents/${documentId}/verify-impact`,
+    { resolutionNote },
+  );
+
+  return response.data;
+}

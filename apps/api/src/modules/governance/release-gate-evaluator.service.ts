@@ -70,6 +70,7 @@ export async function evaluateReleaseGateInternal(
     minFreshnessPercentage: project.releaseGateSettings?.minFreshnessPercentage ?? 80,
     allowOrphanedApiLinks: project.releaseGateSettings?.allowOrphanedApiLinks ?? false,
     allowDeprecatedApiEndpoints: project.releaseGateSettings?.allowDeprecatedApiEndpoints ?? true,
+    allowUnverifiedImpacts: project.releaseGateSettings?.allowUnverifiedImpacts ?? true,
   };
 
   const maxDays = project.governanceSettings?.maxUnreviewedDays ?? 90;
@@ -189,6 +190,21 @@ export async function evaluateReleaseGateInternal(
           });
           continue;
         }
+      }
+    }
+
+    // Cross-Document Change Impact Policy Check
+    if (gateSettings.allowUnverifiedImpacts === false) {
+      const needsVerification = doc.impactVerification?.needsVerification || false;
+      const activeSources = doc.impactVerification?.activeImpactSources || [];
+      if (needsVerification && activeSources.length > 0) {
+        blockingDocuments.push({
+          id: doc._id.toString(),
+          title: doc.title,
+          status: doc.status,
+          reason: 'Document has unverified upstream dependency changes (unresolved impact from upstream documents)',
+        });
+        continue;
       }
     }
 

@@ -342,6 +342,21 @@ export function GovernanceSection({
 
             <div className="flex items-center justify-between">
               <div>
+                <span className="text-sm text-gray-700">Allow Unverified Upstream Impacts</span>
+                <p className="text-xs text-gray-500">Allow CI releases when documents have unverified upstream dependency changes</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={releaseGateSettings.allowUnverifiedImpacts ?? true}
+                disabled={saving}
+                onChange={(e) => void handleUpdateReleaseGate('allowUnverifiedImpacts', e.target.checked)}
+                aria-label="Allow Unverified Upstream Impacts"
+                className="h-4 w-4 text-blue-600 rounded"
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
                 <span className="text-sm text-gray-700">Minimum Required Freshness</span>
                 <p className="text-xs text-gray-500">Block release if project freshness % is below this value</p>
               </div>

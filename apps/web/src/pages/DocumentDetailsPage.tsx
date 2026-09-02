@@ -10,6 +10,7 @@ import {
   deleteDocument,
   getDocuments,
   updateDocumentStatus,
+  verifyDocumentImpactApi,
 } from '../features/documents/document.api';
 import { getFolderById } from '../features/folders/folder.api';
 import { getProjectById } from '../features/projects/project.api';
@@ -109,6 +110,10 @@ function formatAuditAction(action: DocumentAuditAction): {
       return { label: 'Changes Requested', description: 'Changes were requested for document' };
     case 'STATUS_CHANGE':
       return { label: 'Status Changed', description: 'Document lifecycle status was updated' };
+    case 'DOCUMENT_IMPACT_FLAGGED':
+      return { label: 'Upstream Impact Flagged', description: 'Flagged due to upstream dependency change' };
+    case 'DOCUMENT_IMPACT_VERIFIED':
+      return { label: 'Upstream Impact Verified', description: 'Upstream dependency change impact was verified and resolved' };
     default:
       return { label: action, description: '' };
   }
@@ -243,6 +248,36 @@ export default function DocumentDetailsPage() {
       setStatusError(msg);
     } finally {
       setUpdatingStatus(false);
+    }
+  };
+
+  // Verify Impact state
+  const [showVerifyImpactModal, setShowVerifyImpactModal] = useState(false);
+  const [verifyResolutionNote, setVerifyResolutionNote] = useState('');
+  const [verifyingImpact, setVerifyingImpact] = useState(false);
+  const [verifyImpactError, setVerifyImpactError] = useState('');
+  const [verifyImpactSuccess, setVerifyImpactSuccess] = useState('');
+
+  const handleVerifyImpactSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!id || !canEdit) return;
+
+    setVerifyingImpact(true);
+    setVerifyImpactError('');
+    setVerifyImpactSuccess('');
+
+    try {
+      const response = await verifyDocumentImpactApi(id, verifyResolutionNote || undefined);
+      setDoc(response.data);
+      setVerifyImpactSuccess('Upstream impact verified successfully!');
+      setVerifyResolutionNote('');
+      setShowVerifyImpactModal(false);
+      setAuditPage(1);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to verify impact';
+      setVerifyImpactError(msg);
+    } finally {
+      setVerifyingImpact(false);
     }
   };
 
@@ -1316,6 +1351,72 @@ export default function DocumentDetailsPage() {
               </div>
             )}
 
+            {verifyImpactSuccess && (
+              <div
+                style={{
+                  padding: '0.75rem 1rem',
+                  background: '#f0fdf4',
+                  border: '1px solid #bbf7d0',
+                  borderRadius: '6px',
+                  color: '#166534',
+                  fontSize: '0.9rem',
+                  fontWeight: 'bold',
+                }}
+              >
+                ✅ {verifyImpactSuccess}
+              </div>
+            )}
+
+            {/* Upstream Impact Verification Banner */}
+            {doc.impactVerification?.needsVerification && (
+              <div
+                style={{
+                  padding: '1rem',
+                  background: '#fffbe8',
+                  border: '1px solid #fde047',
+                  borderRadius: '6px',
+                  color: '#854d0e',
+                  fontSize: '0.9rem',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>
+                    ⚠️ Upstream Impact Warning: Foundational dependencies have changed. Verification required.
+                  </div>
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => setShowVerifyImpactModal(true)}
+                      style={{
+                        padding: '0.35rem 0.75rem',
+                        background: '#ca8a04',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '4px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        fontSize: '0.85rem',
+                      }}
+                    >
+                      Verify Impact
+                    </button>
+                  )}
+                </div>
+                {doc.impactVerification.activeImpactSources.length > 0 && (
+                  <div style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>
+                    <strong>Active Impact Sources:</strong>
+                    <ul style={{ margin: '0.25rem 0 0 1.25rem', padding: 0 }}>
+                      {doc.impactVerification.activeImpactSources.map((source, idx) => (
+                        <li key={idx}>
+                          Upstream Document: <span style={{ fontFamily: 'monospace' }}>{source.upstreamDocumentId}</span> ({source.changeType}) — Flagged {new Date(source.flaggedAt).toLocaleString()}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Upstream Stale Warning Banner */}
             {upstreamDeps.some((dep) => dep.status === 'STALE') && (
               <div
@@ -2362,6 +2463,96 @@ export default function DocumentDetailsPage() {
           </>
         )}
       </section>
+
+      {/* Verify Upstream Impact Modal */}
+      {showVerifyImpactModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              padding: '1.5rem',
+              borderRadius: '8px',
+              maxWidth: '500px',
+              width: '100%',
+              boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
+            }}
+          >
+            <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', fontWeight: 'bold' }}>
+              Verify Upstream Impact
+            </h3>
+            <p style={{ fontSize: '0.875rem', color: '#4b5563', marginBottom: '1rem' }}>
+              Confirm that you have reviewed the upstream document changes and verified that this document remains technically accurate and valid.
+            </p>
+            {verifyImpactError && (
+              <div style={{ color: '#dc2626', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
+                {verifyImpactError}
+              </div>
+            )}
+            <form onSubmit={handleVerifyImpactSubmit}>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                  Resolution Note (Optional)
+                </label>
+                <textarea
+                  value={verifyResolutionNote}
+                  onChange={(e) => setVerifyResolutionNote(e.target.value)}
+                  placeholder="Describe verification analysis or required compatibility checks..."
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '4px',
+                    fontSize: '0.875rem',
+                  }}
+                />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowVerifyImpactModal(false)}
+                  disabled={verifyingImpact}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    background: '#f3f4f6',
+                    color: '#374151',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={verifyingImpact}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    background: '#2563eb',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '4px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {verifyingImpact ? 'Verifying...' : 'Confirm Verification'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

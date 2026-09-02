@@ -18,7 +18,9 @@ export type DocumentAuditAction =
   | 'REVIEW_REQUEST'
   | 'REVIEW_APPROVED'
   | 'REVIEW_CHANGES_REQUESTED'
-  | 'STATUS_CHANGE';
+  | 'STATUS_CHANGE'
+  | 'DOCUMENT_IMPACT_FLAGGED'
+  | 'DOCUMENT_IMPACT_VERIFIED';
 
 export interface DocumentAuditDocument {
   documentId: Types.ObjectId;
@@ -66,6 +68,8 @@ const documentAuditSchema =
           'REVIEW_APPROVED',
           'REVIEW_CHANGES_REQUESTED',
           'STATUS_CHANGE',
+          'DOCUMENT_IMPACT_FLAGGED',
+          'DOCUMENT_IMPACT_VERIFIED',
         ],
         required: true,
       },

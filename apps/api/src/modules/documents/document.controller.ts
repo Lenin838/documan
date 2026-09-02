@@ -15,6 +15,7 @@ import {
   downloadDocument,
   viewDocument,
   updateDocumentStatus,
+  verifyDocumentImpact,
 } from './document.service.js';
 
 import {
@@ -352,6 +353,37 @@ export const updateDocumentStatusController: RequestHandler = async (
     const { id } = res.locals.validatedParams;
 
     const document = await updateDocumentStatus(
+      req.user.userId,
+      req.user.role,
+      id,
+      req.body,
+    );
+
+    return sendSuccess(res, document);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const verifyDocumentImpactController: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    if (!req.user) {
+      return next(
+        new AppError(
+          'Authentication required',
+          401,
+          'AUTHENTICATION_REQUIRED',
+        ),
+      );
+    }
+
+    const { id } = res.locals.validatedParams;
+
+    const document = await verifyDocumentImpact(
       req.user.userId,
       req.user.role,
       id,

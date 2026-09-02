@@ -163,6 +163,7 @@ export async function updateProjectGovernance(
         minFreshnessPercentage: 80,
         allowOrphanedApiLinks: false,
         allowDeprecatedApiEndpoints: true,
+        allowUnverifiedImpacts: true,
       };
     }
     if (input.releaseGateSettings.allowStale !== undefined) {
@@ -182,6 +183,9 @@ export async function updateProjectGovernance(
     }
     if (input.releaseGateSettings.allowDeprecatedApiEndpoints !== undefined) {
       project.releaseGateSettings.allowDeprecatedApiEndpoints = input.releaseGateSettings.allowDeprecatedApiEndpoints;
+    }
+    if (input.releaseGateSettings.allowUnverifiedImpacts !== undefined) {
+      project.releaseGateSettings.allowUnverifiedImpacts = input.releaseGateSettings.allowUnverifiedImpacts;
     }
   }
 

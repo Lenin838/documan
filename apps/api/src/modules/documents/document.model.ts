@@ -7,6 +7,20 @@ export type DocumentStatus =
   | 'DEPRECATED'
   | 'STALE';
 
+export interface ActiveImpactSource {
+  upstreamDocumentId: Types.ObjectId;
+  changeType: 'STALE' | 'DEPRECATED' | 'FILE_REPLACED';
+  flaggedAt: Date;
+}
+
+export interface DocumentImpactVerification {
+  needsVerification: boolean;
+  activeImpactSources: ActiveImpactSource[];
+  lastVerifiedAt?: Date | null;
+  lastVerifiedBy?: Types.ObjectId | null;
+  resolutionNote?: string | null;
+}
+
 export interface DocumentDocument {
   title: string;
   description?: string;
@@ -21,6 +35,7 @@ export interface DocumentDocument {
   ownerId: Types.ObjectId;
   isDeleted: boolean;
   lastReviewedAt?: Date | null;
+  impactVerification?: DocumentImpactVerification;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -108,6 +123,45 @@ const documentSchema = new Schema<DocumentDocument>(
       default: null,
       index: true,
     },
+
+    impactVerification: {
+      needsVerification: {
+        type: Boolean,
+        default: false,
+        index: true,
+      },
+      activeImpactSources: [
+        {
+          upstreamDocumentId: {
+            type: Schema.Types.ObjectId,
+            ref: 'Document',
+            required: true,
+          },
+          changeType: {
+            type: String,
+            enum: ['STALE', 'DEPRECATED', 'FILE_REPLACED'],
+            required: true,
+          },
+          flaggedAt: {
+            type: Date,
+            default: Date.now,
+          },
+        },
+      ],
+      lastVerifiedAt: {
+        type: Date,
+        default: null,
+      },
+      lastVerifiedBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        default: null,
+      },
+      resolutionNote: {
+        type: String,
+        default: null,
+      },
+    },
   },
   {
     timestamps: true,
@@ -115,6 +169,7 @@ const documentSchema = new Schema<DocumentDocument>(
 );
 
 documentSchema.index({ projectId: 1, status: 1, lastReviewedAt: 1 });
+documentSchema.index({ projectId: 1, 'impactVerification.needsVerification': 1 });
 
 export const Document = model<DocumentDocument>(
   'Document',
