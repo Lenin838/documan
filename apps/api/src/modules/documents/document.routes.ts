@@ -21,6 +21,7 @@ import {
   downloadDocumentController,
   viewDocumentController,
   updateDocumentStatusController,
+  verifyDocumentImpactController,
 } from './document.controller.js';
 
 import { confirmDocumentFreshnessHandler } from '../governance/governance.controller.js';
@@ -37,6 +38,7 @@ import {
   documentAuditHistoryQuerySchema,
   getDocumentDependenciesQuerySchema,
   updateDocumentStatusSchema,
+  verifyDocumentImpactSchema,
 } from './document.schema.js';
 
 import { documentUpload } from '../../middleware/uploads/document-upload.middleware.js';
@@ -142,6 +144,14 @@ documentRouter.post(
   authenticate,
   validateParams(documentIdParamsSchema),
   confirmDocumentFreshnessHandler,
+);
+
+documentRouter.post(
+  '/:id/verify-impact',
+  authenticate,
+  validateParams(documentIdParamsSchema),
+  validateBody(verifyDocumentImpactSchema),
+  verifyDocumentImpactController,
 );
 
 export { documentRouter };

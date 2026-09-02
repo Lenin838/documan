@@ -16,6 +16,7 @@ import {
   dispatchWebhookEvent,
   safeDispatchWebhook,
 } from '../webhooks/webhook-delivery.service.js';
+import { processUpstreamDocumentImpact } from './document-impact-cascade.service.js';
 import type {
   CreateDocumentInput,
   DocumentsQueryInput,
@@ -395,6 +396,16 @@ export async function updateDocument(
   }
 
   const previousStatus = document.status || 'DRAFT';
+
+  if (file && (previousStatus === 'APPROVED' || previousStatus === 'IN_REVIEW')) {
+    void processUpstreamDocumentImpact({
+      upstreamDocId: document._id.toString(),
+      changeType: 'FILE_REPLACED',
+    }).catch((err) => {
+      console.warn('Document impact cascade processing error:', err);
+    });
+  }
+
   if (
     previousStatus === 'APPROVED' ||
     previousStatus === 'DEPRECATED' ||
@@ -522,6 +533,25 @@ export async function transitionDocumentStatusInternal(
           actor: userDoc ? { id: userDoc._id.toString(), name: userDoc.name, email: userDoc.email } : null,
           data: { status: newStatus, reason },
         });
+      });
+    }
+
+    const isStaleTrigger = (previousStatus === 'APPROVED' || previousStatus === 'IN_REVIEW') && newStatus === 'STALE';
+    const isDeprecatedTrigger = (previousStatus === 'APPROVED' || previousStatus === 'STALE' || previousStatus === 'IN_REVIEW') && newStatus === 'DEPRECATED';
+
+    if (isStaleTrigger) {
+      void processUpstreamDocumentImpact({
+        upstreamDocId: documentId,
+        changeType: 'STALE',
+      }).catch((err) => {
+        console.warn('Document impact cascade processing error:', err);
+      });
+    } else if (isDeprecatedTrigger) {
+      void processUpstreamDocumentImpact({
+        upstreamDocId: documentId,
+        changeType: 'DEPRECATED',
+      }).catch((err) => {
+        console.warn('Document impact cascade processing error:', err);
       });
     }
   }
@@ -722,4 +752,106 @@ export async function restoreDocument(
   return {
     message: 'Document restored successfully',
   };
+}
+
+export async function verifyDocumentImpact(
+  userId: string,
+  role: 'user' | 'admin',
+  documentId: string,
+  input?: { resolutionNote?: string },
+) {
+  validateDocumentId(documentId);
+
+  const docFilter: { _id: string; isDeleted: boolean; ownerId?: Types.ObjectId } = {
+    _id: documentId,
+    isDeleted: false,
+  };
+
+  if (role !== 'admin') {
+    const userObjId = new Types.ObjectId(userId);
+    const sharedDocIds = await DocumentShare.find({
+      sharedWithUserId: userObjId,
+      permission: 'EDIT',
+    }).select('documentId');
+    const allowedDocObjIds = sharedDocIds.map((s) => s.documentId);
+
+    const docCheck = await Document.findOne(docFilter);
+    if (!docCheck) {
+      throw new AppError('Document not found', 404, 'DOCUMENT_NOT_FOUND');
+    }
+
+    const isOwner = docCheck.ownerId.toString() === userId;
+    const isSharedEdit = allowedDocObjIds.some(
+      (id) => id.toString() === documentId,
+    );
+
+    if (!isOwner && !isSharedEdit) {
+      throw new AppError('Forbidden', 403, 'FORBIDDEN');
+    }
+  }
+
+  // Bounded Concurrency Retry Loop (Max 1 retry)
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const doc = await Document.findOne({ _id: documentId, isDeleted: false });
+    if (!doc) {
+      throw new AppError('Document not found', 404, 'DOCUMENT_NOT_FOUND');
+    }
+
+    const activeSources = doc.impactVerification?.activeImpactSources || [];
+    const needsVerification = doc.impactVerification?.needsVerification || false;
+
+    // Idempotency check: if no active impacts and verification is false, return state without audit
+    if (!needsVerification && activeSources.length === 0) {
+      return toDocumentResponse(doc);
+    }
+
+    const snapshotSources = [...activeSources];
+
+    const updatedDoc = await Document.findOneAndUpdate(
+      {
+        _id: doc._id,
+        updatedAt: doc.updatedAt,
+      },
+      {
+        $set: {
+          'impactVerification.needsVerification': false,
+          'impactVerification.activeImpactSources': [],
+          'impactVerification.lastVerifiedAt': new Date(),
+          'impactVerification.lastVerifiedBy': new Types.ObjectId(userId),
+          'impactVerification.resolutionNote': input?.resolutionNote || null,
+        },
+      },
+      { new: true },
+    );
+
+    if (!updatedDoc) {
+      if (attempt === 0) {
+        continue;
+      }
+      throw new AppError(
+        'Concurrent document modification detected, please retry',
+        409,
+        'CONCURRENCY_CONFLICT',
+      );
+    }
+
+    // AUDIT INVARIANT: Create audit entry ONLY after DB mutation succeeds
+    await createDocumentAudit(
+      documentId,
+      userId,
+      'DOCUMENT_IMPACT_VERIFIED',
+      {
+        resolvedImpactSources: snapshotSources.map((s) => ({
+          upstreamDocumentId: s.upstreamDocumentId.toString(),
+          changeType: s.changeType,
+          flaggedAt: s.flaggedAt,
+        })),
+        resolutionNote: input?.resolutionNote || null,
+      },
+    );
+
+    return toDocumentResponse(updatedDoc);
+  }
+
+  throw new AppError('Document verification failed', 500, 'INTERNAL_SERVER_ERROR');
 }

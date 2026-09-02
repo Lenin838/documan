@@ -197,6 +197,8 @@ export const documentAuditHistoryQuerySchema = z.object({
       'REVIEW_APPROVED',
       'REVIEW_CHANGES_REQUESTED',
       'STATUS_CHANGE',
+      'DOCUMENT_IMPACT_FLAGGED',
+      'DOCUMENT_IMPACT_VERIFIED',
     ])
     .optional(),
 });
@@ -224,4 +226,18 @@ export const getDocumentDependenciesQuerySchema = z
 
 export type GetDocumentDependenciesQueryInput = z.infer<
   typeof getDocumentDependenciesQuerySchema
+>;
+
+export const verifyDocumentImpactSchema = z
+  .object({
+    resolutionNote: z
+      .string()
+      .trim()
+      .max(1000, 'Resolution note must not exceed 1000 characters')
+      .optional(),
+  })
+  .strict();
+
+export type VerifyDocumentImpactInput = z.infer<
+  typeof verifyDocumentImpactSchema
 >;

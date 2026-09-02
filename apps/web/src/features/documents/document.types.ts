@@ -5,6 +5,20 @@ export type DocumentStatus =
   | 'DEPRECATED'
   | 'STALE';
 
+export interface ActiveImpactSource {
+  upstreamDocumentId: string;
+  changeType: 'STALE' | 'DEPRECATED' | 'FILE_REPLACED';
+  flaggedAt: string;
+}
+
+export interface DocumentImpactVerification {
+  needsVerification: boolean;
+  activeImpactSources: ActiveImpactSource[];
+  lastVerifiedAt?: string | null;
+  lastVerifiedBy?: string | null;
+  resolutionNote?: string | null;
+}
+
 export interface Document {
   id: string;
   title: string;
@@ -19,6 +33,7 @@ export interface Document {
   fileSize: number;
   ownerId: string;
   isDeleted: boolean;
+  impactVerification?: DocumentImpactVerification;
   createdAt: string;
   updatedAt: string;
 }
@@ -87,7 +102,9 @@ export type DocumentAuditAction =
   | 'REVIEW_REQUEST'
   | 'REVIEW_APPROVED'
   | 'REVIEW_CHANGES_REQUESTED'
-  | 'STATUS_CHANGE';
+  | 'STATUS_CHANGE'
+  | 'DOCUMENT_IMPACT_FLAGGED'
+  | 'DOCUMENT_IMPACT_VERIFIED';
 
 export interface DocumentAudit {
   id: string;

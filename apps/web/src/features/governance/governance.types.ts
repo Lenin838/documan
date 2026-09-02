@@ -11,6 +11,7 @@ export interface ProjectReleaseGateSettings {
   minFreshnessPercentage: number;
   allowOrphanedApiLinks?: boolean;
   allowDeprecatedApiEndpoints?: boolean;
+  allowUnverifiedImpacts?: boolean;
 }
 
 export interface ProjectGateToken {

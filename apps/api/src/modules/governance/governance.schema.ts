@@ -22,6 +22,7 @@ export const updateGovernanceSettingsSchema = z.object({
         .optional(),
       allowOrphanedApiLinks: z.boolean().optional(),
       allowDeprecatedApiEndpoints: z.boolean().optional(),
+      allowUnverifiedImpacts: z.boolean().optional(),
     })
     .optional(),
 });
