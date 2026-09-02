@@ -7,6 +7,7 @@ export type DocumentStatus =
 
 export interface ActiveImpactSource {
   upstreamDocumentId: string;
+  upstreamVersionNumber?: number;
   changeType: 'STALE' | 'DEPRECATED' | 'FILE_REPLACED';
   flaggedAt: string;
 }
@@ -27,6 +28,8 @@ export interface Document {
   projectId?: string | null;
   tags?: string[];
   status?: DocumentStatus;
+  version?: number;
+  lastApprovedVersion?: number | null;
   fileName: string;
   filePath: string;
   fileType: string;

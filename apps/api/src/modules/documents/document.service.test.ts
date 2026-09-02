@@ -9,6 +9,27 @@ const { mockCreateDocumentAudit } = vi.hoisted(() => ({
 vi.mock('node:fs/promises', () => ({
   default: {
     access: vi.fn(),
+    copyFile: vi.fn().mockResolvedValue(undefined),
+    unlink: vi.fn().mockResolvedValue(undefined),
+  },
+  copyFile: vi.fn().mockResolvedValue(undefined),
+  unlink: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('node:fs', () => ({
+  default: {
+    existsSync: vi.fn().mockReturnValue(true),
+    mkdirSync: vi.fn(),
+    promises: {
+      copyFile: vi.fn().mockResolvedValue(undefined),
+      unlink: vi.fn().mockResolvedValue(undefined),
+    },
+  },
+  existsSync: vi.fn().mockReturnValue(true),
+  mkdirSync: vi.fn(),
+  promises: {
+    copyFile: vi.fn().mockResolvedValue(undefined),
+    unlink: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -19,6 +40,16 @@ vi.mock('./document-audit.service.js', () => ({
 vi.mock('./document.model.js', () => ({
   Document: {
     create: vi.fn(),
+    find: vi.fn(),
+    findOne: vi.fn(),
+    findOneAndUpdate: vi.fn(),
+    countDocuments: vi.fn(),
+  },
+}));
+
+vi.mock('./document-version.model.js', () => ({
+  DocumentVersion: {
+    create: vi.fn().mockImplementation((val) => Promise.resolve({ ...val, _id: new Types.ObjectId() })),
     find: vi.fn(),
     findOne: vi.fn(),
     countDocuments: vi.fn(),
@@ -42,6 +73,7 @@ const mockDocument = Document as unknown as {
   create: ReturnType<typeof vi.fn>;
   find: ReturnType<typeof vi.fn>;
   findOne: ReturnType<typeof vi.fn>;
+  findOneAndUpdate: ReturnType<typeof vi.fn>;
   countDocuments: ReturnType<typeof vi.fn>;
 };
 
@@ -57,6 +89,8 @@ function createDocumentMock(
     title: 'Test Document',
     description: 'Test description',
     tags: ['engineering', 'spec'],
+    version: 1,
+    lastApprovedVersion: null,
     fileName: 'test.pdf',
     filePath: '/uploads/test.pdf',
     fileType: 'application/pdf',
@@ -110,6 +144,7 @@ describe('createDocument', () => {
       title: 'Test Document',
       description: 'Test description',
       folderId: null,
+      projectId: null,
       tags: [],
       fileName: 'test.pdf',
       filePath: 'uploads/documents/test.pdf',
@@ -117,6 +152,8 @@ describe('createDocument', () => {
       fileSize: 1024,
       ownerId: expect.any(Types.ObjectId),
       isDeleted: false,
+      version: 1,
+      lastApprovedVersion: null,
     });
 
     expect(result).toMatchObject({
@@ -217,6 +254,7 @@ describe('createDocument', () => {
     expect(mockDocument.create).toHaveBeenCalledWith({
       title: 'Test Document',
       folderId: null,
+      projectId: null,
       tags: ['engineering', 'spec'],
       fileName: 'test.pdf',
       filePath: 'uploads/documents/test.pdf',
@@ -224,6 +262,8 @@ describe('createDocument', () => {
       fileSize: 1024,
       ownerId: expect.any(Types.ObjectId),
       isDeleted: false,
+      version: 1,
+      lastApprovedVersion: null,
     });
 
     expect(result.tags).toEqual(['engineering', 'spec']);
@@ -252,6 +292,7 @@ describe('createDocument', () => {
     expect(mockDocument.create).toHaveBeenCalledWith({
       title: 'Test Document',
       folderId: null,
+      projectId: null,
       tags: [],
       fileName: 'test.pdf',
       filePath: 'uploads/documents/test.pdf',
@@ -259,6 +300,8 @@ describe('createDocument', () => {
       fileSize: 1024,
       ownerId: expect.any(Types.ObjectId),
       isDeleted: false,
+      version: 1,
+      lastApprovedVersion: null,
     });
 
     expect(result.id).toBe(DOCUMENT_ID);
@@ -481,6 +524,9 @@ describe('getDocumentById', () => {
 describe('updateDocument', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockDocument.findOneAndUpdate.mockImplementation(() =>
+      Promise.resolve(createDocumentMock({ version: 2 })),
+    );
   });
 
   it('should update a document owned by the user', async () => {
@@ -552,8 +598,8 @@ describe('updateDocument', () => {
       'new-document.pdf',
     );
 
-    expect(document.filePath).toBe(
-      'uploads/documents/new-document.pdf',
+    expect(document.filePath).toContain(
+      'new-document.pdf',
     );
 
     expect(document.fileType).toBe(
@@ -574,7 +620,6 @@ describe('updateDocument', () => {
       id: DOCUMENT_ID,
       title: 'Updated title',
       fileName: 'new-document.pdf',
-      filePath: 'uploads/documents/new-document.pdf',
       fileType: 'application/pdf',
       fileSize: 2048,
     });
@@ -584,6 +629,7 @@ describe('updateDocument', () => {
     const document = createDocumentMock();
 
     mockDocument.findOne.mockResolvedValue(document);
+    mockDocument.findOneAndUpdate.mockResolvedValue({ _id: document._id, version: 2 });
 
     const result = await updateDocument(
       OWNER_ID,
@@ -609,8 +655,8 @@ describe('updateDocument', () => {
       'replacement.txt',
     );
 
-    expect(document.filePath).toBe(
-      'uploads/documents/replacement.txt',
+    expect(document.filePath).toContain(
+      'replacement.txt',
     );
 
     expect(document.fileType).toBe(
