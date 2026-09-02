@@ -105,12 +105,12 @@ Collaboration & Access Control
 Developer / Productivity Workflows
 (Relationships | Project Context | Technical References | Review Workflow | Templates & Scaffolding | Dependency Mapping & Impact Summaries | In-App Notifications | Project Webhooks | Documentation Drift & Automated Governance | Programmatic CI/CD Release Gates)
     ↓
-Project / API Context (Phase 7 Transition)
+Project / API Context (Phase 7 — OpenAPI Context Mapping Completed)
     ↓
 Workflow Intelligence
 ```
 
-The first five areas established the document-management foundation. Developer and productivity workflows and governance automation have established a robust baseline, and Documan is now ready to research Phase 7 opportunities.
+The first five areas established the document-management foundation. Developer/productivity workflows and governance automation established a robust baseline. Documan has now completed Phase 7.1 (OpenAPI Document Context Mapping & Endpoint Association) and is actively researching Phase 7.2 opportunities around OpenAPI endpoint drift, automated governance integration, and endpoint-aware release gates.
 
 ---
 
@@ -308,39 +308,32 @@ The opportunity is not to copy developer tools. It is to connect documents to th
 
 ## Phase 7 — Project / API Context
 
+**Status: IN PROGRESS — Phase 7.1 Completed**
+
+### Phase 7.1 — OpenAPI Document Context Mapping & Endpoint Association (COMPLETED)
+
+#### Completed baseline capabilities
+
+- **OpenAPI 3.0.x & 3.1.x Specification Support**: Multi-format (JSON and YAML) OpenAPI parser (`parseOpenApiSpecification`) supporting both OpenAPI 3.0.x and 3.1.x specifications with strict validation, 2MB size limits, and YAML alias recursion protection (`MALICIOUS_YAML_DETECTED`).
+- **Project-Scoped API Specifications (`ProjectApiSpec`)**: Project-isolated spec persistence retaining raw content, versioning, format metadata, and enforcing a single active specification constraint per project (`projectId + isActive`).
+- **Normalized Endpoint Registry (`ProjectApiEndpoint`)**: Automated extraction and indexing of endpoints from imported specifications, capturing HTTP method (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, `OPTIONS`), path, summary, operationId, tags, and deprecation status (`isDeprecated`).
+- **Document ↔ Endpoint Associations (`DocumentEndpointLink`)**: First-class directional links connecting documents to specific API endpoints with explicit status tracking (`LINKED` / `ORPHANED`), orphaned reason logging, and project-boundary enforcement.
+- **Safe Re-import & Link Lifecycle Preservation**: Specification re-imports automatically migrate active document links to updated endpoint IDs for matching routes while gracefully transitioning removed routes to `ORPHANED` status with detailed reasons (`orphanedReason`), preserving historical auditability.
+- **Specification Deletion & Association Preservation**: Deleting an API specification marks dependent document links as `ORPHANED` without destroying historical association context.
+- **Strict Project Isolation & Security Boundary**: Enforces strict project isolation preventing cross-project endpoint linking (IDOR protection), restricts spec imports/deletions to Project Owners/Admins, and requires EDIT permission for document-endpoint association management.
+- **Audit Logging Integration**: Comprehensive audit tracking for `API_SPEC_IMPORT`, `API_SPEC_DELETE`, `DOCUMENT_ENDPOINT_LINK`, and `DOCUMENT_ENDPOINT_UNLINK` events.
+
+### Phase 7.2 — OpenAPI Endpoint Drift & Governance Integration
+
 **Status: RESEARCH — Active Opportunity Target**
 
-### User problem to investigate
+#### User problem to investigate
 
-Technical documents often describe or depend on APIs, services, environments, endpoints, projects, decisions, specifications, and implementation context. The document may exist, but the context needed to understand it may be scattered elsewhere.
+When API specifications evolve or endpoints are deprecated/removed, technical documents referencing those endpoints silently drift out of sync. Maintainers currently have no automated indication that a document references an `ORPHANED` or `DEPRECATED` API endpoint, and CI release gates have no visibility into API contract breakages within project documentation.
 
-### Why it matters
+#### Strategic direction
 
-Connecting relevant context to documents could make technical documentation more useful, discoverable, and traceable.
-
-### Why it could belong in Documan
-
-Project/API context is a natural extension of document relationships and metadata when it helps users understand or act on documents.
-
-### Differentiated opportunity
-
-Documan should investigate contextual relationships rather than reproduce the full functionality of developer tools.
-
-For example, a useful Documan direction could be understanding that a document describes, references, depends on, or explains a technical resource. The exact model must be determined through research.
-
-### Research required
-
-Investigate:
-
-- What technical context users most often need alongside documents?
-- Which relationships should be first-class?
-- How should project context be represented?
-- How much API awareness is useful before Documan starts becoming an API client?
-- How can traceability and permissions apply to contextual relationships?
-
-### Do not assume yet
-
-Do not assume that collections, environments, request execution, API testing, or other Postman-style capabilities belong in Documan.
+Bridge Phase 7.1 (OpenAPI Context) with Phase 6.9 (Governance Engine) and Phase 6.10 (CI/CD Release Gates) to automatically flag API documentation drift, dispatch notifications/webhooks, enforce freshness transitions, and block deployment release gates when documentation references broken or deprecated API endpoints.
 
 ---
 
@@ -731,7 +724,9 @@ Developer / Productivity Workflows
         ↓
 Governance & Release Automation
         ↓
-Project / API Context (Phase 7)
+Project / API Context (Phase 7.1 Completed)
+        ↓
+OpenAPI Endpoint Drift & Governance Integration (Phase 7.2 Target)
 ```
 
 The next concrete feature should emerge from research into the next meaningful user problem at this boundary.
@@ -778,12 +773,12 @@ This keeps the roadmap understandable even as individual implementation details 
 
 Documan has established the foundations of a document-management and productivity platform through the intended progression of:
 
-**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows (Document Relationships, Project Context, External Technical References, Document Review Workflow, Document Templates & Scaffolding, Document-Level Dependency Mapping & Impact Summaries, Document Review & Lifecycle Notifications, Project Outbound Webhooks & Event Notification Subscriptions, Documentation Drift & Automated Governance Engine, Programmatic CI/CD Documentation Release Gates).**
+**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows (Document Relationships, Project Context, External Technical References, Document Review Workflow, Document Templates & Scaffolding, Document-Level Dependency Mapping & Impact Summaries, Document Review & Lifecycle Notifications, Project Outbound Webhooks & Event Notification Subscriptions, Documentation Drift & Automated Governance Engine, Programmatic CI/CD Documentation Release Gates) → Project / API Context (OpenAPI Document Context Mapping & Endpoint Association).**
 
-With 10 baseline productivity and governance capabilities completed, Documan's strategic position transitions from Phase 6 (Developer / Productivity Workflows) into **Phase 7 (Project / API Context)**:
+With Phase 7.1 completed, Documan's strategic position advances within **Phase 7 (Project / API Context)** to address Phase 7.2 integration:
 
-> **How can Documan leverage established document relationships, project context, technical references, review workflows, templates, dependency mappings, in-app notifications, outbound webhooks, automated governance, and CI release gates to bind technical documentation to real-world API & service specifications (OpenAPI/AsyncAPI) without becoming a generic API execution client?**
+> **How can Documan leverage established OpenAPI document-endpoint links (Phase 7.1) alongside the Automated Governance Engine (Phase 6.9) and CI/CD Release Gates (Phase 6.10) to automatically detect API documentation drift, notify maintainers when linked endpoints are deprecated or orphaned, and block release gates when documentation references broken API contracts—without turning Documan into a Postman-style execution client?**
 
 The answer must come from research, user problems, and differentiated product design—not from copying feature lists.
 
-The immediate strategic research focus is therefore **Phase 7 — OpenAPI / AsyncAPI Document Context Mapping & Endpoint Association**, connecting technical documentation directly to API endpoints and microservice schemas while preserving Documan's central document-management identity.
+The immediate strategic research focus is therefore **Phase 7.2 — OpenAPI Endpoint Drift & Governance Integration**, connecting API spec lifecycle events directly to document staleness, notifications, webhooks, and programmatic deployment gates while preserving Documan's central document-management identity.

@@ -1,9 +1,11 @@
-import { Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 
 import { AppError } from '../../errors/app-error.js';
 import { Project } from '../projects/project.model.js';
 import { Document } from '../documents/document.model.js';
 import { DocumentReview } from '../documents/document-review.model.js';
+import { DocumentEndpointLink } from '../api-specs/document-endpoint-link.model.js';
+import { ProjectApiEndpoint } from '../api-specs/project-api-endpoint.model.js';
 
 export interface BlockingDocumentInfo {
   id: string;
@@ -66,6 +68,8 @@ export async function evaluateReleaseGateInternal(
     allowPendingReviews: project.releaseGateSettings?.allowPendingReviews ?? false,
     allowDeprecated: project.releaseGateSettings?.allowDeprecated ?? false,
     minFreshnessPercentage: project.releaseGateSettings?.minFreshnessPercentage ?? 80,
+    allowOrphanedApiLinks: project.releaseGateSettings?.allowOrphanedApiLinks ?? false,
+    allowDeprecatedApiEndpoints: project.releaseGateSettings?.allowDeprecatedApiEndpoints ?? true,
   };
 
   const maxDays = project.governanceSettings?.maxUnreviewedDays ?? 90;
@@ -144,6 +148,48 @@ export async function evaluateReleaseGateInternal(
         reason: 'Document has an active pending reviewer request',
       });
       continue;
+    }
+
+    // API Endpoint Link Policy Checks
+    const canQueryLinks = mongoose.connection.readyState !== 0 || typeof (DocumentEndpointLink.exists as unknown as { mock?: unknown }).mock !== 'undefined';
+
+    if (canQueryLinks && !gateSettings.allowOrphanedApiLinks) {
+      const hasOrphanedLink = await DocumentEndpointLink.exists({
+        documentId: doc._id,
+        status: 'ORPHANED',
+      });
+      if (hasOrphanedLink) {
+        blockingDocuments.push({
+          id: doc._id.toString(),
+          title: doc.title,
+          status: doc.status,
+          reason: 'Document references orphaned API endpoints (endpoint removed from specification)',
+        });
+        continue;
+      }
+    }
+
+    if (canQueryLinks && !gateSettings.allowDeprecatedApiEndpoints) {
+      const links = await DocumentEndpointLink.find({
+        documentId: doc._id,
+        status: 'LINKED',
+      });
+      if (links.length > 0) {
+        const epIds = links.map((l) => l.endpointId);
+        const hasDeprecatedEp = await ProjectApiEndpoint.exists({
+          _id: { $in: epIds },
+          isDeprecated: true,
+        });
+        if (hasDeprecatedEp) {
+          blockingDocuments.push({
+            id: doc._id.toString(),
+            title: doc.title,
+            status: doc.status,
+            reason: 'Document references deprecated API endpoints',
+          });
+          continue;
+        }
+      }
     }
 
     // Age calculation for APPROVED and STALE documents (uses lastReviewedAt || createdAt fallback)

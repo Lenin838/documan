@@ -102,6 +102,8 @@ export async function getProjectGovernance(
     allowPendingReviews: project.releaseGateSettings?.allowPendingReviews ?? false,
     allowDeprecated: project.releaseGateSettings?.allowDeprecated ?? false,
     minFreshnessPercentage: project.releaseGateSettings?.minFreshnessPercentage ?? 80,
+    allowOrphanedApiLinks: project.releaseGateSettings?.allowOrphanedApiLinks ?? false,
+    allowDeprecatedApiEndpoints: project.releaseGateSettings?.allowDeprecatedApiEndpoints ?? true,
   };
 
   const gateTokens = (project.gateTokens || []).map((t) => ({
@@ -159,6 +161,8 @@ export async function updateProjectGovernance(
         allowPendingReviews: false,
         allowDeprecated: false,
         minFreshnessPercentage: 80,
+        allowOrphanedApiLinks: false,
+        allowDeprecatedApiEndpoints: true,
       };
     }
     if (input.releaseGateSettings.allowStale !== undefined) {
@@ -172,6 +176,12 @@ export async function updateProjectGovernance(
     }
     if (input.releaseGateSettings.minFreshnessPercentage !== undefined) {
       project.releaseGateSettings.minFreshnessPercentage = input.releaseGateSettings.minFreshnessPercentage;
+    }
+    if (input.releaseGateSettings.allowOrphanedApiLinks !== undefined) {
+      project.releaseGateSettings.allowOrphanedApiLinks = input.releaseGateSettings.allowOrphanedApiLinks;
+    }
+    if (input.releaseGateSettings.allowDeprecatedApiEndpoints !== undefined) {
+      project.releaseGateSettings.allowDeprecatedApiEndpoints = input.releaseGateSettings.allowDeprecatedApiEndpoints;
     }
   }
 

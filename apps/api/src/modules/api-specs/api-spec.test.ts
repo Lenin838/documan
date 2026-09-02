@@ -4,7 +4,6 @@ import { Types } from 'mongoose';
 
 import { Project } from '../projects/project.model.js';
 import { Document } from '../documents/document.model.js';
-import { DocumentShare } from '../document-shares/document-share.model.js';
 import { ProjectApiSpec } from './project-api-spec.model.js';
 import { ProjectApiEndpoint } from './project-api-endpoint.model.js';
 import { DocumentEndpointLink } from './document-endpoint-link.model.js';

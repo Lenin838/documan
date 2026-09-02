@@ -20,6 +20,8 @@ export const updateGovernanceSettingsSchema = z.object({
         .min(0, { message: 'Min freshness percentage cannot be negative' })
         .max(100, { message: 'Min freshness percentage cannot exceed 100' })
         .optional(),
+      allowOrphanedApiLinks: z.boolean().optional(),
+      allowDeprecatedApiEndpoints: z.boolean().optional(),
     })
     .optional(),
 });

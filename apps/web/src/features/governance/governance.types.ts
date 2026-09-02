@@ -9,6 +9,8 @@ export interface ProjectReleaseGateSettings {
   allowPendingReviews: boolean;
   allowDeprecated: boolean;
   minFreshnessPercentage: number;
+  allowOrphanedApiLinks?: boolean;
+  allowDeprecatedApiEndpoints?: boolean;
 }
 
 export interface ProjectGateToken {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { AppError } from '../../errors/app-error.js';
 import type { HttpMethod } from './project-api-endpoint.model.js';
 
@@ -36,7 +37,7 @@ export function parseOpenApiSpecification(content: string): ParsedOpenApiSpec {
 
   const trimmed = content.trim();
   let parsedDoc: Record<string, any>;
-  let format: 'JSON' | 'YAML' = 'JSON';
+  let format: 'JSON' | 'YAML';
 
   if (trimmed.startsWith('{')) {
     format = 'JSON';
