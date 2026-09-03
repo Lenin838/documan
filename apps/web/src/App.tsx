@@ -15,6 +15,7 @@ import DocumentEditPage from './pages/DocumentEditPage';
 import TrashPage from './pages/TrashPage';
 import ProjectsPage from './pages/ProjectsPage';
 import ProjectDetailsPage from './pages/ProjectDetailsPage';
+import KnowledgeSearchPage from './pages/KnowledgeSearchPage';
 import { ReviewsPage } from './pages/ReviewsPage';
 import ProtectedRoute from './routes/ProtectedRoute';
 import UsersPage from './pages/UsersPage';
@@ -52,6 +53,10 @@ function App() {
         <Route
           path="/dashboard"
           element={<DashboardPage />}
+        />
+        <Route
+          path="/knowledge/search"
+          element={<KnowledgeSearchPage />}
         />
         <Route
           path="/projects"

@@ -56,6 +56,8 @@ documentReferenceSchema.index(
   { documentId: 1, type: 1, url: 1 },
   { unique: true },
 );
+documentReferenceSchema.index({ title: 1 });
+documentReferenceSchema.index({ url: 1 });
 
 export const DocumentReference = model<DocumentReferenceDocument>(
   'DocumentReference',

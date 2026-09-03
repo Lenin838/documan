@@ -57,6 +57,7 @@ const documentEndpointLinkSchema = new Schema<DocumentEndpointLinkDocument>(
 
 documentEndpointLinkSchema.index({ documentId: 1, endpointId: 1 }, { unique: true });
 documentEndpointLinkSchema.index({ projectId: 1, status: 1 });
+documentEndpointLinkSchema.index({ endpointId: 1, status: 1 });
 
 export const DocumentEndpointLink = model<DocumentEndpointLinkDocument>(
   'DocumentEndpointLink',

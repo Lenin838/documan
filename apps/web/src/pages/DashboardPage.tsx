@@ -36,6 +36,7 @@ export default function DashboardPage() {
       )}
 
       <nav style={{ margin: '1rem 0', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+        <Link to="/knowledge/search">Knowledge Search</Link>
         <Link to="/documents">View Documents</Link>
         <Link to="/projects">Projects</Link>
         <Link to="/reviews">My Reviews</Link>
