@@ -22,7 +22,10 @@ export type DocumentAuditAction =
   | 'DOCUMENT_IMPACT_FLAGGED'
   | 'DOCUMENT_IMPACT_VERIFIED'
   | 'DOCUMENT_VERSION_CREATED'
-  | 'DOCUMENT_STEWARD_CHANGED';
+  | 'DOCUMENT_STEWARD_CHANGED'
+  | 'GOVERNANCE_ASSURANCE_EVALUATED'
+  | 'GOVERNANCE_WAIVER_GRANTED'
+  | 'GOVERNANCE_WAIVER_REVOKED';
 
 export interface DocumentAuditDocument {
   documentId: Types.ObjectId;
@@ -74,6 +77,9 @@ const documentAuditSchema =
           'DOCUMENT_IMPACT_VERIFIED',
           'DOCUMENT_VERSION_CREATED',
           'DOCUMENT_STEWARD_CHANGED',
+          'GOVERNANCE_ASSURANCE_EVALUATED',
+          'GOVERNANCE_WAIVER_GRANTED',
+          'GOVERNANCE_WAIVER_REVOKED',
         ],
         required: true,
       },

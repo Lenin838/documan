@@ -65,6 +65,7 @@ import type {
 import { useAuthStore } from '../features/auth/auth.store';
 import { DocumentApiEndpointsSection } from '../components/DocumentApiEndpointsSection';
 import { EvidencePanel } from '../components/EvidencePanel';
+import { AssuranceGateCard } from '../components/AssuranceGateCard';
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -2609,6 +2610,11 @@ export default function DocumentDetailsPage() {
           </div>
         </div>
       )}
+
+      {/* Documentation Assurance & Governance Gate */}
+      <section style={{ marginTop: '2rem', marginBottom: '2rem' }}>
+        {id && <AssuranceGateCard documentId={id} />}
+      </section>
 
       {/* Documentation Evidence & Traceability Panel */}
       <section style={{ marginTop: '2rem', marginBottom: '2rem' }}>
