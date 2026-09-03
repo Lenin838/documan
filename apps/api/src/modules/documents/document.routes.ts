@@ -50,6 +50,7 @@ import { documentRelationshipRouter } from './document-relationship.routes.js';
 import { documentReferenceRouter } from './document-reference.routes.js';
 import { documentReviewRouter } from './document-review.routes.js';
 import { documentApiEndpointRouter } from '../api-specs/api-spec.routes.js';
+import { assuranceRouter } from '../governance/assurance.routes.js';
 
 const documentRouter = Router();
 
@@ -58,6 +59,7 @@ documentRouter.use('/:id/relationships', documentRelationshipRouter);
 documentRouter.use('/:id/references', documentReferenceRouter);
 documentRouter.use('/:id/reviews', documentReviewRouter);
 documentRouter.use('/:id/api-endpoints', documentApiEndpointRouter);
+documentRouter.use('/:id/assurance', assuranceRouter);
 
 documentRouter.post(
   '/',
