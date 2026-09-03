@@ -743,7 +743,13 @@ Governance & Release Automation
         ↓
 Project / API Context (Phase 7.1 & Phase 7.2 Completed)
         ↓
-Cross-Document Change Impact & Cascade Verification (Phase 7.3 / Phase 8 Research Candidate)
+Cross-Document Change Impact & Cascade Verification (Phase 7.3 Completed)
+        ↓
+Immutable Versioning & Content Snapshot History (Phase 7.4 Completed)
+        ↓
+Documentation Health & Technical Knowledge Risk Radar (Phase 7.5 Completed)
+        ↓
+Authoritative Technical Knowledge Discovery & Traceability (Phase 8 Completed)
 ```
 
 The next concrete feature should emerge from research into the next meaningful user problem at this boundary.
@@ -790,12 +796,6 @@ This keeps the roadmap understandable even as individual implementation details 
 
 Documan has established the foundations of a document-management and productivity platform through the intended progression of:
 
-**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows (Document Relationships, Project Context, External Technical References, Document Review Workflow, Document Templates & Scaffolding, Document-Level Dependency Mapping & Impact Summaries, Document Review & Lifecycle Notifications, Project Outbound Webhooks & Event Notification Subscriptions, Documentation Drift & Automated Governance Engine, Programmatic CI/CD Documentation Release Gates) → Project / API Context (OpenAPI Document Context Mapping & Endpoint Association, OpenAPI Endpoint Drift & Governance Integration — Completed in `cf1b65f`).**
+**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows → Project / API Context → Cross-Document Change Impact (Phase 7.3) → Immutable Versioning & Snapshots (Phase 7.4) → Technical Knowledge Risk Radar (Phase 7.5) → Authoritative Technical Knowledge Discovery & Traceability (Phase 8 Completed).**
 
-With Phase 7.1 and Phase 7.2 completed, Documan's strategic position advances to evaluate the next high-value product opportunity:
-
-> **How can Documan leverage established document-to-document relationships, OpenAPI endpoint links, governance staleness policies, and CI release gates to evaluate cross-document change impact cascades when upstream technical documents or architecture specifications change—ensuring downstream documentation remains coherent without turning Documan into a generic workflow builder or Jira clone?**
-
-The answer must come from research, user problems, and differentiated product design—not from copying feature lists.
-
-The immediate strategic research focus is evaluating **Phase 7.3 — Cross-Document Change Impact & Cascade Verification Engine**, connecting upstream document lifecycle updates directly to downstream impact summaries, notifications, webhooks, and release gate verification while preserving Documan's central document-management identity.
+With Phase 8 completed, Documan provides permission-aware, authority-ranked technical document discovery, exact API path/method candidate matching, technical reference discovery, and integrated traceability without introducing generic enterprise search or AI clutter.
