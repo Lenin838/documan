@@ -54,6 +54,7 @@ documentRelationshipSchema.index(
 );
 
 documentRelationshipSchema.index({ sourceDocumentId: 1, targetDocumentId: 1 });
+documentRelationshipSchema.index({ targetDocumentId: 1, type: 1 });
 
 export const DocumentRelationship = model<DocumentRelationshipDocument>(
   'DocumentRelationship',

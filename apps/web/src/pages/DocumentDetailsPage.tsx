@@ -64,6 +64,7 @@ import type {
 } from '../features/documents/document.types';
 import { useAuthStore } from '../features/auth/auth.store';
 import { DocumentApiEndpointsSection } from '../components/DocumentApiEndpointsSection';
+import { EvidencePanel } from '../components/EvidencePanel';
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -2608,6 +2609,14 @@ export default function DocumentDetailsPage() {
           </div>
         </div>
       )}
+
+      {/* Documentation Evidence & Traceability Panel */}
+      <section style={{ marginTop: '2rem', marginBottom: '2rem' }}>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: '#0f172a' }}>
+          Documentation Evidence &amp; Traceability
+        </h2>
+        {id && <EvidencePanel documentId={id} />}
+      </section>
 
       <KnowledgeHealthDrawer
         isOpen={isHealthDrawerOpen}

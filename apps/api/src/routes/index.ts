@@ -12,6 +12,7 @@ import webhookRouter from '../modules/webhooks/webhook.routes.js';
 import { projectGovernanceRouter } from '../modules/governance/governance.routes.js';
 import { projectApiSpecRouter } from '../modules/api-specs/api-spec.routes.js';
 import { knowledgeRouter } from '../modules/knowledge/knowledge.routes.js';
+import { evidenceRouter } from '../modules/knowledge/evidence.routes.js';
 
 const apiRouter = Router();
 
@@ -24,6 +25,7 @@ apiRouter.use('/projects', projectRouter);
 apiRouter.use('/reviews', reviewRouter);
 apiRouter.use('/notifications', notificationRouter);
 apiRouter.use('/knowledge', knowledgeRouter);
+apiRouter.use('/evidence', evidenceRouter);
 apiRouter.use('/projects/:projectId/webhooks', webhookRouter);
 apiRouter.use('/projects/:projectId/governance', projectGovernanceRouter);
 apiRouter.use('/projects/:projectId/api-specs', projectApiSpecRouter);
