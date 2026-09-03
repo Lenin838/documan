@@ -750,6 +750,8 @@ Immutable Versioning & Content Snapshot History (Phase 7.4 Completed)
 Documentation Health & Technical Knowledge Risk Radar (Phase 7.5 Completed)
         ↓
 Authoritative Technical Knowledge Discovery & Traceability (Phase 8 Completed)
+        ↓
+Documentation Evidence & Traceability (Phase 9 Completed)
 ```
 
 The next concrete feature should emerge from research into the next meaningful user problem at this boundary.
@@ -796,6 +798,6 @@ This keeps the roadmap understandable even as individual implementation details 
 
 Documan has established the foundations of a document-management and productivity platform through the intended progression of:
 
-**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows → Project / API Context → Cross-Document Change Impact (Phase 7.3) → Immutable Versioning & Snapshots (Phase 7.4) → Technical Knowledge Risk Radar (Phase 7.5) → Authoritative Technical Knowledge Discovery & Traceability (Phase 8 Completed).**
+**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows → Project / API Context → Cross-Document Change Impact (Phase 7.3) → Immutable Versioning & Snapshots (Phase 7.4) → Technical Knowledge Risk Radar (Phase 7.5) → Authoritative Technical Knowledge Discovery & Traceability (Phase 8 Completed) → Documentation Evidence & Traceability (Phase 9 Completed).**
 
-With Phase 8 completed, Documan provides permission-aware, authority-ranked technical document discovery, exact API path/method candidate matching, technical reference discovery, and integrated traceability without introducing generic enterprise search or AI clutter.
+With Phase 9 completed, Documan provides deterministic, permission-aware documentation evidence discovery, dynamic evidence state classification (`VERIFIED`, `STALE`, `ORPHANED`, `UNVERIFIED`), Evidence Coverage scoring, and bidirectional reverse traceability navigation across API endpoints, document dependencies, and external technical references—all built on Option A pure calculator architecture without data duplication or persistent state drift.
