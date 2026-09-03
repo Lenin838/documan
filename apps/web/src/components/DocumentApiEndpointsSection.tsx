@@ -126,11 +126,11 @@ export function DocumentApiEndpointsSection({
       </div>
 
       {/* Linked Endpoints List */}
-      {links.length === 0 ? (
+      {(!links || links.length === 0) ? (
         <p className="text-xs text-gray-500 italic">No API endpoints linked to this document.</p>
       ) : (
         <div className="space-y-2">
-          {links.map((link) => (
+          {(links || []).map((link) => (
             <div
               key={link.id}
               className="p-3 border rounded flex items-center justify-between bg-gray-50"

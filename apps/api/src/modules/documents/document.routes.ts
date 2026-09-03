@@ -27,6 +27,7 @@ import {
 } from './document.controller.js';
 
 import { confirmDocumentFreshnessHandler } from '../governance/governance.controller.js';
+import { getForwardEvidenceController } from '../knowledge/evidence.controller.js';
 
 import {
   getDocumentDependenciesController,
@@ -192,6 +193,12 @@ documentRouter.post(
   '/:id/versions/compare',
   authenticate,
   compareDocumentVersionsController,
+);
+
+documentRouter.get(
+  '/:id/evidence',
+  authenticate,
+  getForwardEvidenceController,
 );
 
 export { documentRouter };
