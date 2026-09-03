@@ -67,9 +67,9 @@ async function seedQAUsers() {
     console.log('Created QA project');
   }
 
-  let document = await Document.findOne({ title: 'System Architecture Specification' });
-  if (!document) {
-    document = await Document.create({
+  const existingDoc = await Document.findOne({ title: 'System Architecture Specification' });
+  if (!existingDoc) {
+    await Document.create({
       title: 'System Architecture Specification',
       description: 'Core microservices & cloud infrastructure documentation',
       fileName: 'system_arch_spec.pdf',

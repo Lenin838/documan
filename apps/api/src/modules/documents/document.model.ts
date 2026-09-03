@@ -196,6 +196,13 @@ const documentSchema = new Schema<DocumentDocument>(
 
 documentSchema.index({ projectId: 1, status: 1, lastReviewedAt: 1 });
 documentSchema.index({ projectId: 1, 'impactVerification.needsVerification': 1 });
+documentSchema.index(
+  { title: 'text', description: 'text', tags: 'text', fileName: 'text' },
+  {
+    weights: { title: 10, tags: 5, description: 3, fileName: 1 },
+    name: 'document_text_search_idx',
+  },
+);
 
 export const Document = model<DocumentDocument>(
   'Document',
