@@ -102,6 +102,31 @@ export async function evaluateReleaseGateInternal(
   let pendingReviewCount = 0;
   let deprecatedCount = 0;
 
+  // Active Verification Plan Policy Check
+  if (!gateSettings.allowUnverifiedImpacts && mongoose.connection.readyState !== 0) {
+    try {
+      const { VerificationPlan } = await import('./verification-plan.model.js');
+      const openPlans = await VerificationPlan.find({
+        projectId: projObjId,
+        status: { $in: ['PENDING', 'IN_PROGRESS'] },
+      });
+
+      for (const plan of openPlans) {
+        const remainingTasks = plan.totalTasks - plan.completedTasks - plan.skippedTasks;
+        if (remainingTasks > 0) {
+          blockingDocuments.push({
+            id: plan.triggerDocumentId.toString(),
+            title: `Verification Plan (v${plan.triggerVersion})`,
+            status: 'UNVERIFIED_CHANGE_PLAN',
+            reason: `Project has an active unverified change verification plan (v${plan.triggerVersion}) with ${remainingTasks} open task(s)`,
+          });
+        }
+      }
+    } catch {
+      // Model guard for isolated tests
+    }
+  }
+
   for (const doc of projectDocs) {
     if (doc.status === 'DRAFT') {
       // DRAFT documents are unreleased drafts and do not block by default

@@ -13,6 +13,11 @@ import { projectGovernanceRouter } from '../modules/governance/governance.routes
 import { projectApiSpecRouter } from '../modules/api-specs/api-spec.routes.js';
 import { knowledgeRouter } from '../modules/knowledge/knowledge.routes.js';
 import { evidenceRouter } from '../modules/knowledge/evidence.routes.js';
+import {
+  verificationPlanRouter,
+  verificationTaskRouter,
+  documentVerificationPlanRouter,
+} from '../modules/governance/verification-plan.routes.js';
 
 const apiRouter = Router();
 
@@ -20,12 +25,15 @@ apiRouter.use('/health', healthRouter);
 apiRouter.use('/users', userRouter);
 apiRouter.use('/auth', authRouter);
 apiRouter.use('/documents', documentRouter);
+apiRouter.use('/documents/:documentId/verification-plans', documentVerificationPlanRouter);
 apiRouter.use('/folders', folderRouter);
 apiRouter.use('/projects', projectRouter);
 apiRouter.use('/reviews', reviewRouter);
 apiRouter.use('/notifications', notificationRouter);
 apiRouter.use('/knowledge', knowledgeRouter);
 apiRouter.use('/evidence', evidenceRouter);
+apiRouter.use('/verification-plans', verificationPlanRouter);
+apiRouter.use('/verification-tasks', verificationTaskRouter);
 apiRouter.use('/projects/:projectId/webhooks', webhookRouter);
 apiRouter.use('/projects/:projectId/governance', projectGovernanceRouter);
 apiRouter.use('/projects/:projectId/api-specs', projectApiSpecRouter);

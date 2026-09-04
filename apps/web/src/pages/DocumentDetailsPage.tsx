@@ -66,6 +66,7 @@ import { useAuthStore } from '../features/auth/auth.store';
 import { DocumentApiEndpointsSection } from '../components/DocumentApiEndpointsSection';
 import { EvidencePanel } from '../components/EvidencePanel';
 import { AssuranceGateCard } from '../components/AssuranceGateCard';
+import { VerificationPlanSection } from '../components/VerificationPlanSection';
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -2615,6 +2616,15 @@ export default function DocumentDetailsPage() {
       <section style={{ marginTop: '2rem', marginBottom: '2rem' }}>
         {id && <AssuranceGateCard documentId={id} />}
       </section>
+
+      {/* Phase 11 Documentation Change Intelligence & Verification Section */}
+      {id && (
+        <VerificationPlanSection
+          documentId={id}
+          projectId={doc?.projectId || undefined}
+          isOwnerOrAdmin={canEdit}
+        />
+      )}
 
       {/* Documentation Evidence & Traceability Panel */}
       <section style={{ marginTop: '2rem', marginBottom: '2rem' }}>

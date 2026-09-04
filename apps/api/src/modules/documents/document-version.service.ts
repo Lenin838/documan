@@ -122,6 +122,35 @@ export async function createVersionSnapshot(input: CreateVersionSnapshotInput) {
     console.warn('Document version creation audit failed:', auditErr);
   }
 
+  // Step 4: Non-blocking automatic verification plan trigger (Major/Minor version bump: versionNumber > 1)
+  if (document.projectId && versionNumber > 1) {
+    try {
+      const versionStr = `v${versionNumber}.0.0`;
+      const { createVerificationPlanInternal } = await import('../governance/verification-plan.service.js');
+      await createVerificationPlanInternal(
+        document.projectId.toString(),
+        document._id.toString(),
+        versionStr,
+        createdById,
+      );
+    } catch (planErr) {
+      console.warn('Automatic verification plan generation failed:', planErr);
+      try {
+        await createDocumentAudit(
+          document._id.toString(),
+          createdById.toString(),
+          'VERIFICATION_PLAN_GENERATION_FAILED',
+          {
+            versionNumber,
+            error: planErr instanceof Error ? planErr.message : String(planErr),
+          },
+        );
+      } catch {
+        // Ignore secondary audit error
+      }
+    }
+  }
+
   return versionDoc as DocumentVersionDocument;
 }
 
