@@ -48,15 +48,21 @@ describe('assurance-calculator', () => {
       riskLevel: 'LOW',
       effectiveContact: { id: 'user1', name: 'Alice Owner', isActive: true },
     },
+    baselineContext: {
+      hasActiveBaseline: true,
+      activeBaselineVersionTag: 'v1.0.0',
+      isPostBaselineDocument: false,
+      documentDrift: null,
+    },
     now: new Date('2026-02-15'),
   };
 
-  it('evaluates READY status when all 12 checks pass', () => {
+  it('evaluates READY status when all 13 checks pass', () => {
     const result = calculateDocumentAssurance(baseContext);
 
     expect(result.status).toBe('READY');
-    expect(result.summary.totalChecks).toBe(12);
-    expect(result.summary.passedCount).toBe(12);
+    expect(result.summary.totalChecks).toBe(13);
+    expect(result.summary.passedCount).toBe(13);
     expect(result.summary.failedCount).toBe(0);
     expect(result.blockingReasons).toHaveLength(0);
   });

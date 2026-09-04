@@ -120,5 +120,15 @@ export interface AssuranceCalculatorContext {
     riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
     effectiveContact?: { id: string; name: string; isActive?: boolean } | null | undefined;
   } | null | undefined;
+  baselineContext?: {
+    hasActiveBaseline: boolean;
+    activeBaselineVersionTag?: string | undefined;
+    isPostBaselineDocument?: boolean | undefined;
+    documentDrift?: {
+      hasDrift: boolean;
+      driftDimensions: string[];
+      details: string[];
+    } | null | undefined;
+  } | null | undefined;
   now?: Date;
 }

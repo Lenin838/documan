@@ -11,6 +11,7 @@ import {
   createGateToken,
   revokeGateToken,
 } from '../features/governance/governance.api';
+import { ProjectBaselinesTab } from '../features/governance/ProjectBaselinesTab';
 
 interface GovernanceSectionProps {
   projectId: string;
@@ -454,6 +455,11 @@ export function GovernanceSection({
           ))}
         </div>
       )}
+
+      {/* Phase 12 Authoritative Documentation Baseline & Drift Control */}
+      <div className="pt-6 border-t">
+        <ProjectBaselinesTab projectId={projectId} isOwnerOrAdmin={isOwnerOrAdmin} />
+      </div>
 
       {/* One-Time Token Generation Modal */}
       {showTokenModal && (

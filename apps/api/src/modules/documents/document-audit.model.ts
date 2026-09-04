@@ -31,7 +31,9 @@ export type DocumentAuditAction =
   | 'VERIFICATION_TASK_SKIPPED'
   | 'VERIFICATION_PLAN_COMPLETED'
   | 'VERIFICATION_PLAN_BYPASSED'
-  | 'VERIFICATION_PLAN_GENERATION_FAILED';
+  | 'VERIFICATION_PLAN_GENERATION_FAILED'
+  | 'DOCUMENTATION_BASELINE_CREATED'
+  | 'DOCUMENTATION_BASELINE_ARCHIVED';
 
 export interface DocumentAuditDocument {
   documentId: Types.ObjectId;
@@ -92,6 +94,8 @@ const documentAuditSchema =
           'VERIFICATION_PLAN_COMPLETED',
           'VERIFICATION_PLAN_BYPASSED',
           'VERIFICATION_PLAN_GENERATION_FAILED',
+          'DOCUMENTATION_BASELINE_CREATED',
+          'DOCUMENTATION_BASELINE_ARCHIVED',
         ],
         required: true,
       },

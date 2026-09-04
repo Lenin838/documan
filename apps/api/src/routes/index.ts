@@ -10,6 +10,7 @@ import { reviewRouter } from '../modules/documents/document-review.routes.js';
 import { notificationRouter } from '../modules/notifications/notification.routes.js';
 import webhookRouter from '../modules/webhooks/webhook.routes.js';
 import { projectGovernanceRouter } from '../modules/governance/governance.routes.js';
+import { baselineRouter } from '../modules/governance/baseline.routes.js';
 import { projectApiSpecRouter } from '../modules/api-specs/api-spec.routes.js';
 import { knowledgeRouter } from '../modules/knowledge/knowledge.routes.js';
 import { evidenceRouter } from '../modules/knowledge/evidence.routes.js';
@@ -36,6 +37,7 @@ apiRouter.use('/verification-plans', verificationPlanRouter);
 apiRouter.use('/verification-tasks', verificationTaskRouter);
 apiRouter.use('/projects/:projectId/webhooks', webhookRouter);
 apiRouter.use('/projects/:projectId/governance', projectGovernanceRouter);
+apiRouter.use('/projects/:projectId/baselines', baselineRouter);
 apiRouter.use('/projects/:projectId/api-specs', projectApiSpecRouter);
 
 export { apiRouter };
