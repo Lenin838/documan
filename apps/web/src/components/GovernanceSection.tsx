@@ -12,6 +12,7 @@ import {
   revokeGateToken,
 } from '../features/governance/governance.api';
 import { ProjectBaselinesTab } from '../features/governance/ProjectBaselinesTab';
+import { ProjectWorkRequestsPanel } from '../features/governance/ProjectWorkRequestsPanel';
 
 interface GovernanceSectionProps {
   projectId: string;
@@ -455,6 +456,11 @@ export function GovernanceSection({
           ))}
         </div>
       )}
+
+      {/* Phase 13 Documentation Work Requests & Review Roster */}
+      <div className="pt-6 border-t">
+        <ProjectWorkRequestsPanel projectId={projectId} />
+      </div>
 
       {/* Phase 12 Authoritative Documentation Baseline & Drift Control */}
       <div className="pt-6 border-t">

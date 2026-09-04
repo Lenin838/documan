@@ -20,6 +20,8 @@ import {
   documentVerificationPlanRouter,
 } from '../modules/governance/verification-plan.routes.js';
 
+import workRequestRouter from '../modules/governance/work-request.routes.js';
+
 const apiRouter = Router();
 
 apiRouter.use('/health', healthRouter);
@@ -39,5 +41,6 @@ apiRouter.use('/projects/:projectId/webhooks', webhookRouter);
 apiRouter.use('/projects/:projectId/governance', projectGovernanceRouter);
 apiRouter.use('/projects/:projectId/baselines', baselineRouter);
 apiRouter.use('/projects/:projectId/api-specs', projectApiSpecRouter);
+apiRouter.use('/', workRequestRouter);
 
 export { apiRouter };
