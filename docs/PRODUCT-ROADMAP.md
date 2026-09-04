@@ -758,6 +758,8 @@ Governance & Assurance Engine (Phase 10 Completed)
 Documentation Change Intelligence & Verification Planning (Phase 11 Completed)
         ↓
 Authoritative Documentation Baseline & Drift Control (Phase 12 Completed)
+        ↓
+Documentation Work Requests & Review Workflow (Phase 13 Completed)
 ```
 
 The next concrete feature should emerge from research into the next meaningful user problem at this boundary.
@@ -804,7 +806,7 @@ This keeps the roadmap understandable even as individual implementation details 
 
 Documan has established the foundations of a document-management and productivity platform through the intended progression of:
 
-**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows → Project / API Context → Cross-Document Change Impact (Phase 7.3) → Immutable Versioning & Snapshots (Phase 7.4) → Technical Knowledge Risk Radar (Phase 7.5) → Authoritative Technical Knowledge Discovery & Traceability (Phase 8 Completed) → Documentation Evidence & Traceability (Phase 9 Completed) → Governance & Assurance Engine (Phase 10 Completed) → Documentation Change Intelligence & Verification Planning (Phase 11 Completed) → Authoritative Documentation Baseline & Drift Control (Phase 12 Completed).**
+**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows → Project / API Context → Cross-Document Change Impact (Phase 7.3) → Immutable Versioning & Snapshots (Phase 7.4) → Technical Knowledge Risk Radar (Phase 7.5) → Authoritative Technical Knowledge Discovery & Traceability (Phase 8 Completed) → Documentation Evidence & Traceability (Phase 9 Completed) → Governance & Assurance Engine (Phase 10 Completed) → Documentation Change Intelligence & Verification Planning (Phase 11 Completed) → Authoritative Documentation Baseline & Drift Control (Phase 12 Completed) → Documentation Work Requests & Review Workflow (Phase 13 Completed).**
 
-With Phase 12 completed, Documan provides deterministic, permission-aware authoritative documentation baselining, real-time drift calculation across versions, document deletions, relationship topologies, and verification plans, deadlock-free re-baselining, CI/CD release gate integration (`chk_baseline_drift_clear`), transactional baseline lifecycle transitions, and dedicated project baselines governance UI—all built on Option A pure calculator architecture without data duplication or persistent drift state.
+With Phase 13 completed, Documan turns documentation intelligence into accountable human action while keeping the document as the central product object. Phase 13 provides document-centric Work Requests with strict lifecycle status control (`OPEN`, `ASSIGNED`, `IN_PROGRESS`, `IN_REVIEW`, `RESOLVED`, `SKIPPED`), deterministic finding idempotency (`originKey`), reopen collision prevention (`409 WORK_REQUEST_ORIGIN_ALREADY_ACTIVE`), project-scoped assignee eligibility validation, automated findings integrations across Phase 7.3 `CHANGE_IMPACT`, Phase 9 `EVIDENCE`, Phase 10 `GOVERNANCE`, Phase 11 `VERIFICATION`, and Phase 12 `BASELINE_DRIFT`, full audit logging, non-blocking notification dispatch (`safeNotify`), and dedicated document & project work requests UI components.
 
