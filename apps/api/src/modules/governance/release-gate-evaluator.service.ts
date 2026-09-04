@@ -32,6 +32,7 @@ export interface ReleaseGateCheckResult {
 
 export async function evaluateReleaseGateInternal(
   projectId: string | Types.ObjectId,
+  options?: { excludeChecks?: string[] },
 ): Promise<ReleaseGateCheckResult> {
   const projObjId = new Types.ObjectId(projectId.toString());
   const project = await Project.findOne({ _id: projObjId });
@@ -124,6 +125,27 @@ export async function evaluateReleaseGateInternal(
       }
     } catch {
       // Model guard for isolated tests
+    }
+
+    if (!options?.excludeChecks?.includes('chk_baseline_drift_clear')) {
+      try {
+        const { calculateProjectBaselineDrift } = await import('./drift-calculator.service.js');
+        const driftReport = await calculateProjectBaselineDrift(projObjId);
+        if (driftReport.hasActiveBaseline && driftReport.hasDrift && driftReport.severity === 'BLOCKING') {
+          for (const dDoc of driftReport.driftedDocuments) {
+            if (dDoc.severity === 'BLOCKING') {
+              blockingDocuments.push({
+                id: dDoc.documentId,
+                title: dDoc.documentTitle,
+                status: 'BASELINE_DRIFT',
+                reason: `Document has unverified baseline drift: ${dDoc.details.join(' ')}`,
+              });
+            }
+          }
+        }
+      } catch {
+        // Model guard for isolated tests
+      }
     }
   }
 

@@ -193,6 +193,50 @@ export function calculateDocumentAssurance(
     }),
   );
 
+  // CHECK 2c: Authoritative Baseline Drift Control
+  const bCtx = context.baselineContext;
+  let baselineDriftStatus: 'PASSED' | 'FAILED' | 'NOT_APPLICABLE' = 'PASSED';
+  let baselineActualVal = 'BASELINE_MATCH';
+  let baselineReason = 'Document matches the active authoritative documentation baseline snapshot.';
+
+  if (!bCtx || !bCtx.hasActiveBaseline) {
+    baselineDriftStatus = 'NOT_APPLICABLE';
+    baselineActualVal = 'NO_ACTIVE_BASELINE';
+    baselineReason = 'No active authoritative documentation baseline exists for this project.';
+  } else if (bCtx.isPostBaselineDocument) {
+    baselineDriftStatus = 'NOT_APPLICABLE';
+    baselineActualVal = 'POST_BASELINE_DOCUMENT';
+    baselineReason = `Document was created after active baseline (${bCtx.activeBaselineVersionTag || 'active'}) lock; will be incorporated into next baseline lock.`;
+  } else if (bCtx.documentDrift?.hasDrift) {
+    baselineDriftStatus = 'FAILED';
+    baselineActualVal = 'DRIFT_DETECTED';
+    baselineReason = `Document has baseline drift (${bCtx.documentDrift.driftDimensions.join(', ')}): ${bCtx.documentDrift.details.join(' ')}`;
+  }
+
+  const baselineSeverity = gateSettings.allowUnverifiedImpacts ? 'WARNING' : 'BLOCKING';
+
+  checks.push(
+    applyWaiverIfPresent({
+      checkId: 'chk_baseline_drift_clear',
+      name: 'Authoritative Baseline Drift Control',
+      category: 'CHANGE_IMPACT',
+      severity: baselineSeverity,
+      status: baselineDriftStatus,
+      isWaivable: true,
+      actualValue: baselineActualVal,
+      expectedValue: 'BASELINE_MATCH',
+      reason: baselineReason,
+      remediation:
+        baselineDriftStatus === 'FAILED'
+          ? {
+              code: 'REMEDIATE_BASELINE_DRIFT',
+              label: 'Remediate Baseline Drift',
+              detail: 'Complete Phase 11 verification plan and perform re-baselining.',
+            }
+          : undefined,
+    }),
+  );
+
   // CHECK 3: Deprecated API Endpoint Usage
   const staleEpCount = evidenceCoverage?.staleCount ?? 0;
   const isApiDriftPassed = staleEpCount === 0;

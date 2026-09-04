@@ -1,4 +1,4 @@
-import { Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 
 import { AppError } from '../../errors/app-error.js';
 import { Document } from '../documents/document.model.js';
@@ -109,6 +109,36 @@ export async function getForwardAssurance(
     createdAt: a.createdAt,
   }));
 
+  // Fetch active baseline context for project if project exists
+  let baselineContextData = null;
+  if (doc.projectId && mongoose.connection.readyState !== 0) {
+    try {
+      const { calculateProjectBaselineDrift } = await import('./drift-calculator.service.js');
+      const driftReport = await calculateProjectBaselineDrift(doc.projectId);
+      if (driftReport.hasActiveBaseline) {
+        const dDoc = driftReport.driftedDocuments.find((d) => d.documentId === doc._id.toString());
+        const { DocumentationBaseline } = await import('./documentation-baseline.model.js');
+        const activeBaseline = await DocumentationBaseline.findOne({ projectId: doc.projectId, isActive: true });
+        const isInSnapshot = activeBaseline?.documentSnapshots.some((s) => s.documentId.toString() === doc._id.toString());
+
+        baselineContextData = {
+          hasActiveBaseline: true,
+          activeBaselineVersionTag: activeBaseline?.versionTag,
+          isPostBaselineDocument: !isInSnapshot,
+          documentDrift: dDoc
+            ? {
+                hasDrift: true,
+                driftDimensions: dDoc.driftDimensions,
+                details: dDoc.details,
+              }
+            : null,
+        };
+      }
+    } catch {
+      // Model guard
+    }
+  }
+
   return calculateDocumentAssurance({
     document: {
       id: doc._id.toString(),
@@ -154,6 +184,7 @@ export async function getForwardAssurance(
           effectiveContact: riskData.effectiveContact,
         }
       : null,
+    baselineContext: baselineContextData,
   });
 }
 
