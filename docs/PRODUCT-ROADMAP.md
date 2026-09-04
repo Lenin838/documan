@@ -752,6 +752,12 @@ Documentation Health & Technical Knowledge Risk Radar (Phase 7.5 Completed)
 Authoritative Technical Knowledge Discovery & Traceability (Phase 8 Completed)
         ↓
 Documentation Evidence & Traceability (Phase 9 Completed)
+        ↓
+Governance & Assurance Engine (Phase 10 Completed)
+        ↓
+Documentation Change Intelligence & Verification Planning (Phase 11 Completed)
+        ↓
+Authoritative Documentation Baseline & Drift Control (Phase 12 Completed)
 ```
 
 The next concrete feature should emerge from research into the next meaningful user problem at this boundary.
@@ -798,6 +804,7 @@ This keeps the roadmap understandable even as individual implementation details 
 
 Documan has established the foundations of a document-management and productivity platform through the intended progression of:
 
-**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows → Project / API Context → Cross-Document Change Impact (Phase 7.3) → Immutable Versioning & Snapshots (Phase 7.4) → Technical Knowledge Risk Radar (Phase 7.5) → Authoritative Technical Knowledge Discovery & Traceability (Phase 8 Completed) → Documentation Evidence & Traceability (Phase 9 Completed).**
+**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows → Project / API Context → Cross-Document Change Impact (Phase 7.3) → Immutable Versioning & Snapshots (Phase 7.4) → Technical Knowledge Risk Radar (Phase 7.5) → Authoritative Technical Knowledge Discovery & Traceability (Phase 8 Completed) → Documentation Evidence & Traceability (Phase 9 Completed) → Governance & Assurance Engine (Phase 10 Completed) → Documentation Change Intelligence & Verification Planning (Phase 11 Completed) → Authoritative Documentation Baseline & Drift Control (Phase 12 Completed).**
 
-With Phase 9 completed, Documan provides deterministic, permission-aware documentation evidence discovery, dynamic evidence state classification (`VERIFIED`, `STALE`, `ORPHANED`, `UNVERIFIED`), Evidence Coverage scoring, and bidirectional reverse traceability navigation across API endpoints, document dependencies, and external technical references—all built on Option A pure calculator architecture without data duplication or persistent state drift.
+With Phase 12 completed, Documan provides deterministic, permission-aware authoritative documentation baselining, real-time drift calculation across versions, document deletions, relationship topologies, and verification plans, deadlock-free re-baselining, CI/CD release gate integration (`chk_baseline_drift_clear`), transactional baseline lifecycle transitions, and dedicated project baselines governance UI—all built on Option A pure calculator architecture without data duplication or persistent drift state.
+
