@@ -11,7 +11,8 @@ export type AssuranceDimensionCategory =
   | 'GOVERNANCE_FRESHNESS'
   | 'HUMAN_APPROVAL'
   | 'STEWARDSHIP'
-  | 'KNOWLEDGE_RISK';
+  | 'KNOWLEDGE_RISK'
+  | 'CHANGE_IMPACT';
 
 export interface AssuranceRemediation {
   code: string;

@@ -12,6 +12,12 @@ C:\MERN_STACK\Documan\documan\apps\api\src\modules\api-specs\run_phase7_2_qa.ts
 C:\MERN_STACK\Documan\documan\apps\api\src\modules\governance\run_governance_qa.ts
   1:1  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
 
-✖ 3 problems (0 errors, 3 warnings)
-  0 errors and 3 warnings potentially fixable with the `--fix` option.
+C:\MERN_STACK\Documan\documan\apps\api\src\modules\governance\run_phase10_qa.ts
+  1:1  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+
+C:\MERN_STACK\Documan\documan\apps\api\src\modules\governance\run_phase11_qa.ts
+  1:1  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+
+✖ 5 problems (0 errors, 5 warnings)
+  0 errors and 5 warnings potentially fixable with the `--fix` option.
 

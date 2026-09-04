@@ -51,12 +51,12 @@ describe('assurance-calculator', () => {
     now: new Date('2026-02-15'),
   };
 
-  it('evaluates READY status when all 11 checks pass', () => {
+  it('evaluates READY status when all 12 checks pass', () => {
     const result = calculateDocumentAssurance(baseContext);
 
     expect(result.status).toBe('READY');
-    expect(result.summary.totalChecks).toBe(11);
-    expect(result.summary.passedCount).toBe(11);
+    expect(result.summary.totalChecks).toBe(12);
+    expect(result.summary.passedCount).toBe(12);
     expect(result.summary.failedCount).toBe(0);
     expect(result.blockingReasons).toHaveLength(0);
   });

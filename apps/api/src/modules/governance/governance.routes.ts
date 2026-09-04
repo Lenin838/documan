@@ -46,3 +46,13 @@ projectGovernanceRouter.post(
 );
 projectGovernanceRouter.get('/gate-tokens', authenticate, getProjectGateTokensHandler);
 projectGovernanceRouter.delete('/gate-tokens/:tokenId', authenticate, revokeProjectGateTokenHandler);
+
+// Phase 11 Verification Plans for Project
+projectGovernanceRouter.get('/verification-plans', authenticate, async (req, res, next) => {
+  try {
+    const { getProjectVerificationPlansHandler } = await import('./verification-plan.controller.js');
+    await getProjectVerificationPlansHandler(req, res);
+  } catch (err) {
+    next(err);
+  }
+});

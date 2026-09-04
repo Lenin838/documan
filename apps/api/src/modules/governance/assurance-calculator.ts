@@ -169,6 +169,30 @@ export function calculateDocumentAssurance(
     }),
   );
 
+  // CHECK 2b: Verification Plan & Task Clear Check
+  checks.push(
+    applyWaiverIfPresent({
+      checkId: 'chk_verification_plans_clear',
+      name: 'Verification Plan Completion',
+      category: 'CHANGE_IMPACT',
+      severity: gateSettings.allowUnverifiedImpacts ? 'WARNING' : 'BLOCKING',
+      status: isUpstreamPassed ? 'PASSED' : 'FAILED',
+      isWaivable: true,
+      actualValue: isUpstreamPassed ? 'CLEAR' : 'UNRESOLVED_TASKS_EXIST',
+      expectedValue: 'CLEAR',
+      reason: isUpstreamPassed
+        ? 'All change verification plan tasks targeting this document have been completed or resolved.'
+        : 'Unresolved change verification tasks exist for this document following upstream changes.',
+      remediation: isUpstreamPassed
+        ? undefined
+        : {
+            code: 'COMPLETE_VERIFICATION_TASKS',
+            label: 'Complete Verification Tasks',
+            detail: 'Complete or skip open change verification tasks for target document.',
+          },
+    }),
+  );
+
   // CHECK 3: Deprecated API Endpoint Usage
   const staleEpCount = evidenceCoverage?.staleCount ?? 0;
   const isApiDriftPassed = staleEpCount === 0;
