@@ -110,7 +110,7 @@ Project / API Context (Phase 7.1 & Phase 7.2 Completed)
 Workflow Intelligence / Cross-Document Change Impact (Research Phase)
 ```
 
-The first five areas established the document-management foundation. Developer/productivity workflows and governance automation established a robust baseline. Documan has now completed Phase 7.1 (OpenAPI Document Context Mapping & Endpoint Association) and Phase 7.2 (OpenAPI Endpoint Drift & Governance Integration), and is actively researching the next product opportunity.
+The first five areas established the document-management foundation. Developer/productivity workflows and governance automation established a robust baseline. Documan has now completed Phase 16 (Multi-Document Change Packages & Coordinated Impact Simulation), and is actively researching the next product opportunity.
 
 ---
 
@@ -427,6 +427,42 @@ Phase 15 strictly avoids:
 - Automatic document or database state mutation upon simulation.
 - Automatic creation of Work Requests or Verification Tasks during simulation.
 - Unbounded graph traversal or unverified performance guarantees.
+
+---
+
+## Phase 16 — Multi-Document Change Packages & Coordinated Impact Simulation
+
+**Status: COMPLETED — Implementation: 6eb204a0 / Merge: bb6921a**
+
+### Capability baseline
+
+- **Multi-Document Change Package Persistence**: Project-scoped package container (`DocumentChangePackage`) grouping multiple constituent change proposals across documents into a single coordinated release unit (`PKG-YYYYMMDD-XXXX`), with status state machine (`DRAFT` → `SIMULATED` → `UNDER_REVIEW` → `ACCEPTED` / `REJECTED` / `DISCARDED`).
+- **Coordinated Combined In-Memory Overlay Simulation**: Aggregate simulation orchestrator (`runChangePackageSimulation`) building a unified in-memory graph overlay (combining DB relationships with proposed edge additions and removals across all constituent proposals) before impact cascade BFS traversal (`POST /api/change-packages/:id/simulate`).
+- **Bounded Multi-Proposal Conflict Matrix**: Deterministic detection of package-level conflicts: `MUTUALLY_EXCLUSIVE_TARGET`, `CONTRADICTORY_RELATIONSHIP`, `DEPRECATION_DEPENDENCY_CONFLICT` (CASE A package proposals), `CIRCULAR_DEPENDENCY_INJECTION`, and `INCOMPATIBLE_CONTRACT_SCHEMA`.
+- **Aggregate Governance & Subsystem Prediction**: Combined joint gate status prediction, evidence score computation, baseline drift prediction, aggregated verification task requirements, and cross-project topology blast radius calculation.
+- **Canonical Package State Fingerprint & Staleness Control**: SHA-256 state fingerprinting (`computePackageStateFingerprint`) evaluating package tuple, proposal IDs, target document versions, and baseline timestamps, with per-proposal staleness tracking and automatic package staleness flagging on authoritative divergence.
+- **Deduplicated Roster & Detail Preservation**: Aggregate affected document roster strictly deduplicated by `documentId` while preserving distinct impact details (relationship, evidence, baseline, verification, topology) and contributing proposal attributions.
+- **ACL & Cross-Project Disclosure Isolation**: Permission-aware project boundary checking (`checkUserProjectReadAccess`), strictly omitting unauthorized project nodes, document nodes, topology edges, impact details, and counts from simulation responses.
+- **Side-Effect Free Package Acceptance & Handoff**: Acceptance updates package lifecycle status to `ACCEPTED` and outputs structured multi-proposal handoff payload instructions with **0** `DocumentVersion` mutations, **0** `DocumentationWorkRequest` mutations, **0** document content edits, and **0** side-effects.
+- **Frontend Package Management & Drawer UI**: Project-level change packages tab (`ProjectChangePackagesTab`), package creation modal (`CreatePackageModal`), and comprehensive drawer view (`ChangePackageDetailsDrawer`) displaying package status, proposals, conflicts, predicted governance, and acceptance controls.
+
+### Architectural Boundaries & System Authority
+
+- **Package Container Layer Only**: Phase 16 operates strictly as a package-level grouping and coordinated simulation layer above Phase 15 single-proposal simulation and existing authoritative engines.
+- **Zero Duplicate Engines**: Reuses Phase 15 proposal simulation, Phase 7.3 graph cascade adapter, Phase 9 evidence calculator, Phase 10 release gate evaluator, Phase 11 verification planner, Phase 12 baseline drift calculator, Phase 13 work request tracker, and Phase 14 topology link models.
+- **Zero Authoritative State Mutation**: Package creation, simulation, and acceptance are 100% side-effect free, creating zero `DocumentVersion` records, zero `DocumentationWorkRequest` records, and zero database document mutations.
+- **Independent Package Lifecycle**: Shared proposal membership does not couple packages. Accepting Package A does not invalidate Package B unless underlying authoritative document state diverges.
+
+### Explicit Non-Scope
+
+Phase 16 strictly avoids:
+
+- Generic NLP, LLM, RAG, or AI workflow engines.
+- Live API network testing, sandbox execution, or protocol behavior inference.
+- Arbitrary OpenAPI semantic compatibility analysis.
+- Automatic database document content mutation upon package acceptance.
+- Automatic creation of Work Requests or Verification Tasks during package simulation/acceptance.
+- Unbounded graph traversal or non-deterministic package conflict rules.
 
 ---
 
@@ -840,6 +876,8 @@ Documentation Work Requests & Review Workflow (Phase 13 Completed)
 System Architecture Topology & Cross-Project Contract Governance (Phase 14 Completed)
         ↓
 Pre-Change Impact Simulation & Change Proposal Engine (Phase 15 Completed)
+        ↓
+Multi-Document Change Packages & Coordinated Impact Simulation (Phase 16 Completed)
 ```
 
 The next concrete feature should emerge from research into the next meaningful user problem at this boundary.
@@ -886,7 +924,7 @@ This keeps the roadmap understandable even as individual implementation details 
 
 Documan has established the foundations of a document-management and productivity platform through the intended progression of:
 
-**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows → Project / API Context → Cross-Document Change Impact (Phase 7.3) → Immutable Versioning & Snapshots (Phase 7.4) → Technical Knowledge Risk Radar (Phase 7.5) → Authoritative Technical Knowledge Discovery & Traceability (Phase 8 Completed) → Documentation Evidence & Traceability (Phase 9 Completed) → Governance & Assurance Engine (Phase 10 Completed) → Documentation Change Intelligence & Verification Planning (Phase 11 Completed) → Authoritative Documentation Baseline & Drift Control (Phase 12 Completed) → Documentation Work Requests & Review Workflow (Phase 13 Completed) → System Architecture Topology & Cross-Project Contract Governance (Phase 14 Completed) → Pre-Change Impact Simulation & Change Proposal Engine (Phase 15 Completed).**
+**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows → Project / API Context → Cross-Document Change Impact (Phase 7.3) → Immutable Versioning & Snapshots (Phase 7.4) → Technical Knowledge Risk Radar (Phase 7.5) → Authoritative Technical Knowledge Discovery & Traceability (Phase 8 Completed) → Documentation Evidence & Traceability (Phase 9 Completed) → Governance & Assurance Engine (Phase 10 Completed) → Documentation Change Intelligence & Verification Planning (Phase 11 Completed) → Authoritative Documentation Baseline & Drift Control (Phase 12 Completed) → Documentation Work Requests & Review Workflow (Phase 13 Completed) → System Architecture Topology & Cross-Project Contract Governance (Phase 14 Completed) → Pre-Change Impact Simulation & Change Proposal Engine (Phase 15 Completed) → Multi-Document Change Packages & Coordinated Impact Simulation (Phase 16 Completed).**
 
-With Phase 15 completed, Documan extends its governance platform from reactive drift detection to deterministic pre-change decision support. Phase 15 delivers read-only ephemeral in-memory simulation (`POST /api/documents/:id/simulate-change`), persisted proposal lifecycle management (`DRAFT` → `SIMULATED` → `UNDER_REVIEW` → `ACCEPTED` / `REJECTED` / `DISCARDED`), bounded proposal types (`DOCUMENT_CONTENT_UPDATE`, `TECHNICAL_CONTRACT_UPDATE`, `RELATIONSHIP_UPDATE`, `DEPRECATION_PROPOSAL`), canonical state fingerprinting (`computeSimulationStateFingerprint`) with staleness detection, bounded graph traversal (`MAX_DEPTH = 3`, `MAX_NODES = 50`), pure subsystem integration across Phase 7.3/9/10/11/12/13/14, privacy-safe ACL node omission, post-acceptance handoff to existing Phase 7.4/13 workflows, slide-over `ProposeChangeDrawer` UI, project `ProjectProposalsTab`, and automated QA runner (`run_phase15_qa.ts`) passing 17 matrix scenarios.
+With Phase 16 completed, Documan extends its change simulation platform from single-document proposals to coordinated multi-document change packages. Phase 16 delivers project-scoped package containers (`DocumentChangePackage`), combined in-memory overlay graph traversal (`runChangePackageSimulation`), bounded multi-proposal conflict analysis (`MUTUALLY_EXCLUSIVE_TARGET`, `CONTRADICTORY_RELATIONSHIP`, `DEPRECATION_DEPENDENCY_CONFLICT`, `CIRCULAR_DEPENDENCY_INJECTION`, `INCOMPATIBLE_CONTRACT_SCHEMA`), aggregate governance status & evidence prediction, canonical SHA-256 state fingerprinting (`computePackageStateFingerprint`) with per-proposal staleness tracking, deduplicated impact roster with preserved contributing details, privacy-safe ACL node omission, side-effect free package acceptance handoff, frontend `ProjectChangePackagesTab`, `CreatePackageModal`, `ChangePackageDetailsDrawer`, and automated QA runner (`run_phase16_qa.ts`) passing 36 matrix scenarios.
 
