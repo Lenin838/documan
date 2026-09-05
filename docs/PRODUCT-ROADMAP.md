@@ -394,6 +394,42 @@ Phase 14 strictly avoids:
 
 ---
 
+## Phase 15 — Pre-Change Impact Simulation & Change Proposal Engine
+
+**Status: COMPLETED — Implementation: e27958f / Merge: 196443d**
+
+### Capability baseline
+
+- **Deterministic Pre-Change Simulation**: In-memory read-only simulation orchestrator (`runChangeProposalSimulation`) predicting upstream/downstream impacts of hypothetical modifications without mutating authoritative state or generating audit events (`POST /api/documents/:id/simulate-change`).
+- **Persisted Change Proposals & State Machine**: Human review workflow persisting `DocumentChangeProposal` records across an explicit state machine (`DRAFT` → `SIMULATED` → `UNDER_REVIEW` → `ACCEPTED` / `REJECTED` / `DISCARDED`), with zero `APPLIED` state.
+- **Bounded Proposal Types**: Support for bounded change proposals: `DOCUMENT_CONTENT_UPDATE`, `TECHNICAL_CONTRACT_UPDATE`, `RELATIONSHIP_UPDATE` (`ADD_RELATIONSHIP` / `REMOVE_RELATIONSHIP`), and `DEPRECATION_PROPOSAL`.
+- **Simulated Impact Analysis & Subsystem Integration**: Pure in-memory integration across existing authoritative engines: Phase 7.3 graph cascade adapter (`MAX_DEPTH = 3`, `MAX_NODES = 50`), Phase 9 pure evidence calculator, Phase 10 predicted release gate status, Phase 11 predicted verification task requirements, Phase 12 predicted baseline drift, Phase 13 predicted work items, and Phase 14 topology filtering.
+- **Deterministic State Fingerprint & Staleness Detection**: SHA-256 state fingerprinting (`computeSimulationStateFingerprint`) over target document, baseline snapshot, connected relationships, and topology links. Automatic `isStale=true` flag on fingerprint mismatch with re-simulation refresh.
+- **Privacy-Safe Disclosure Filtering**: Reuses Phase 14 `checkUserProjectReadAccess` to strictly omit unauthorized project nodes, edges, IDs, and contract counts from simulation outputs.
+- **Bounded Partial & Truncated Simulation Handling**: Explicit simulation status representation (`COMPLETE`, `TRUNCATED_PARTIAL`, `INDETERMINATE`, `UNSUPPORTED`), preserving partial outcomes without masking incomplete traversals as safe.
+- **Human Proposal & Workflow Handoff**: Post-acceptance handoff payload providing step-by-step instructions for existing Phase 7.4 `documentVersionService.createVersion` and Phase 13 work request creation workflows.
+- **Frontend Proposal UI & Governance Tab**: Slide-over `ProposeChangeDrawer` on `DocumentDetailsPage` and `ProjectProposalsTab` on `ProjectDetailsPage` for end-to-end proposal creation, simulation, submission, review, and acceptance.
+
+### Architectural Boundaries & System Authority
+
+- **Decision-Support Layer Only**: Phase 15 operates strictly as an orchestration and decision-support layer above existing authoritative subsystems.
+- **Zero Duplicate Engines**: Creates no duplicate impact, evidence, assurance, verification, baseline/drift, topology, or work-request engines.
+- **Zero State Side-Effects**: Ephemeral simulation is 100% read-only, producing 0 DB mutations, 0 audit events, 0 `DocumentVersion` records, and 0 `VerificationTask` or `DocumentationWorkRequest` records.
+- **Authoritative Version Handoff**: Acceptance hands off to existing Phase 7.4 document versioning and Phase 13 work request workflows rather than directly modifying authoritative version history.
+
+### Explicit Non-Scope
+
+Phase 15 strictly avoids:
+
+- Generic NLP, LLM, RAG, or AI analysis engines.
+- Live API execution, sandbox runtime testing, or network payload inspection.
+- Full semantic OpenAPI compatibility or automatic schema translation.
+- Automatic document or database state mutation upon simulation.
+- Automatic creation of Work Requests or Verification Tasks during simulation.
+- Unbounded graph traversal or unverified performance guarantees.
+
+---
+
 ## Phase 8 — Workflow Intelligence
 
 **Status: EXPLORATORY**
@@ -802,6 +838,8 @@ Authoritative Documentation Baseline & Drift Control (Phase 12 Completed)
 Documentation Work Requests & Review Workflow (Phase 13 Completed)
         ↓
 System Architecture Topology & Cross-Project Contract Governance (Phase 14 Completed)
+        ↓
+Pre-Change Impact Simulation & Change Proposal Engine (Phase 15 Completed)
 ```
 
 The next concrete feature should emerge from research into the next meaningful user problem at this boundary.
@@ -848,7 +886,7 @@ This keeps the roadmap understandable even as individual implementation details 
 
 Documan has established the foundations of a document-management and productivity platform through the intended progression of:
 
-**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows → Project / API Context → Cross-Document Change Impact (Phase 7.3) → Immutable Versioning & Snapshots (Phase 7.4) → Technical Knowledge Risk Radar (Phase 7.5) → Authoritative Technical Knowledge Discovery & Traceability (Phase 8 Completed) → Documentation Evidence & Traceability (Phase 9 Completed) → Governance & Assurance Engine (Phase 10 Completed) → Documentation Change Intelligence & Verification Planning (Phase 11 Completed) → Authoritative Documentation Baseline & Drift Control (Phase 12 Completed) → Documentation Work Requests & Review Workflow (Phase 13 Completed) → System Architecture Topology & Cross-Project Contract Governance (Phase 14 Completed).**
+**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows → Project / API Context → Cross-Document Change Impact (Phase 7.3) → Immutable Versioning & Snapshots (Phase 7.4) → Technical Knowledge Risk Radar (Phase 7.5) → Authoritative Technical Knowledge Discovery & Traceability (Phase 8 Completed) → Documentation Evidence & Traceability (Phase 9 Completed) → Governance & Assurance Engine (Phase 10 Completed) → Documentation Change Intelligence & Verification Planning (Phase 11 Completed) → Authoritative Documentation Baseline & Drift Control (Phase 12 Completed) → Documentation Work Requests & Review Workflow (Phase 13 Completed) → System Architecture Topology & Cross-Project Contract Governance (Phase 14 Completed) → Pre-Change Impact Simulation & Change Proposal Engine (Phase 15 Completed).**
 
-With Phase 14 completed, Documan extends its documentation intelligence, baseline drift, and work request governance across project boundaries to provide multi-project software landscape context while preserving the document as the central product object. Phase 14 delivers `ProjectTopologyLink` architectural boundary models (`DEPENDS_ON`, `PROVIDES_API_TO`, `INTEGRATES_WITH`, `SHARED_LIBRARY`), semantic inverse duplicate rejection, cross-project `DocumentRelationship` contract controls (`CROSS_PROJECT_TOPOLOGY_REQUIRED`), bounded cross-project Phase 7.3 change impact traversal (`MAX_DEPTH = 3`, `MAX_NODES = 50`), Phase 12 external baseline target snapshots (`documentId`, `versionNumber`, `checksum` only) and relationship drift control, Phase 11 verification and Phase 13 work request integration, strict privacy omission of unauthorized project nodes/edges from graph responses, interactive `ProjectArchitecturePanel` frontend component, document `DocumentCrossProjectImpactSection`, and automated QA runner (`run_phase14_qa.ts`) passing 25 scenarios.
+With Phase 15 completed, Documan extends its governance platform from reactive drift detection to deterministic pre-change decision support. Phase 15 delivers read-only ephemeral in-memory simulation (`POST /api/documents/:id/simulate-change`), persisted proposal lifecycle management (`DRAFT` → `SIMULATED` → `UNDER_REVIEW` → `ACCEPTED` / `REJECTED` / `DISCARDED`), bounded proposal types (`DOCUMENT_CONTENT_UPDATE`, `TECHNICAL_CONTRACT_UPDATE`, `RELATIONSHIP_UPDATE`, `DEPRECATION_PROPOSAL`), canonical state fingerprinting (`computeSimulationStateFingerprint`) with staleness detection, bounded graph traversal (`MAX_DEPTH = 3`, `MAX_NODES = 50`), pure subsystem integration across Phase 7.3/9/10/11/12/13/14, privacy-safe ACL node omission, post-acceptance handoff to existing Phase 7.4/13 workflows, slide-over `ProposeChangeDrawer` UI, project `ProjectProposalsTab`, and automated QA runner (`run_phase15_qa.ts`) passing 17 matrix scenarios.
 
