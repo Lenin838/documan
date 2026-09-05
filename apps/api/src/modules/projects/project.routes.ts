@@ -18,6 +18,19 @@ import {
   assignProjectDocumentSchema,
   projectDocumentParamsSchema,
 } from './project.schema.js';
+import {
+  createProjectTopologyLinkController,
+  getProjectTopologyLinksController,
+  updateProjectTopologyLinkController,
+  deleteProjectTopologyLinkController,
+  getProjectArchitectureGraphController,
+} from './project-topology.controller.js';
+import {
+  createProjectTopologyLinkSchema,
+  updateProjectTopologyLinkSchema,
+  projectTopologyParamsSchema,
+  projectTopologyIdParamsSchema,
+} from './project-topology.schema.js';
 import { authenticate } from '../../middleware/auth.middleware.js';
 import { validateBody, validateParams } from '../../middleware/validate.middleware.js';
 
@@ -29,6 +42,31 @@ projectRouter
   .route('/')
   .post(validateBody(createProjectSchema), createProjectHandler)
   .get(getProjectsHandler);
+
+projectRouter
+  .route('/:projectId/topology')
+  .get(validateParams(projectTopologyParamsSchema), getProjectTopologyLinksController)
+  .post(
+    validateParams(projectTopologyParamsSchema),
+    validateBody(createProjectTopologyLinkSchema),
+    createProjectTopologyLinkController,
+  );
+
+projectRouter
+  .route('/:projectId/topology/:linkId')
+  .patch(
+    validateParams(projectTopologyIdParamsSchema),
+    validateBody(updateProjectTopologyLinkSchema),
+    updateProjectTopologyLinkController,
+  )
+  .delete(
+    validateParams(projectTopologyIdParamsSchema),
+    deleteProjectTopologyLinkController,
+  );
+
+projectRouter
+  .route('/:projectId/architecture-graph')
+  .get(validateParams(projectTopologyParamsSchema), getProjectArchitectureGraphController);
 
 projectRouter
   .route('/:id/knowledge-risk')

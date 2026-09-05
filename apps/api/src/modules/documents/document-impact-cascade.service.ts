@@ -3,6 +3,9 @@ import mongoose, { Types } from 'mongoose';
 import { Document, type DocumentDocument } from './document.model.js';
 import { DocumentRelationship } from './document-relationship.model.js';
 import { createDocumentAudit } from './document-audit.service.js';
+import { Project } from '../projects/project.model.js';
+import { createVerificationPlanInternal } from '../governance/verification-plan.service.js';
+import { createWorkRequestInternal } from '../governance/work-request.service.js';
 import {
   createNotificationInternal,
   safeNotify,
@@ -37,19 +40,18 @@ export async function processUpstreamDocumentImpact({
     '_id projectId ownerId title isDeleted version',
   );
 
-  if (!upstreamDoc || upstreamDoc.isDeleted || !upstreamDoc.projectId) {
+  if (!upstreamDoc || upstreamDoc.isDeleted) {
     return { impactedCount: 0 };
   }
 
   const upstreamVersionNumber = upstreamDoc.version || 1;
 
-  const projectIdStr = upstreamDoc.projectId.toString();
   let currentLevelDocIds: string[] = [upstreamDoc._id.toString()];
   const visitedSet = new Set<string>([upstreamDoc._id.toString()]);
   const impactedDocIdsSet = new Set<string>();
   const impactedDocsList: DocumentDocument[] = [];
 
-  // Bounded Downstream Traversal (targetDocumentId <- sourceDocumentId)
+  // Bounded Downstream Traversal across projects (targetDocumentId <- sourceDocumentId)
   for (let depth = 1; depth <= MAX_DEPTH; depth++) {
     if (
       currentLevelDocIds.length === 0 ||
@@ -76,7 +78,7 @@ export async function processUpstreamDocumentImpact({
       (rel) =>
         rel.sourceDocumentId &&
         !rel.sourceDocumentId.isDeleted &&
-        rel.sourceDocumentId.projectId?.toString() === projectIdStr,
+        rel.sourceDocumentId.projectId,
     );
 
     if (activeRels.length === 0) {
@@ -91,6 +93,10 @@ export async function processUpstreamDocumentImpact({
       if (visitedSet.has(sourceIdStr)) {
         continue;
       }
+
+      // Verify target project is not archived
+      const proj = await Project.findOne({ _id: rel.sourceDocumentId.projectId, isArchived: false });
+      if (!proj) continue;
 
       visitedSet.add(sourceIdStr);
       nextLevelDocIds.push(sourceIdStr);
@@ -148,7 +154,50 @@ export async function processUpstreamDocumentImpact({
       resolutionNote: downstreamDoc.impactVerification?.resolutionNote || null,
     };
 
+    // Auto-mark STALE if downstream project governance allows
+    if (downstreamDoc.projectId) {
+      const proj = await Project.findById(downstreamDoc.projectId);
+      if (proj && proj.governanceSettings?.isGovernanceEnabled && proj.governanceSettings?.autoMarkStaleOnUpstreamChange) {
+        if (downstreamDoc.status === 'APPROVED') {
+          downstreamDoc.status = 'STALE';
+        }
+      }
+    }
+
     await downstreamDoc.save();
+
+    // Auto-dispatch Phase 11 VerificationPlan and Phase 13 WorkRequest for downstream project
+    if (downstreamDoc.projectId) {
+      try {
+        await createVerificationPlanInternal(
+          downstreamDoc.projectId,
+          upstreamDoc._id,
+          `v${upstreamVersionNumber}`,
+          upstreamDoc.ownerId,
+        );
+      } catch {
+        // Idempotent or safe non-blocking handling
+      }
+
+      try {
+        await createWorkRequestInternal({
+          projectId: downstreamDoc.projectId,
+          documentId: downstreamDoc._id,
+          title: `Remediate upstream contract change in ${upstreamDoc.title}`,
+          reason: `Upstream document ${upstreamDoc.title} (v${upstreamVersionNumber}) underwent ${changeType}. Technical verification required.`,
+          source: 'CHANGE_IMPACT',
+          createdByUserId: upstreamDoc.ownerId,
+          targetVersionNumber: downstreamDoc.version,
+          originatingContext: {
+            impactSourceDocumentId: upstreamDoc._id,
+            upstreamVersionNumber,
+            changeType,
+          },
+        });
+      } catch {
+        // Idempotent or safe non-blocking handling
+      }
+    }
 
     // System audit event
     await createDocumentAudit(

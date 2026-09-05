@@ -184,16 +184,25 @@ export async function calculateProjectBaselineDrift(
   let versionDriftCount = 0;
   let deletionDriftCount = 0;
   let verificationDriftCount = 0;
+  let relationshipDriftCount = 0;
 
   for (const snap of baseline.documentSnapshots) {
     const docIdStr = snap.documentId.toString();
-    const activeDoc = activeDocMap.get(docIdStr);
+    let activeDoc = activeDocMap.get(docIdStr);
     const driftDims: DriftDimension[] = [];
     const details: string[] = [];
 
+    // Fallback: check if document belongs to an external project
     if (!activeDoc) {
+      const extDoc = await Document.findById(snap.documentId);
+      if (extDoc && !extDoc.isDeleted) {
+        activeDoc = extDoc;
+      }
+    }
+
+    if (!activeDoc || activeDoc.isDeleted) {
       driftDims.push('DOCUMENT_DELETION_DRIFT');
-      details.push(`Baseline document (v${snap.versionNumber}) has been deleted or removed from project.`);
+      details.push(`Baseline document (v${snap.versionNumber}) has been deleted or removed.`);
       deletionDriftCount += 1;
     } else {
       const latestVer = latestVersionMap.get(docIdStr);
@@ -201,9 +210,16 @@ export async function calculateProjectBaselineDrift(
       const currentChecksum = latestVer?.checksum || `${activeDoc.fileName}:${activeDoc.fileSize}:v${activeDoc.version}`;
 
       if (currentVerNum > snap.versionNumber || (snap.checksum && currentChecksum !== snap.checksum)) {
-        driftDims.push('VERSION_DRIFT');
-        details.push(`Version divergence: baseline v${snap.versionNumber} (checksum: ${snap.checksum.substring(0, 8)}) vs current v${currentVerNum} (checksum: ${currentChecksum.substring(0, 8)}).`);
-        versionDriftCount += 1;
+        const isExternal = activeDoc.projectId?.toString() !== projObjId.toString();
+        if (isExternal) {
+          driftDims.push('RELATIONSHIP_DRIFT');
+          details.push(`External upstream contract document version divergence: baseline v${snap.versionNumber} vs current v${currentVerNum}.`);
+          relationshipDriftCount += 1;
+        } else {
+          driftDims.push('VERSION_DRIFT');
+          details.push(`Version divergence: baseline v${snap.versionNumber} (checksum: ${snap.checksum.substring(0, 8)}) vs current v${currentVerNum} (checksum: ${currentChecksum.substring(0, 8)}).`);
+          versionDriftCount += 1;
+        }
       }
 
       const hasImpactFlag = activeDoc.impactVerification?.needsVerification || false;
@@ -276,7 +292,7 @@ export async function calculateProjectBaselineDrift(
     }
   }
 
-  const relationshipDriftCount = relationshipDrifts.length;
+  relationshipDriftCount += relationshipDrifts.length;
 
   // 7. Calculate Overall Severity & Continuous Supplementary Score
   const hasBlockingDocDrift = driftedDocuments.some((d) => d.severity === 'BLOCKING');

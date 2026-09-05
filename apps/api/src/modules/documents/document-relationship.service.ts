@@ -6,6 +6,7 @@ import {
 } from './document-relationship.model.js';
 import { Document, type DocumentDocument, type DocumentStatus } from './document.model.js';
 import { DocumentShare } from '../document-shares/document-share.model.js';
+import { ProjectTopologyLink } from '../projects/project-topology.model.js';
 import { createDocumentAudit } from './document-audit.service.js';
 import type { CreateDocumentRelationshipInput } from './document-relationship.schema.js';
 import { AppError } from '../../errors/app-error.js';
@@ -121,6 +122,27 @@ export async function createDocumentRelationship(
     input.targetDocumentId,
     'READ',
   );
+
+  if (
+    sourceDocument.projectId &&
+    targetDocument.projectId &&
+    sourceDocument.projectId.toString() !== targetDocument.projectId.toString()
+  ) {
+    const topologyLink = await ProjectTopologyLink.findOne({
+      $or: [
+        { sourceProjectId: sourceDocument.projectId, targetProjectId: targetDocument.projectId },
+        { sourceProjectId: targetDocument.projectId, targetProjectId: sourceDocument.projectId },
+      ],
+    } as unknown as Record<string, unknown>);
+
+    if (!topologyLink) {
+      throw new AppError(
+        'No valid ProjectTopologyLink exists between the projects for cross-project document relationship',
+        400,
+        'CROSS_PROJECT_TOPOLOGY_REQUIRED',
+      );
+    }
+  }
 
   const existing = await DocumentRelationship.findOne({
     sourceDocumentId: sourceDocument._id,

@@ -39,7 +39,10 @@ export type DocumentAuditAction =
   | 'WORK_REQUEST_STATUS_CHANGED'
   | 'WORK_REQUEST_RESOLVED'
   | 'WORK_REQUEST_SKIPPED'
-  | 'WORK_REQUEST_REOPENED';
+  | 'WORK_REQUEST_REOPENED'
+  | 'PROJECT_TOPOLOGY_LINK_CREATED'
+  | 'PROJECT_TOPOLOGY_LINK_UPDATED'
+  | 'PROJECT_TOPOLOGY_LINK_DELETED';
 
 export interface DocumentAuditDocument {
   documentId: Types.ObjectId;
@@ -108,6 +111,9 @@ const documentAuditSchema =
           'WORK_REQUEST_RESOLVED',
           'WORK_REQUEST_SKIPPED',
           'WORK_REQUEST_REOPENED',
+          'PROJECT_TOPOLOGY_LINK_CREATED',
+          'PROJECT_TOPOLOGY_LINK_UPDATED',
+          'PROJECT_TOPOLOGY_LINK_DELETED',
         ],
         required: true,
       },

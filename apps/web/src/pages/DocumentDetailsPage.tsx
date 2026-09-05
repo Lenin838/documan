@@ -40,6 +40,7 @@ import {
 } from '../features/document-reviews/document-review.api';
 import { VersionHistorySection } from '../components/VersionHistorySection';
 import { KnowledgeHealthDrawer } from '../components/KnowledgeHealthDrawer';
+import { DocumentCrossProjectImpactSection } from '../features/documents/DocumentCrossProjectImpactSection';
 import { fetchDocumentHealth } from '../features/documents/health.api';
 import type { KnowledgeHealthData } from '../features/documents/health.types';
 import type {
@@ -2625,6 +2626,14 @@ export default function DocumentDetailsPage() {
           isOwnerOrAdmin={canEdit}
         />
       )}
+
+      {/* Phase 14 System Architecture & Cross-Project Contract Impact Section */}
+      <section style={{ marginTop: '2rem', marginBottom: '2rem' }}>
+        <DocumentCrossProjectImpactSection
+          needsVerification={doc?.impactVerification?.needsVerification}
+          activeImpactSources={doc?.impactVerification?.activeImpactSources as unknown as Array<{ upstreamDocumentId: string; upstreamVersionNumber?: number; changeType: 'STALE' | 'DEPRECATED' | 'FILE_REPLACED'; flaggedAt: string }>}
+        />
+      </section>
 
       {/* Documentation Evidence & Traceability Panel */}
       <section style={{ marginTop: '2rem', marginBottom: '2rem' }}>
