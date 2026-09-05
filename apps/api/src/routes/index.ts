@@ -21,6 +21,7 @@ import {
 } from '../modules/governance/verification-plan.routes.js';
 
 import workRequestRouter from '../modules/governance/work-request.routes.js';
+import { changeProposalRouter } from '../modules/change-proposals/change-proposal.routes.js';
 
 const apiRouter = Router();
 
@@ -42,5 +43,6 @@ apiRouter.use('/projects/:projectId/governance', projectGovernanceRouter);
 apiRouter.use('/projects/:projectId/baselines', baselineRouter);
 apiRouter.use('/projects/:projectId/api-specs', projectApiSpecRouter);
 apiRouter.use('/', workRequestRouter);
+apiRouter.use('/', changeProposalRouter);
 
 export { apiRouter };
