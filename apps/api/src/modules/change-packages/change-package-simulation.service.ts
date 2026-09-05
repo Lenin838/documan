@@ -129,7 +129,7 @@ export async function runChangePackageSimulation(
       if (schemas.length > 1 && new Set(schemas).size > 1) {
         conflicts.push({
           conflictClass: 'INCOMPATIBLE_CONTRACT_SCHEMA',
-          description: `Multiple contract proposals target document ${docId} with incompatible OpenAPI schema definitions`,
+          description: `Multiple contract proposals target document ${docId} with incompatible structural JSON Schema definitions`,
           contributingProposalIds: props.map((p) => p._id.toString()),
           severity: 'BLOCKING',
         });
@@ -173,7 +173,7 @@ export async function runChangePackageSimulation(
     }
   }
 
-  // Conflict Class 3: DEPRECATION_DEPENDENCY_CONFLICT
+  // Conflict Class 3: DEPRECATION_DEPENDENCY_CONFLICT (CASE A: Package Proposal Interactions Only)
   for (const addOp of relAddOps) {
     if (addOp.type === 'DEPENDS_ON' && deprecatedDocIds.has(addOp.target)) {
       conflicts.push({
@@ -185,29 +185,8 @@ export async function runChangePackageSimulation(
     }
   }
 
-  // Check deprecation against existing graph relationships
-  for (const depId of Array.from(deprecatedDocIds)) {
-    const existingDependents = await DocumentRelationship.find({
-      $or: [
-        { targetDocumentId: new Types.ObjectId(depId) },
-        { sourceDocumentId: new Types.ObjectId(depId) },
-      ],
-      type: 'DEPENDS_ON',
-    });
-    if (existingDependents.length > 0) {
-      const deprecationProp = proposals.find((p) => p.targetDocumentId.toString() === depId);
-      conflicts.push({
-        conflictClass: 'DEPRECATION_DEPENDENCY_CONFLICT',
-        description: `Deprecating document ${depId} breaks ${existingDependents.length} existing active DEPENDS_ON relationship(s)`,
-        contributingProposalIds: deprecationProp ? [deprecationProp._id.toString()] : [],
-        severity: 'BLOCKING',
-      });
-    }
-  }
-
-  // Conflict Class 4: CIRCULAR_DEPENDENCY_INJECTION
-  // Build in-memory graph containing existing DEPENDS_ON + relAddOps - relRemoveOps
-  const existingRels = await DocumentRelationship.find({ type: 'DEPENDS_ON' });
+  // Build combined in-memory graph overlay (existing DEPENDS_ON + proposed relAddOps - proposed relRemoveOps)
+  const existingRels = await DocumentRelationship.find({});
   const graphMap = new Map<string, Set<string>>();
 
   for (const r of existingRels) {
@@ -217,17 +196,19 @@ export async function runChangePackageSimulation(
     graphMap.get(src)!.add(tgt);
   }
 
-  for (const remOp of relRemoveOps.filter((o) => o.type === 'DEPENDS_ON')) {
+  for (const remOp of relRemoveOps) {
     if (graphMap.has(remOp.source)) {
       graphMap.get(remOp.source)!.delete(remOp.target);
     }
   }
 
-  for (const addOp of relAddOps.filter((o) => o.type === 'DEPENDS_ON')) {
+  for (const addOp of relAddOps) {
     if (!graphMap.has(addOp.source)) graphMap.set(addOp.source, new Set());
     graphMap.get(addOp.source)!.add(addOp.target);
+  }
 
-    // Check if adding addOp.source -> addOp.target creates a cycle
+  // Conflict Class 4: CIRCULAR_DEPENDENCY_INJECTION
+  for (const addOp of relAddOps.filter((o) => o.type === 'DEPENDS_ON')) {
     const visited = new Set<string>();
     const stack = new Set<string>();
 
@@ -258,7 +239,7 @@ export async function runChangePackageSimulation(
     }
   }
 
-  // 2. Aggregate Impact Cascade & Blast Radius (Bounded Depth 3, 50 Nodes)
+  // 2. Aggregate Impact Cascade & Blast Radius over Combined In-Memory Overlay (Bounded Depth 3, 50 Nodes)
   const MAX_DEPTH = 3;
   const MAX_NODES = 50;
 
@@ -303,19 +284,15 @@ export async function runChangePackageSimulation(
     docImpactDetailsMap.get(docId)!.push({
       category: depth === 0 ? 'RELATIONSHIP_IMPACT' : 'BASELINE_IMPACT',
       sourceProposalId: sourcePropId,
-      description: depth === 0 ? 'Direct target of proposal' : `Transitive downstream impact at depth ${depth}`,
+      description: depth === 0 ? 'Direct target of proposal' : `Transitive downstream impact at depth ${depth} via in-memory overlay`,
     });
 
     totalVisitedCount++;
 
     if (depth < MAX_DEPTH) {
-      // Find downstream dependent documents
-      const downRels = await DocumentRelationship.find({
-        sourceDocumentId: new Types.ObjectId(docId),
-      }).select('targetDocumentId type');
-
-      for (const r of downRels) {
-        const nextId = r.targetDocumentId.toString();
+      // Traverse downstream neighbors from the combined in-memory overlay graph!
+      const neighbors = graphMap.get(docId) || new Set();
+      for (const nextId of Array.from(neighbors)) {
         queue.push({ docId: nextId, depth: depth + 1, sourcePropId });
       }
     }

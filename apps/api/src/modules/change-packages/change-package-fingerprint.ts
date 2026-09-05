@@ -5,10 +5,7 @@ import { DocumentChangePackage } from './change-package.model.js';
 import { DocumentChangeProposal } from '../change-proposals/change-proposal.model.js';
 import { computeSimulationStateFingerprint } from '../change-proposals/change-proposal-fingerprint.js';
 import { Document } from '../documents/document.model.js';
-import { DocumentVersion } from '../documents/document-version.model.js';
-import { DocumentRelationship } from '../documents/document-relationship.model.js';
 import { DocumentationBaseline } from '../governance/documentation-baseline.model.js';
-import { ProjectTopologyLink } from '../projects/project-topology.model.js';
 
 export interface PackageStalenessResult {
   isStale: boolean;
@@ -66,12 +63,6 @@ export async function computePackageStateFingerprint(
       propStale = true;
       staleReason = 'Target document was deleted or not found';
     } else {
-      const latestVer = (await DocumentVersion.findOne({ documentId: prop.targetDocumentId })
-        .sort({ versionNumber: -1 })
-        .select('checksum versionNumber')) as any;
-      const currentDocChecksum = latestVer?.checksum || doc.filePath || 'NO_CHECKSUM';
-      const docUpdatedAt = doc.updatedAt ? doc.updatedAt.getTime() : 0;
-
       const currentFingerprint = await computeSimulationStateFingerprint(prop.targetDocumentId, prop.projectId);
 
       if (prop.simulationStateFingerprint && prop.simulationStateFingerprint !== currentFingerprint) {

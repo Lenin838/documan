@@ -12,19 +12,17 @@ import {
 
 const changeProposalRouter = Router();
 
-changeProposalRouter.use(authenticate);
-
 // Ephemeral simulation endpoint
-changeProposalRouter.post('/documents/:documentId/simulate-change', runEphemeralSimulationController);
+changeProposalRouter.post('/documents/:documentId/simulate-change', authenticate, runEphemeralSimulationController);
 
 // Project proposals CRUD & list
-changeProposalRouter.post('/projects/:projectId/proposals', createProposalController);
-changeProposalRouter.get('/projects/:projectId/proposals', listProjectProposalsController);
+changeProposalRouter.post('/projects/:projectId/proposals', authenticate, createProposalController);
+changeProposalRouter.get('/projects/:projectId/proposals', authenticate, listProjectProposalsController);
 
 // Proposal lifecycle endpoints
-changeProposalRouter.get('/proposals/:proposalId', getProposalDetailsController);
-changeProposalRouter.post('/proposals/:proposalId/simulate', simulateProposalController);
-changeProposalRouter.patch('/proposals/:proposalId/status', updateProposalStatusController);
-changeProposalRouter.post('/proposals/:proposalId/accept', acceptProposalController);
+changeProposalRouter.get('/proposals/:proposalId', authenticate, getProposalDetailsController);
+changeProposalRouter.post('/proposals/:proposalId/simulate', authenticate, simulateProposalController);
+changeProposalRouter.patch('/proposals/:proposalId/status', authenticate, updateProposalStatusController);
+changeProposalRouter.post('/proposals/:proposalId/accept', authenticate, acceptProposalController);
 
 export { changeProposalRouter };

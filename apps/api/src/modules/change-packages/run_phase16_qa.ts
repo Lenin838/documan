@@ -363,17 +363,40 @@ async function runPhase16Qa() {
   );
 
   // ----------------------------------------------------
-  // Scenario 16: DEPRECATION_DEPENDENCY_CONFLICT Conflict
+  // Scenario 16: DEPRECATION_DEPENDENCY_CONFLICT Conflict (CASE A vs CASE B)
   // ----------------------------------------------------
-  // Prop3 deprecates A1 while A1 has dependent doc A2/A3
+  // CASE A: Package contains deprecation proposal + proposal adding DEPENDS_ON to deprecated doc -> CONFLICT
+  const propAddDepOnDep = await createChangeProposal(ownerUser._id.toString(), 'user', projectA._id.toString(), {
+    targetDocumentId: docA2._id.toString(),
+    title: `Add Dep on A1 ${timestamp}`,
+    proposalType: ProposalType.RELATIONSHIP_UPDATE,
+    proposedChange: {
+      relationshipOperations: [
+        { operation: 'ADD_RELATIONSHIP', targetDocumentId: docA1._id as any, type: 'DEPENDS_ON' },
+      ],
+    },
+  });
+  await simulateProposal(ownerUser._id.toString(), 'user', propAddDepOnDep._id.toString());
+
   const conflictPkg3 = await createChangePackage(ownerUser._id.toString(), 'user', projectA._id.toString(), {
-    title: `Conflict Package Deprecation ${timestamp}`,
-    proposalIds: [prop3._id.toString()],
+    title: `Conflict Package Deprecation CASE A ${timestamp}`,
+    proposalIds: [prop3._id.toString(), propAddDepOnDep._id.toString()],
   });
   const confSim3 = await simulateChangePackage(ownerUser._id.toString(), 'user', conflictPkg3._id.toString());
   assert(
     confSim3.simulation.conflicts.some((c) => c.conflictClass === 'DEPRECATION_DEPENDENCY_CONFLICT'),
-    '16. DEPRECATION_DEPENDENCY_CONFLICT detected when deprecating document with active dependents',
+    '16. DEPRECATION_DEPENDENCY_CONFLICT detected when package proposal adds dependency on document deprecated in package (CASE A)',
+  );
+
+  // CASE B: Package containing only deprecation proposal without proposed new dependency DOES NOT trigger package conflict
+  const pkgDepOnly = await createChangePackage(ownerUser._id.toString(), 'user', projectA._id.toString(), {
+    title: `Deprecation Only Package ${timestamp}`,
+    proposalIds: [prop3._id.toString()],
+  });
+  const depSimOnly = await simulateChangePackage(ownerUser._id.toString(), 'user', pkgDepOnly._id.toString());
+  assert(
+    !depSimOnly.simulation.conflicts.some((c) => c.conflictClass === 'DEPRECATION_DEPENDENCY_CONFLICT'),
+    '16. Deprecation proposal alone without proposed package dependency DOES NOT trigger DEPRECATION_DEPENDENCY_CONFLICT (CASE B)',
   );
 
   // ----------------------------------------------------
@@ -504,6 +527,118 @@ async function runPhase16Qa() {
   });
   const discardCheck = await DocumentChangePackage.findById(pkgDiscard._id);
   assert(discardCheck?.status === PackageStatus.DISCARDED, '25. Package successfully transitioned to DISCARDED');
+
+  // ----------------------------------------------------
+  // Scenario 26: Shared Proposal Across Packages & Independence
+  // ----------------------------------------------------
+  const propShared = await createChangeProposal(ownerUser._id.toString(), 'user', projectA._id.toString(), {
+    targetDocumentId: docA2._id.toString(),
+    title: `Shared Proposal ${timestamp}`,
+    proposalType: ProposalType.DOCUMENT_CONTENT_UPDATE,
+    proposedChange: { content: 'Shared update content' },
+  });
+  await simulateProposal(ownerUser._id.toString(), 'user', propShared._id.toString());
+
+  const pkgSharedA = await createChangePackage(ownerUser._id.toString(), 'user', projectA._id.toString(), {
+    title: `Package Shared A ${timestamp}`,
+    proposalIds: [propShared._id.toString()],
+  });
+  const pkgSharedB = await createChangePackage(ownerUser._id.toString(), 'user', projectA._id.toString(), {
+    title: `Package Shared B ${timestamp}`,
+    proposalIds: [propShared._id.toString()],
+  });
+
+  await simulateChangePackage(ownerUser._id.toString(), 'user', pkgSharedA._id.toString());
+  await simulateChangePackage(ownerUser._id.toString(), 'user', pkgSharedB._id.toString());
+
+  await updatePackageStatus(ownerUser._id.toString(), 'user', pkgSharedA._id.toString(), {
+    status: PackageStatus.UNDER_REVIEW,
+  });
+  await acceptChangePackage(ownerUser._id.toString(), 'user', pkgSharedA._id.toString());
+
+  const checkPkgB = await computePackageStateFingerprint(pkgSharedB._id.toString());
+  assert(
+    checkPkgB.stalenessResult.isStale === false,
+    '26. Package B remains VALID (not stale) when Package A sharing Proposal X is accepted',
+  );
+
+  // ----------------------------------------------------
+  // Scenario 27: True Combined In-Memory Overlay Graph Traversal
+  // ----------------------------------------------------
+  const docNode1 = await DocModel.create({
+    title: `Node 1 ${timestamp}`,
+    projectId: projectA._id,
+    ownerId: ownerUser._id,
+    status: 'APPROVED',
+    version: 1,
+    fileName: 'n1.md',
+    filePath: '/n1.md',
+    fileType: 'text/markdown',
+    fileSize: 10,
+    isDeleted: false,
+  } as any);
+
+  const docNode2 = await DocModel.create({
+    title: `Node 2 ${timestamp}`,
+    projectId: projectA._id,
+    ownerId: ownerUser._id,
+    status: 'APPROVED',
+    version: 1,
+    fileName: 'n2.md',
+    filePath: '/n2.md',
+    fileType: 'text/markdown',
+    fileSize: 10,
+    isDeleted: false,
+  } as any);
+
+  const docNode3 = await DocModel.create({
+    title: `Node 3 ${timestamp}`,
+    projectId: projectA._id,
+    ownerId: ownerUser._id,
+    status: 'APPROVED',
+    version: 1,
+    fileName: 'n3.md',
+    filePath: '/n3.md',
+    fileType: 'text/markdown',
+    fileSize: 10,
+    isDeleted: false,
+  } as any);
+
+  // Proposal X adds edge N1 -> N2
+  const propEdge1 = await createChangeProposal(ownerUser._id.toString(), 'user', projectA._id.toString(), {
+    targetDocumentId: docNode1._id.toString(),
+    title: `Edge N1->N2 ${timestamp}`,
+    proposalType: ProposalType.RELATIONSHIP_UPDATE,
+    proposedChange: {
+      relationshipOperations: [{ operation: 'ADD_RELATIONSHIP', targetDocumentId: docNode2._id as any, type: 'DEPENDS_ON' }],
+    },
+  });
+
+  // Proposal Y adds edge N2 -> N3
+  const propEdge2 = await createChangeProposal(ownerUser._id.toString(), 'user', projectA._id.toString(), {
+    targetDocumentId: docNode2._id.toString(),
+    title: `Edge N2->N3 ${timestamp}`,
+    proposalType: ProposalType.RELATIONSHIP_UPDATE,
+    proposedChange: {
+      relationshipOperations: [{ operation: 'ADD_RELATIONSHIP', targetDocumentId: docNode3._id as any, type: 'DEPENDS_ON' }],
+    },
+  });
+
+  await simulateProposal(ownerUser._id.toString(), 'user', propEdge1._id.toString());
+  await simulateProposal(ownerUser._id.toString(), 'user', propEdge2._id.toString());
+
+  const pkgOverlay = await createChangePackage(ownerUser._id.toString(), 'user', projectA._id.toString(), {
+    title: `Package Combined Overlay ${timestamp}`,
+    proposalIds: [propEdge1._id.toString(), propEdge2._id.toString()],
+  });
+
+  const overlaySim = await simulateChangePackage(ownerUser._id.toString(), 'user', pkgOverlay._id.toString());
+  const overlayDocs = overlaySim.simulation.predictedState.impactCascade.impactedDocuments;
+  const containsN3 = overlayDocs.some((d) => d.documentId === docNode3._id.toString());
+  assert(
+    containsN3,
+    '27. Aggregate simulation traverses combined in-memory overlay (N1 -> N2 -> N3) and includes transitive node N3',
+  );
 
   console.log('\n====================================================');
   console.log(`   PHASE 16 QA MATRIX VERIFICATION COMPLETE`);
