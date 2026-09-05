@@ -466,6 +466,39 @@ Phase 16 strictly avoids:
 
 ---
 
+## Phase 17 — Documentation Change Package Fulfillment Verification & Immutable Attestation
+
+**Status: APPROVED — Implementation Planning Phase**
+
+### Capability baseline
+
+- **Post-Acceptance Fulfillment Verification**: Deterministic post-change verification engine (`package-fulfillment-attestation.service.ts`) comparing accepted change packages (`DocumentChangePackage`) and constituent proposals against resulting authoritative `DocumentVersion` records and active relationship states (`POST /api/change-packages/:id/verify-fulfillment`).
+- **Deterministic Data Comparison**: Grounded strictly in target document IDs, proposed content diffs/operations, version numbers, SHA-256 content checksums, and active `DocumentRelationship` records. Explicitly avoids NLP, LLM, or subjective semantic interpretation; unsupported formats produce `INDETERMINATE` or `UNSUPPORTED`.
+- **Categorical Fulfillment State Model**: Formal governance states (`FULFILLED`, `PARTIALLY_FULFILLED`, `UNFULFILLED`, `INDETERMINATE`, `UNSUPPORTED`, `STALE`) as the primary evaluation authority, with derived numerical metrics.
+- **Scope Variance Detection**: Identification of unapproved edits or scope drift outside proposed diffs (`UNAPPROVED_SCOPE_VARIANCE`), presenting findings to technical stewards without invalidating deterministic proposal fulfillment.
+- **Immutable Attestation Primitive**: Dedicated persistent model (`PackageFulfillmentAttestation`) binding an accepted package ID, constituent proposal IDs, resulting authoritative `DocumentVersion` IDs/checksums, verification outcomes, attestor user ID (`EDIT`/`ADMIN` required), and timestamp.
+- **Baseline Eligibility Handoff Payload**: Attestation outputs a structured handoff payload containing recommended baseline inputs (`name`, `versionTag`, `targetDocumentSnapshots`) for explicit Phase 12 baseline creation (`createBaseline`).
+
+### Architectural Boundaries & System Authority
+
+- **Post-Change Verification & Attestation Layer Only**: Phase 17 operates strictly after package acceptance (Phase 16) and version creation (Phase 7.4), closing the governance loop between proposal intent and authoritative state.
+- **Zero Automatic State Mutations**: Does NOT automatically edit document content, create `DocumentVersion` records, or re-baseline `DocumentationBaseline`. Phase 12 remains the single authoritative baseline/re-baselining engine.
+- **System Authority Boundaries**: Preserves Phase 16 for package coordination/acceptance, Phase 10 for assurance scoring/release-gates, Phase 11 for verification planning, and Phase 12 for baselines.
+- **Zero Deployment / Release Management Tooling**: Strictly document-centric governance; contains no software deployment runners, CI/CD pipelines, Git VCS operations, or infrastructure monitoring.
+
+### Explicit Non-Scope
+
+Phase 17 strictly avoids:
+
+- Generic NLP, LLM, RAG, or AI document review.
+- Automatic document editing or automatic `DocumentVersion` creation.
+- Software deployment, release management, or production environment monitoring.
+- CI/CD build runner or Git / VCS integrations.
+- Automatic baseline mutation upon attestation issuance.
+- Replacement or duplication of Phases 10–16.
+
+---
+
 ## Phase 8 — Workflow Intelligence
 
 **Status: EXPLORATORY**
@@ -878,6 +911,8 @@ System Architecture Topology & Cross-Project Contract Governance (Phase 14 Compl
 Pre-Change Impact Simulation & Change Proposal Engine (Phase 15 Completed)
         ↓
 Multi-Document Change Packages & Coordinated Impact Simulation (Phase 16 Completed)
+        ↓
+Documentation Change Package Fulfillment Verification & Immutable Attestation (Phase 17 Approved)
 ```
 
 The next concrete feature should emerge from research into the next meaningful user problem at this boundary.
@@ -924,7 +959,7 @@ This keeps the roadmap understandable even as individual implementation details 
 
 Documan has established the foundations of a document-management and productivity platform through the intended progression of:
 
-**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows → Project / API Context → Cross-Document Change Impact (Phase 7.3) → Immutable Versioning & Snapshots (Phase 7.4) → Technical Knowledge Risk Radar (Phase 7.5) → Authoritative Technical Knowledge Discovery & Traceability (Phase 8 Completed) → Documentation Evidence & Traceability (Phase 9 Completed) → Governance & Assurance Engine (Phase 10 Completed) → Documentation Change Intelligence & Verification Planning (Phase 11 Completed) → Authoritative Documentation Baseline & Drift Control (Phase 12 Completed) → Documentation Work Requests & Review Workflow (Phase 13 Completed) → System Architecture Topology & Cross-Project Contract Governance (Phase 14 Completed) → Pre-Change Impact Simulation & Change Proposal Engine (Phase 15 Completed) → Multi-Document Change Packages & Coordinated Impact Simulation (Phase 16 Completed).**
+**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows → Project / API Context → Cross-Document Change Impact (Phase 7.3) → Immutable Versioning & Snapshots (Phase 7.4) → Technical Knowledge Risk Radar (Phase 7.5) → Authoritative Technical Knowledge Discovery & Traceability (Phase 8 Completed) → Documentation Evidence & Traceability (Phase 9 Completed) → Governance & Assurance Engine (Phase 10 Completed) → Documentation Change Intelligence & Verification Planning (Phase 11 Completed) → Authoritative Documentation Baseline & Drift Control (Phase 12 Completed) → Documentation Work Requests & Review Workflow (Phase 13 Completed) → System Architecture Topology & Cross-Project Contract Governance (Phase 14 Completed) → Pre-Change Impact Simulation & Change Proposal Engine (Phase 15 Completed) → Multi-Document Change Packages & Coordinated Impact Simulation (Phase 16 Completed) → Documentation Change Package Fulfillment Verification & Immutable Attestation (Phase 17 Approved).**
 
-With Phase 16 completed, Documan extends its change simulation platform from single-document proposals to coordinated multi-document change packages. Phase 16 delivers project-scoped package containers (`DocumentChangePackage`), combined in-memory overlay graph traversal (`runChangePackageSimulation`), bounded multi-proposal conflict analysis (`MUTUALLY_EXCLUSIVE_TARGET`, `CONTRADICTORY_RELATIONSHIP`, `DEPRECATION_DEPENDENCY_CONFLICT`, `CIRCULAR_DEPENDENCY_INJECTION`, `INCOMPATIBLE_CONTRACT_SCHEMA`), aggregate governance status & evidence prediction, canonical SHA-256 state fingerprinting (`computePackageStateFingerprint`) with per-proposal staleness tracking, deduplicated impact roster with preserved contributing details, privacy-safe ACL node omission, side-effect free package acceptance handoff, frontend `ProjectChangePackagesTab`, `CreatePackageModal`, `ChangePackageDetailsDrawer`, and automated QA runner (`run_phase16_qa.ts`) passing 36 matrix scenarios.
+With Phase 16 completed, Documan extends its change simulation platform from single-document proposals to coordinated multi-document change packages. Phase 17 expands this foundation into post-acceptance fulfillment verification and attestation. Phase 17 defines deterministic fulfillment verification comparing accepted change packages (`DocumentChangePackage`) against resulting authoritative `DocumentVersion` records and relationship states (`POST /api/change-packages/:id/verify-fulfillment`), categorical fulfillment states (`FULFILLED`, `PARTIALLY_FULFILLED`, `UNFULFILLED`, `INDETERMINATE`, `UNSUPPORTED`, `STALE`), scope variance detection (`UNAPPROVED_SCOPE_VARIANCE`), dedicated immutable attestation primitive (`PackageFulfillmentAttestation`), and Baseline Eligibility Handoff Payload outputting recommended parameters for Phase 12 baseline creation (`createBaseline`).
 
