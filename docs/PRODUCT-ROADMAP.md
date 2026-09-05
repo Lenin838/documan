@@ -356,21 +356,17 @@ The opportunity is not to copy developer tools. It is to connect documents to th
 
 ## Phase 14 — System Architecture Topology & Cross-Project Contract Governance
 
-**Status: PLANNED — Research Complete (Pending Implementation Plan)**
-
-### User problem investigated
-
-As Documan projects grow across microservices, platforms, SDKs, and enterprise systems, technical context and contracts cross single-project (`projectId`) boundaries. Changes to an upstream document or API specification in one project can silently break downstream documents, API contracts, and baselines in another project without cross-project visibility or automated remediation.
+**Status: COMPLETED — Commit `6ef9aa1` / Merge `9e59ef3`**
 
 ### Capability baseline
 
-- **Project-Level Topology & Context Relationships**: Explicit project-level architectural topology links (`ProjectTopologyLink`) where architecturally justified, representing high-level system dependencies without duplicating document-level relationship semantics.
-- **Cross-Project Document Dependency Mapping**: Directional `DEPENDS_ON` and `REFERENCES` mapping connecting documents across project boundaries while maintaining project access control and security boundaries.
-- **Permission-Aware Cross-Project Impact Traversal**: Cross-project dependency graph evaluation respecting project-level user authorization (`READ` access) to prevent cross-tenant/cross-project context leakage.
-- **Cross-Project Change Impact & Contract Drift Detection**: Detection of upstream document/API spec changes that impact downstream project documentation, identifying cross-project staleness and contract drift.
-- **Integration with Existing Baseline & Drift Engine**: Seamless integration with Phase 12 `DocumentationBaseline` and drift calculator to flag `RELATIONSHIP_DRIFT` and cross-project contract deltas.
-- **Integration with Phase 13 Work Requests**: Automated generation of origin-keyed `DocumentationWorkRequest` items in downstream projects to assign, track, and remediate cross-project drift.
-- **System Architecture & Topology Visibility**: Unified system architecture view presenting project topology, cross-project document dependencies, and active cross-project contract health.
+- **Project-Level Topology & Context Relationships**: Explicit project-level architectural topology links (`ProjectTopologyLink`) where architecturally justified (`DEPENDS_ON`, `PROVIDES_API_TO`, `INTEGRATES_WITH`, `SHARED_LIBRARY`), representing high-level system dependencies without duplicating document-level relationship semantics.
+- **Cross-Project Document Dependency Mapping**: Directional `DocumentRelationship` technical contracts connecting documents across project boundaries with `CROSS_PROJECT_TOPOLOGY_REQUIRED` validation.
+- **Permission-Aware & Privacy-Safe Graph Traversal**: Cross-project dependency graph evaluation respecting project-level user authorization (`READ` access), completely omitting unauthorized project nodes, edges, IDs, contract counts, and drift states from API/graph responses.
+- **Cross-Project Change Impact & Contract Drift Detection**: Detection of upstream document/API spec changes that impact downstream project documentation, identifying cross-project staleness and contract drift via bounded traversal (`MAX_DEPTH = 3`, `MAX_NODES = 50`).
+- **Integration with Baseline & Drift Engine**: Seamless integration with Phase 12 `DocumentationBaseline` target snapshots (`documentId`, `versionNumber`, `checksum` only) and drift calculator to evaluate `RELATIONSHIP_DRIFT` and external contract deltas.
+- **Integration with Phase 11 & Phase 13 Engines**: Automated generation of Phase 11 `VerificationPlan` tasks and Phase 13 origin-keyed `DocumentationWorkRequest` items in downstream projects to assign, track, and remediate cross-project drift.
+- **System Architecture & Topology Visibility**: Unified system architecture UI panel (`ProjectArchitecturePanel`) presenting project topology and interactive SVG graph, alongside document-level cross-project impact visibility (`DocumentCrossProjectImpactSection`).
 
 ### Architectural Boundaries & System Authority
 
@@ -805,7 +801,7 @@ Authoritative Documentation Baseline & Drift Control (Phase 12 Completed)
         ↓
 Documentation Work Requests & Review Workflow (Phase 13 Completed)
         ↓
-System Architecture Topology & Cross-Project Contract Governance (Phase 14 Planned)
+System Architecture Topology & Cross-Project Contract Governance (Phase 14 Completed)
 ```
 
 The next concrete feature should emerge from research into the next meaningful user problem at this boundary.
@@ -852,9 +848,7 @@ This keeps the roadmap understandable even as individual implementation details 
 
 Documan has established the foundations of a document-management and productivity platform through the intended progression of:
 
-**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows → Project / API Context → Cross-Document Change Impact (Phase 7.3) → Immutable Versioning & Snapshots (Phase 7.4) → Technical Knowledge Risk Radar (Phase 7.5) → Authoritative Technical Knowledge Discovery & Traceability (Phase 8 Completed) → Documentation Evidence & Traceability (Phase 9 Completed) → Governance & Assurance Engine (Phase 10 Completed) → Documentation Change Intelligence & Verification Planning (Phase 11 Completed) → Authoritative Documentation Baseline & Drift Control (Phase 12 Completed) → Documentation Work Requests & Review Workflow (Phase 13 Completed) → System Architecture Topology & Cross-Project Contract Governance (Phase 14 Planned).**
+**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows → Project / API Context → Cross-Document Change Impact (Phase 7.3) → Immutable Versioning & Snapshots (Phase 7.4) → Technical Knowledge Risk Radar (Phase 7.5) → Authoritative Technical Knowledge Discovery & Traceability (Phase 8 Completed) → Documentation Evidence & Traceability (Phase 9 Completed) → Governance & Assurance Engine (Phase 10 Completed) → Documentation Change Intelligence & Verification Planning (Phase 11 Completed) → Authoritative Documentation Baseline & Drift Control (Phase 12 Completed) → Documentation Work Requests & Review Workflow (Phase 13 Completed) → System Architecture Topology & Cross-Project Contract Governance (Phase 14 Completed).**
 
-With Phase 13 completed, Documan turns documentation intelligence into accountable human action while keeping the document as the central product object. Phase 13 provides document-centric Work Requests with strict lifecycle status control (`OPEN`, `ASSIGNED`, `IN_PROGRESS`, `IN_REVIEW`, `RESOLVED`, `SKIPPED`), deterministic finding idempotency (`originKey`), reopen collision prevention (`409 WORK_REQUEST_ORIGIN_ALREADY_ACTIVE`), project-scoped assignee eligibility validation, automated findings integrations across Phase 7.3 `CHANGE_IMPACT`, Phase 9 `EVIDENCE`, Phase 10 `GOVERNANCE`, Phase 11 `VERIFICATION`, and Phase 12 `BASELINE_DRIFT`, full audit logging, non-blocking notification dispatch (`safeNotify`), and dedicated document & project work requests UI components.
-
-Phase 14 Product Research has been reviewed and approved, establishing Phase 14 (*System Architecture Topology & Cross-Project Contract Governance*) as PLANNED. Phase 14 extends Documan's change impact, baseline drift, and work request governance across project boundaries to provide multi-project software landscape context without altering core system authority or introducing generic project management features.
+With Phase 14 completed, Documan extends its documentation intelligence, baseline drift, and work request governance across project boundaries to provide multi-project software landscape context while preserving the document as the central product object. Phase 14 delivers `ProjectTopologyLink` architectural boundary models (`DEPENDS_ON`, `PROVIDES_API_TO`, `INTEGRATES_WITH`, `SHARED_LIBRARY`), semantic inverse duplicate rejection, cross-project `DocumentRelationship` contract controls (`CROSS_PROJECT_TOPOLOGY_REQUIRED`), bounded cross-project Phase 7.3 change impact traversal (`MAX_DEPTH = 3`, `MAX_NODES = 50`), Phase 12 external baseline target snapshots (`documentId`, `versionNumber`, `checksum` only) and relationship drift control, Phase 11 verification and Phase 13 work request integration, strict privacy omission of unauthorized project nodes/edges from graph responses, interactive `ProjectArchitecturePanel` frontend component, document `DocumentCrossProjectImpactSection`, and automated QA runner (`run_phase14_qa.ts`) passing 25 scenarios.
 
