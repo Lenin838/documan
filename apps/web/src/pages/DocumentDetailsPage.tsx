@@ -41,6 +41,7 @@ import {
 import { VersionHistorySection } from '../components/VersionHistorySection';
 import { KnowledgeHealthDrawer } from '../components/KnowledgeHealthDrawer';
 import { DocumentCrossProjectImpactSection } from '../features/documents/DocumentCrossProjectImpactSection';
+import { ProposeChangeDrawer } from '../features/change-proposals/components/ProposeChangeDrawer';
 import { fetchDocumentHealth } from '../features/documents/health.api';
 import type { KnowledgeHealthData } from '../features/documents/health.types';
 import type {
@@ -195,6 +196,9 @@ export default function DocumentDetailsPage() {
   const [sharingError, setSharingError] = useState('');
   const [sharingSuccess, setSharingSuccess] = useState('');
   const [creatingShare, setCreatingShare] = useState(false);
+
+  // Propose change drawer state
+  const [isProposeDrawerOpen, setIsProposeDrawerOpen] = useState(false);
 
   // Relationships state
   const [relationships, setRelationships] = useState<DocumentRelationship[]>([]);
@@ -939,8 +943,33 @@ export default function DocumentDetailsPage() {
         }}
       >
         <h1>Document Details</h1>
-        <Link to="/documents">Back to Documents</Link>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <button
+            onClick={() => setIsProposeDrawerOpen(true)}
+            style={{
+              padding: '0.4rem 0.8rem',
+              borderRadius: '6px',
+              border: '1px solid #4f46e5',
+              background: '#6366f1',
+              color: '#fff',
+              fontWeight: 'bold',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+            }}
+          >
+            ⚡ Propose & Simulate Change
+          </button>
+          <Link to="/documents">Back to Documents</Link>
+        </div>
       </header>
+
+      <ProposeChangeDrawer
+        isOpen={isProposeDrawerOpen}
+        onClose={() => setIsProposeDrawerOpen(false)}
+        documentId={doc.id}
+        projectId={doc.projectId || ''}
+        documentTitle={doc.title}
+      />
 
       <section style={{ marginBottom: '2rem' }}>
         <h2>Document Information</h2>
