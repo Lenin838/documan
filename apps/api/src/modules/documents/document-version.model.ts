@@ -8,6 +8,8 @@ export interface DocumentVersionDocument {
   filePath: string;
   fileType: string;
   fileSize: number;
+  checksum?: string | null;
+  content?: string | null;
   changeSummary?: string | null;
   createdById: Types.ObjectId;
   createdAt: Date;
@@ -51,6 +53,15 @@ const documentVersionSchema = new Schema<DocumentVersionDocument>(
       type: Number,
       required: true,
       min: 0,
+    },
+    checksum: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    content: {
+      type: String,
+      default: null,
     },
     changeSummary: {
       type: String,

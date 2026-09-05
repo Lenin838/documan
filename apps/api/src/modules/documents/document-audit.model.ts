@@ -52,7 +52,8 @@ export type DocumentAuditAction =
   | 'CHANGE_PACKAGE_SUBMITTED'
   | 'CHANGE_PACKAGE_ACCEPTED'
   | 'CHANGE_PACKAGE_REJECTED'
-  | 'CHANGE_PACKAGE_DISCARDED';
+  | 'CHANGE_PACKAGE_DISCARDED'
+  | 'CHANGE_PACKAGE_ATTESTED';
 
 export interface DocumentAuditDocument {
   documentId: Types.ObjectId;
@@ -124,6 +125,17 @@ const documentAuditSchema =
           'PROJECT_TOPOLOGY_LINK_CREATED',
           'PROJECT_TOPOLOGY_LINK_UPDATED',
           'PROJECT_TOPOLOGY_LINK_DELETED',
+          'CHANGE_PROPOSAL_CREATED',
+          'CHANGE_PROPOSAL_SUBMITTED',
+          'CHANGE_PROPOSAL_ACCEPTED',
+          'CHANGE_PROPOSAL_REJECTED',
+          'CHANGE_PROPOSAL_DISCARDED',
+          'CHANGE_PACKAGE_CREATED',
+          'CHANGE_PACKAGE_SUBMITTED',
+          'CHANGE_PACKAGE_ACCEPTED',
+          'CHANGE_PACKAGE_REJECTED',
+          'CHANGE_PACKAGE_DISCARDED',
+          'CHANGE_PACKAGE_ATTESTED',
         ],
         required: true,
       },
