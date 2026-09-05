@@ -110,7 +110,7 @@ Project / API Context (Phase 7.1 & Phase 7.2 Completed)
 Workflow Intelligence / Cross-Document Change Impact (Research Phase)
 ```
 
-The first five areas established the document-management foundation. Developer/productivity workflows and governance automation established a robust baseline. Documan has now completed Phase 17 (Documentation Change Package Fulfillment Verification & Immutable Attestation), and is actively researching the next product opportunity.
+The first five areas established the document-management foundation. Developer/productivity workflows and governance automation established a robust baseline. Documan has completed Phase 17 (Fulfillment Verification & Immutable Attestation), and has approved the research direction for Phase 18 (Cross-Project Baseline Contract Lineage & Attestation Alignment Verification).
 
 ---
 
@@ -496,6 +496,45 @@ Phase 17 strictly avoids:
 - CI/CD build runner or Git / VCS integrations.
 - Automatic baseline mutation upon attestation issuance.
 - Replacement or duplication of Phases 10–16.
+
+---
+
+## Phase 18 — Cross-Project Baseline Contract Lineage & Attestation Alignment Verification
+
+**Status: APPROVED — RESEARCH COMPLETE / IMPLEMENTATION PLANNING**
+
+Research Artifact: [`docs/research/PHASE-18-RESEARCH-v4.md`](file:///c:/MERN_STACK/Documan/documan/docs/research/PHASE-18-RESEARCH-v4.md)
+
+### Capability Baseline
+
+- **Cross-Project Baseline Contract Lineage Verification**: Deterministic, derived, read-only cross-project governance service (`system-baseline-alignment.service.ts`) analyzing multi-project baseline snapshots (`DocumentationBaseline`) against project topology links (`ProjectTopologyLink`) and historical attestation lineages (`PackageFulfillmentAttestation`).
+- **Technical Contract Dependency Boundaries**: Grounded strictly in cross-project `DocumentRelationship` records with `type === 'DEPENDS_ON'`. Excludes informational relationship types (`REFERENCES`, `REPLACES`, `RELATED`) from baseline contract alignment metrics.
+- **Separation of Alignment State & Governance Evidence**: Distinguishes structural baseline reference alignment (`alignmentState`: `ALIGNED`, `MISALIGNED`, `INDETERMINATE`) from explicit governance provenance metadata (`governanceEvidence`: `providerBaselinePresent`, `consumerBaselinePresent`, `providerAttested`, `attestationStale`). Missing attestation is modeled as an evidence condition (`providerAttested: false`), not a false structural state of contract incompatibility.
+- **Provider Baseline Authority & Evolution Handling**: Phase 12 active baseline (`isActive === true`) remains the single authoritative baseline for a provider project. When a provider project updates to active Baseline `v2.0` (even if not yet attested), a consumer baseline still referencing `v1.0` is evaluated as `MISALIGNED` (outdated provider version reference).
+- **Mathematically Defensible Dual-Metric Governance**: Reports `System Alignment Score` ($\frac{N_{\text{aligned}}}{N_{\text{applicable}}} \times 100$) alongside `Evidence Completeness` ($\frac{N_{\text{applicable}}}{N_{\text{total}}} \times 100$). Prevents missing baseline evidence from artificially inflating alignment scores.
+- **Zero-Applicable Evidence Handling**: Networks with zero cross-project `DEPENDS_ON` document pairs return `alignmentScore: null`, `evidenceCompleteness: null`, and status `ZERO_APPLICABLE_EVIDENCE` (never falsely reported as "100% Aligned").
+- **Strict Cross-Project Privacy Preservation**: Reuses Phase 14 `checkUserProjectReadAccess`. If a user lacks `READ` permission on a connected project, the unauthorized project, its topology links, documents, baselines, and attestations are **100% omitted** (zero placeholders, zero restricted node IDs, zero hidden project counts). Metrics are computed strictly over authorized subgraphs.
+- **Zero-Database Persistence Architecture**: Derived 100% dynamically at query time from existing `DocumentationBaseline`, `ProjectTopologyLink`, `DocumentRelationship`, and `PackageFulfillmentAttestation` collections without introducing new database collections or models.
+
+### Architectural Boundaries & System Authority
+
+- **Read-Only Derived Governance Layer Only**: Phase 18 operates strictly as a read-only query service above existing Phase 12 baselines, Phase 14 topology links, and Phase 17 attestations.
+- **System Authority Boundaries**: Preserves Phase 12 as sole baseline creation authority, Phase 14 as sole project topology authority, and Phase 17 as sole attestation authority. Phase 18 does NOT create or modify baselines, topology links, or attestations.
+- **Zero Document Mutations**: Does NOT edit document text, modify relationships, or create `DocumentVersion` records.
+
+### Explicit Non-Scope
+
+Phase 18 strictly avoids:
+
+- Semantic API compatibility analysis or AST-level OpenAPI schema diffing.
+- Live API execution, sandbox testing, or runtime network compatibility checks.
+- Automatic baseline creation or automatic `DocumentVersion` creation.
+- Creation or modification of Phase 17 attestation records.
+- Introduction of new database models or persistent collections unless later planning proves one necessary.
+- Software deployment execution, release pipelines, Docker builds, or CI/CD runners.
+- Git / VCS repository automation or branch management.
+- Mandatory AI, LLM, RAG, or non-deterministic machine learning features.
+- Visual vector diagram canvas editing (e.g., Miro / Lucidchart clones).
 
 ---
 
