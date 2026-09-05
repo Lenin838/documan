@@ -18,6 +18,8 @@ import { ApiSpecsSection } from '../components/ApiSpecsSection';
 import { KnowledgeRiskRadarPanel } from '../components/KnowledgeRiskRadarPanel';
 import { ProjectArchitecturePanel } from '../features/projects/ProjectArchitecturePanel';
 import { ProjectProposalsTab } from '../features/change-proposals/components/ProjectProposalsTab';
+import { ProjectChangePackagesTab } from '../features/change-packages/components/ProjectChangePackagesTab';
+
 
 export default function ProjectDetailsPage() {
   const { id: projectId } = useParams<{ id: string }>();
@@ -231,6 +233,13 @@ export default function ProjectDetailsPage() {
         <div style={{ marginBottom: '2rem' }}>
           <h2 style={{ marginBottom: '1rem' }}>Pre-Change Proposals & Simulations</h2>
           <ProjectProposalsTab projectId={projectId} />
+        </div>
+      )}
+
+      {projectId && (
+        <div style={{ marginBottom: '2rem' }}>
+          <h2 style={{ marginBottom: '1rem' }}>Multi-Document Change Packages</h2>
+          <ProjectChangePackagesTab projectId={projectId} />
         </div>
       )}
 

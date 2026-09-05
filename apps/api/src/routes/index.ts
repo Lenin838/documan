@@ -22,6 +22,7 @@ import {
 
 import workRequestRouter from '../modules/governance/work-request.routes.js';
 import { changeProposalRouter } from '../modules/change-proposals/change-proposal.routes.js';
+import { changePackageRouter } from '../modules/change-packages/change-package.routes.js';
 
 const apiRouter = Router();
 
@@ -44,5 +45,6 @@ apiRouter.use('/projects/:projectId/baselines', baselineRouter);
 apiRouter.use('/projects/:projectId/api-specs', projectApiSpecRouter);
 apiRouter.use('/', workRequestRouter);
 apiRouter.use('/', changeProposalRouter);
+apiRouter.use('/', changePackageRouter);
 
 export { apiRouter };
