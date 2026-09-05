@@ -112,21 +112,72 @@ export async function createBaseline(
     });
   }
 
-  // 4. Build Relationship Snapshots
+  // 4. Build Relationship Snapshots & include authorized cross-project target document snapshots
   const relationships = await DocumentRelationship.find({
     $or: [{ sourceDocumentId: { $in: activeDocIds } }, { targetDocumentId: { $in: activeDocIds } }],
   });
 
   const relationshipSnapshots: IRelationshipSnapshot[] = [];
+  const externalDocIdsToSnapshot: Types.ObjectId[] = [];
+
   for (const rel of relationships) {
     const srcStr = rel.sourceDocumentId.toString();
     const tgtStr = rel.targetDocumentId.toString();
+
+    // In-project relationship
     if (activeDocIdSet.has(srcStr) && activeDocIdSet.has(tgtStr)) {
       relationshipSnapshots.push({
         sourceDocumentId: rel.sourceDocumentId,
         targetDocumentId: rel.targetDocumentId,
         type: rel.type,
       });
+    } else if (activeDocIdSet.has(srcStr) && rel.type === 'DEPENDS_ON') {
+      // Cross-project downstream dependency: Doc B (Project B) -> Doc A (External)
+      // Check if creator has access to external target document
+      const extDoc = await Document.findOne({ _id: rel.targetDocumentId, isDeleted: false });
+      if (extDoc) {
+        relationshipSnapshots.push({
+          sourceDocumentId: rel.sourceDocumentId,
+          targetDocumentId: rel.targetDocumentId,
+          type: rel.type,
+        });
+        if (!activeDocIdSet.has(tgtStr)) {
+          externalDocIdsToSnapshot.push(rel.targetDocumentId);
+        }
+      }
+    }
+  }
+
+  // Fetch and snapshot external target documents minimal state (documentId, versionNumber, checksum)
+  if (externalDocIdsToSnapshot.length > 0) {
+    const extDocVersions = await DocumentVersion.find({
+      documentId: { $in: externalDocIdsToSnapshot },
+    }).sort({ versionNumber: -1 });
+
+    const extVerMap = new Map<string, { versionId: Types.ObjectId; versionNumber: number; checksum: string }>();
+    for (const ver of extDocVersions) {
+      const docIdStr = ver.documentId.toString();
+      if (!extVerMap.has(docIdStr)) {
+        extVerMap.set(docIdStr, {
+          versionId: ver._id,
+          versionNumber: ver.versionNumber,
+          checksum: `${ver.fileName}:${ver.fileSize}:v${ver.versionNumber}`,
+        });
+      }
+    }
+
+    const extDocs = await Document.find({ _id: { $in: externalDocIdsToSnapshot }, isDeleted: false });
+    for (const extDoc of extDocs) {
+      const docIdStr = extDoc._id.toString();
+      if (!documentSnapshots.some((s) => s.documentId.toString() === docIdStr)) {
+        const verInfo = extVerMap.get(docIdStr);
+        documentSnapshots.push({
+          documentId: extDoc._id,
+          documentVersionId: verInfo?.versionId,
+          versionNumber: verInfo?.versionNumber ?? extDoc.version,
+          checksum: verInfo?.checksum ?? `${extDoc.fileName}:${extDoc.fileSize}:v${extDoc.version}`,
+        });
+      }
     }
   }
 

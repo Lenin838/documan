@@ -47,7 +47,6 @@ export async function createVerificationPlanInternal(
 
   const triggerDoc = await Document.findOne({
     _id: triggerDocObjId,
-    projectId: projObjId,
     isDeleted: false,
   });
 

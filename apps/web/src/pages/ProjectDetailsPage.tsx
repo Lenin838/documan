@@ -16,6 +16,7 @@ import { WebhooksSection } from '../components/WebhooksSection';
 import { GovernanceSection } from '../components/GovernanceSection';
 import { ApiSpecsSection } from '../components/ApiSpecsSection';
 import { KnowledgeRiskRadarPanel } from '../components/KnowledgeRiskRadarPanel';
+import { ProjectArchitecturePanel } from '../features/projects/ProjectArchitecturePanel';
 
 export default function ProjectDetailsPage() {
   const { id: projectId } = useParams<{ id: string }>();
@@ -296,6 +297,12 @@ export default function ProjectDetailsPage() {
           </ul>
         )}
       </section>
+
+      {projectId && (
+        <section style={{ marginBottom: '2rem' }}>
+          <ProjectArchitecturePanel projectId={projectId} isOwnerOrAdmin={Boolean(project?.isOwner)} />
+        </section>
+      )}
 
       {project && (project.isOwner || project.ownerId) && projectId && (
         <WebhooksSection projectId={projectId} />

@@ -40,7 +40,6 @@ export async function getChangeIntelligenceForVersion(
 
   const triggerDoc = await Document.findOne({
     _id: triggerObjId,
-    projectId: projObjId,
     isDeleted: false,
   }).select('_id title ownerId version');
 
