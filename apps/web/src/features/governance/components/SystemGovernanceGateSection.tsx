@@ -15,6 +15,7 @@ import { SystemTopologySimulationSandbox } from './SystemTopologySimulationSandb
 import { SystemGovernanceLineageTimeline } from './SystemGovernanceLineageTimeline';
 import { ContractEvolutionAnalyzer } from './ContractEvolutionAnalyzer';
 import { TraceabilityAuditView } from './TraceabilityAuditView';
+import { SystemContractMatrixView } from './SystemContractMatrixView';
 
 interface SystemGovernanceGateSectionProps {
   projectId: string;
@@ -393,6 +394,9 @@ export function SystemGovernanceGateSection({ projectId }: SystemGovernanceGateS
 
       {/* Phase 24: End-to-End Document Traceability Completeness & Gap Audit Engine */}
       <TraceabilityAuditView documentId={data?.evidence?.blockingDependencies?.[0]?.targetDocumentId || ''} />
+
+      {/* Phase 25: Cross-Project Contract Interoperability Matrix & Topology Compatibility Analyzer */}
+      <SystemContractMatrixView projectId={projectId} />
 
       {/* Grant Waiver Modal */}
       {selectedDep && (
