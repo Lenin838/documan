@@ -14,6 +14,7 @@ import type {
 import { SystemTopologySimulationSandbox } from './SystemTopologySimulationSandbox';
 import { SystemGovernanceLineageTimeline } from './SystemGovernanceLineageTimeline';
 import { ContractEvolutionAnalyzer } from './ContractEvolutionAnalyzer';
+import { TraceabilityAuditView } from './TraceabilityAuditView';
 
 interface SystemGovernanceGateSectionProps {
   projectId: string;
@@ -389,6 +390,9 @@ export function SystemGovernanceGateSection({ projectId }: SystemGovernanceGateS
 
       {/* Phase 23: Cross-Project Contract Evolution Intelligence Analyzer */}
       <ContractEvolutionAnalyzer providerProjectId={projectId} token={localStorage.getItem('token') || ''} />
+
+      {/* Phase 24: End-to-End Document Traceability Completeness & Gap Audit Engine */}
+      <TraceabilityAuditView documentId={data?.evidence?.blockingDependencies?.[0]?.targetDocumentId || ''} />
 
       {/* Grant Waiver Modal */}
       {selectedDep && (
