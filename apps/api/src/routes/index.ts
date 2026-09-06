@@ -28,6 +28,8 @@ import workRequestRouter from '../modules/governance/work-request.routes.js';
 import { changeProposalRouter } from '../modules/change-proposals/change-proposal.routes.js';
 import { changePackageRouter } from '../modules/change-packages/change-package.routes.js';
 
+import systemGovernanceLineageRouter from '../modules/governance/system-governance-lineage.routes.js';
+
 const apiRouter = Router();
 
 apiRouter.use('/health', healthRouter);
@@ -52,6 +54,7 @@ apiRouter.use('/projects/:projectId/system-governance-gate', systemTopologySimul
 apiRouter.use('/projects/:projectId/system-topology-gate', systemTopologySimulationRouter);
 apiRouter.use('/projects/:projectId/system-governance-waivers', systemGovernanceWaiverRouter);
 apiRouter.use('/projects/:projectId/api-specs', projectApiSpecRouter);
+apiRouter.use('/governance', systemGovernanceLineageRouter);
 apiRouter.use('/', workRequestRouter);
 apiRouter.use('/', changeProposalRouter);
 apiRouter.use('/', changePackageRouter);
