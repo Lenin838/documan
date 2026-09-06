@@ -175,7 +175,7 @@ export async function evaluateSystemGateAt(
 
     const isMissingBaseline = !providerBaseline;
     const isUnattested = Boolean(providerBaseline && !providerAttestation);
-    
+
     let isStale = false;
     if (providerBaseline && providerAttestation) {
       totalAttestations++;
@@ -504,7 +504,7 @@ export async function generateSystemGovernanceTimeline(
 
   for (let i = 0; i < slicedEvents.length; i++) {
     const ev = slicedEvents[i]!;
-    
+
     const evalResult = await evaluateSystemGateAt(userId, role, projectId, ev.timestamp);
     const newStatus = evalResult.systemReleaseStatus;
     const gateStateChanged = i === 0 ? false : newStatus !== previousGateStatus;
