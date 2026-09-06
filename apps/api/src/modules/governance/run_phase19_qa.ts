@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+/* eslint-disable no-console, @typescript-eslint/no-explicit-any */
 import mongoose, { Types } from 'mongoose';
 import { Project } from '../projects/project.model.js';
 import { Document } from '../documents/document.model.js';
