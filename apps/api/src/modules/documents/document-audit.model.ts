@@ -53,7 +53,9 @@ export type DocumentAuditAction =
   | 'CHANGE_PACKAGE_ACCEPTED'
   | 'CHANGE_PACKAGE_REJECTED'
   | 'CHANGE_PACKAGE_DISCARDED'
-  | 'CHANGE_PACKAGE_ATTESTED';
+  | 'CHANGE_PACKAGE_ATTESTED'
+  | 'GOVERNANCE_SYSTEM_WAIVER_GRANTED'
+  | 'GOVERNANCE_SYSTEM_WAIVER_REVOKED';
 
 export interface DocumentAuditDocument {
   documentId: Types.ObjectId;
@@ -136,6 +138,8 @@ const documentAuditSchema =
           'CHANGE_PACKAGE_REJECTED',
           'CHANGE_PACKAGE_DISCARDED',
           'CHANGE_PACKAGE_ATTESTED',
+          'GOVERNANCE_SYSTEM_WAIVER_GRANTED',
+          'GOVERNANCE_SYSTEM_WAIVER_REVOKED',
         ],
         required: true,
       },

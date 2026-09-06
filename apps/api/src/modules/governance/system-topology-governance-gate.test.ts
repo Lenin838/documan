@@ -8,10 +8,13 @@ import { evaluateReleaseGateInternal } from './release-gate-evaluator.service.js
 import { calculateSystemBaselineAlignment } from './system-baseline-alignment.service.js';
 import { checkUserProjectReadAccess } from '../projects/project-topology.service.js';
 
+import { SystemGovernanceWaiver } from './system-governance-waiver.model.js';
+
 vi.mock('../projects/project.model.js');
 vi.mock('./release-gate-evaluator.service.js');
 vi.mock('./system-baseline-alignment.service.js');
 vi.mock('../projects/project-topology.service.js');
+vi.mock('./system-governance-waiver.model.js');
 vi.mock('../projects/project-topology.model.js', () => ({
   ProjectTopologyLink: {
     find: vi.fn().mockReturnValue({
@@ -27,6 +30,9 @@ describe('evaluateSystemTopologyGovernanceGate', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(SystemGovernanceWaiver.find).mockReturnValue({
+      lean: vi.fn().mockResolvedValue([]),
+    } as any);
   });
 
   it('throws 404 for invalid project ID', async () => {

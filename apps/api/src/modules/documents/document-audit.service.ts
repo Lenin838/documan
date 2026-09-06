@@ -1,4 +1,4 @@
-import { Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 
 import {
   DocumentAudit,
@@ -16,6 +16,7 @@ export async function createDocumentAudit(
   userId: string,
   action: DocumentAuditAction,
   metadata?: Record<string, unknown>,
+  options?: { session?: mongoose.ClientSession },
 ) {
   if (!Types.ObjectId.isValid(documentId)) {
     throw new AppError(
@@ -33,13 +34,19 @@ export async function createDocumentAudit(
     );
   }
 
-  const audit = await DocumentAudit.create({
+  const payload = {
     documentId: new Types.ObjectId(documentId),
     userId: new Types.ObjectId(userId),
     action,
     ...(metadata !== undefined ? { metadata } : {}),
-  });
+  };
 
+  if (options?.session) {
+    const created = await DocumentAudit.create([payload], { session: options.session });
+    return created[0]!;
+  }
+
+  const audit = await DocumentAudit.create(payload);
   return audit;
 }
 
