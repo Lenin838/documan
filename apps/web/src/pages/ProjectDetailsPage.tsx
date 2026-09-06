@@ -14,6 +14,7 @@ import { getDocuments } from '../features/documents/document.api';
 import type { Document } from '../features/documents/document.types';
 import { WebhooksSection } from '../components/WebhooksSection';
 import { GovernanceSection } from '../components/GovernanceSection';
+import { SystemBaselineAlignmentSection } from '../features/governance/components/SystemBaselineAlignmentSection';
 import { ApiSpecsSection } from '../components/ApiSpecsSection';
 import { KnowledgeRiskRadarPanel } from '../components/KnowledgeRiskRadarPanel';
 import { ProjectArchitecturePanel } from '../features/projects/ProjectArchitecturePanel';
@@ -226,6 +227,12 @@ export default function ProjectDetailsPage() {
       {projectId && (
         <div style={{ marginBottom: '2rem' }}>
           <GovernanceSection projectId={projectId} isOwnerOrAdmin={!!project.isOwner} />
+        </div>
+      )}
+
+      {projectId && (
+        <div style={{ marginBottom: '2rem' }}>
+          <SystemBaselineAlignmentSection projectId={projectId} />
         </div>
       )}
 
