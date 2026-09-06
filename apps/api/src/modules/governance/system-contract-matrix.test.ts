@@ -6,4 +6,10 @@ describe('System Contract Matrix Service', () => {
     expect(calculateSystemContractMatrix).toBeDefined();
     expect(typeof calculateSystemContractMatrix).toBe('function');
   });
+
+  it('should validate root project ID format', async () => {
+    await expect(
+      calculateSystemContractMatrix('user123', 'user', 'invalid-project-id'),
+    ).rejects.toThrow('Invalid root project ID');
+  });
 });
