@@ -110,7 +110,7 @@ Project / API Context (Phase 7.1 & Phase 7.2 Completed)
 Workflow Intelligence / Cross-Document Change Impact (Research Phase)
 ```
 
-The first five areas established the document-management foundation. Developer/productivity workflows and governance automation established a robust baseline. Documan has completed Phase 17 (Fulfillment Verification & Immutable Attestation), and has approved the research direction for Phase 18 (Cross-Project Baseline Contract Lineage & Attestation Alignment Verification).
+The first five areas established the document-management foundation. Developer/productivity workflows and governance automation established a robust baseline. Documan has completed Phase 18 (Cross-Project Baseline Contract Lineage & Attestation Alignment Verification), and has approved the research direction for Phase 19 (Cross-Project System Topology Governance Gate).
 
 ---
 
@@ -538,6 +538,44 @@ Phase 18 strictly avoids:
 
 ---
 
+## Phase 19 — Cross-Project System Topology Governance Gate
+
+**Status: APPROVED — RESEARCH COMPLETE / IMPLEMENTATION PLANNING**
+
+Research Artifact: [`docs/research/PHASE-19-RESEARCH-v3.md`](file:///c:/MERN_STACK/Documan/documan/docs/research/PHASE-19-RESEARCH-v3.md)
+
+### Capability Baseline
+
+- **Cross-Project System Topology Governance Gate**: Deterministic, derived, read-only system governance evaluation service (`system-topology-governance-gate.service.ts`) evaluating multi-project release safety across authorized project topology graphs (`ProjectTopologyLink`).
+- **Multi-Phase Primitive Synthesis**: Composes Phase 10 single-project documentation health (`evaluateReleaseGateInternal`), Phase 14 project topology links (`ProjectTopologyLink`), Phase 17 immutable fulfillment attestations (`PackageFulfillmentAttestation`), and Phase 18 cross-project contract baseline alignment (`system-baseline-alignment.service.ts`).
+- **Categorical System Gate Status Model**: Evaluates aggregate system release safety across categorical states (`PASSED`, `BLOCKED`, `INDETERMINATE`, `GOVERNANCE_DISABLED`), ensuring that missing or unverified upstream contract evidence produces an explicit blocked/indeterminate gate result without false passes.
+- **Root vs. Provider Governance Disabled Semantics**: Distinguishes root consumer project governance bypass (`GOVERNANCE_DISABLED`) from upstream provider governance disabled evidence (`providerGovernanceEnabled: false`). Provider governance bypass does not override structural contract reference misalignment or missing baselines.
+- **Traceable Subsystem Evidence Breakdown**: Separates the top-level aggregate decision (`systemReleaseStatus`, `passed`) from traceable subsystem evidence (`rootLocalGate`, `baselineAlignment`, `providerAttestationSummary`, `blockingDependencies`), preserving transparent evidence provenance for technical stewards.
+- **Strict Permission-Safe Subgraph Evaluation**: Reuses Phase 14 `checkUserProjectReadAccess`. Unauthorized connected project nodes, topology edges, documents, and failure counts are **100% omitted** from response details and metrics (zero placeholders, zero restricted node IDs, zero count leakage).
+- **Zero-Database Persistence Architecture**: Derived 100% dynamically at query time from existing Phase 10–18 collections without creating new database models, persistent schemas, background queue workers, or payload tokens.
+
+### Architectural Boundaries & System Authority
+
+- **Read-Only Derived Governance Gate Layer Only**: Phase 19 operates strictly as a read-only query and gate evaluation service above existing Phase 10, 12, 14, 17, and 18 authorities.
+- **System Authority Boundaries**: Preserves Phase 10 as sole local release gate authority, Phase 12 as sole baseline authority, Phase 14 as sole project topology authority, Phase 17 as sole attestation authority, and Phase 18 as sole baseline alignment authority.
+- **Zero Document / Baseline Mutations**: Does NOT edit document text, modify relationships, create `DocumentVersion` records, or alter baseline states.
+
+### Explicit Non-Scope
+
+Phase 19 strictly avoids:
+
+- Software deployment execution, release pipelines, Docker builds, or cloud infrastructure orchestration.
+- CI/CD build runner execution, pipeline scheduling, or deployment trigger execution.
+- Infrastructure access credentials, deployment secrets, or cloud authorization tokens.
+- Git / VCS repository automation, commit hooks, or branch creation.
+- Semantic API compatibility analysis, AST-level OpenAPI diffing, or live network execution.
+- Introduction of new database models, persistent collections, or background queue workers.
+- Automatic baseline creation or automatic `DocumentVersion` creation.
+- Mandatory AI, LLM, RAG, or non-deterministic machine learning features.
+- Visual vector diagram canvas editing (e.g., Miro / Lucidchart clones).
+
+---
+
 ## Phase 8 — Workflow Intelligence
 
 **Status: EXPLORATORY**
@@ -951,7 +989,11 @@ Pre-Change Impact Simulation & Change Proposal Engine (Phase 15 Completed)
         ↓
 Multi-Document Change Packages & Coordinated Impact Simulation (Phase 16 Completed)
         ↓
-Documentation Change Package Fulfillment Verification & Immutable Attestation (Phase 17 Approved)
+Documentation Change Package Fulfillment Verification & Immutable Attestation (Phase 17 Completed)
+        ↓
+Cross-Project Baseline Contract Lineage & Attestation Alignment Verification (Phase 18 Completed)
+        ↓
+Cross-Project System Topology Governance Gate (Phase 19 Approved)
 ```
 
 The next concrete feature should emerge from research into the next meaningful user problem at this boundary.
@@ -998,7 +1040,7 @@ This keeps the roadmap understandable even as individual implementation details 
 
 Documan has established the foundations of a document-management and productivity platform through the intended progression of:
 
-**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows → Project / API Context → Cross-Document Change Impact (Phase 7.3) → Immutable Versioning & Snapshots (Phase 7.4) → Technical Knowledge Risk Radar (Phase 7.5) → Authoritative Technical Knowledge Discovery & Traceability (Phase 8 Completed) → Documentation Evidence & Traceability (Phase 9 Completed) → Governance & Assurance Engine (Phase 10 Completed) → Documentation Change Intelligence & Verification Planning (Phase 11 Completed) → Authoritative Documentation Baseline & Drift Control (Phase 12 Completed) → Documentation Work Requests & Review Workflow (Phase 13 Completed) → System Architecture Topology & Cross-Project Contract Governance (Phase 14 Completed) → Pre-Change Impact Simulation & Change Proposal Engine (Phase 15 Completed) → Multi-Document Change Packages & Coordinated Impact Simulation (Phase 16 Completed) → Documentation Change Package Fulfillment Verification & Immutable Attestation (Phase 17 Approved).**
+**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows → Project / API Context → Cross-Document Change Impact (Phase 7.3) → Immutable Versioning & Snapshots (Phase 7.4) → Technical Knowledge Risk Radar (Phase 7.5) → Authoritative Technical Knowledge Discovery & Traceability (Phase 8 Completed) → Documentation Evidence & Traceability (Phase 9 Completed) → Governance & Assurance Engine (Phase 10 Completed) → Documentation Change Intelligence & Verification Planning (Phase 11 Completed) → Authoritative Documentation Baseline & Drift Control (Phase 12 Completed) → Documentation Work Requests & Review Workflow (Phase 13 Completed) → System Architecture Topology & Cross-Project Contract Governance (Phase 14 Completed) → Pre-Change Impact Simulation & Change Proposal Engine (Phase 15 Completed) → Multi-Document Change Packages & Coordinated Impact Simulation (Phase 16 Completed) → Documentation Change Package Fulfillment Verification & Immutable Attestation (Phase 17 Completed) → Cross-Project Baseline Contract Lineage & Attestation Alignment Verification (Phase 18 Completed) → Cross-Project System Topology Governance Gate (Phase 19 Approved).**
 
-With Phase 16 completed, Documan extends its change simulation platform from single-document proposals to coordinated multi-document change packages. Phase 17 expands this foundation into post-acceptance fulfillment verification and attestation. Phase 17 defines deterministic fulfillment verification comparing accepted change packages (`DocumentChangePackage`) against resulting authoritative `DocumentVersion` records and relationship states (`POST /api/change-packages/:id/verify-fulfillment`), categorical fulfillment states (`FULFILLED`, `PARTIALLY_FULFILLED`, `UNFULFILLED`, `INDETERMINATE`, `UNSUPPORTED`, `STALE`), scope variance detection (`UNAPPROVED_SCOPE_VARIANCE`), dedicated immutable attestation primitive (`PackageFulfillmentAttestation`), and Baseline Eligibility Handoff Payload outputting recommended parameters for Phase 12 baseline creation (`createBaseline`).
+With Phase 18 completed, Documan provides derived, query-time, read-only cross-project baseline contract lineage and attestation alignment verification. Phase 19 expands this foundation into a multi-project, topology-aware system release gate (`system-topology-governance-gate.service.ts`), evaluating whether a project is safe to release within its connected project dependency graph (`ProjectTopologyLink`).
 
