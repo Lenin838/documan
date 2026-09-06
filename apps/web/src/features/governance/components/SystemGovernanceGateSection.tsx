@@ -13,6 +13,7 @@ import type {
 } from '../system-topology-governance-gate.types';
 import { SystemTopologySimulationSandbox } from './SystemTopologySimulationSandbox';
 import { SystemGovernanceLineageTimeline } from './SystemGovernanceLineageTimeline';
+import { ContractEvolutionAnalyzer } from './ContractEvolutionAnalyzer';
 
 interface SystemGovernanceGateSectionProps {
   projectId: string;
@@ -385,6 +386,9 @@ export function SystemGovernanceGateSection({ projectId }: SystemGovernanceGateS
 
       {/* Phase 22: System Governance Lineage & Longitudinal Timeline */}
       <SystemGovernanceLineageTimeline projectId={projectId} />
+
+      {/* Phase 23: Cross-Project Contract Evolution Intelligence Analyzer */}
+      <ContractEvolutionAnalyzer providerProjectId={projectId} token={localStorage.getItem('token') || ''} />
 
       {/* Grant Waiver Modal */}
       {selectedDep && (
