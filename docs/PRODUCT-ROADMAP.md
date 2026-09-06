@@ -110,7 +110,7 @@ Project / API Context (Phase 7.1 & Phase 7.2 Completed)
 Workflow Intelligence / Cross-Document Change Impact (Research Phase)
 ```
 
-The first five areas established the document-management foundation. Developer/productivity workflows and governance automation established a robust baseline. Documan has completed Phase 18 (Cross-Project Baseline Contract Lineage & Attestation Alignment Verification), and has approved the research direction for Phase 19 (Cross-Project System Topology Governance Gate).
+The first five areas established the document-management foundation. Developer/productivity workflows and governance automation established a robust baseline. Documan has completed Phase 19 (Cross-Project System Topology Governance Gate), and has approved the research artifact for Phase 20 (Cross-Project System Governance Exception & Policy Waiver Lifecycle Management).
 
 ---
 
@@ -574,6 +574,45 @@ Phase 19 strictly avoids:
 - Automatic baseline creation or automatic `DocumentVersion` creation.
 - Mandatory AI, LLM, RAG, or non-deterministic machine learning features.
 - Visual vector diagram canvas editing (e.g., Miro / Lucidchart clones).
+
+---
+
+## Phase 20 — Cross-Project System Governance Exception & Policy Waiver Lifecycle Management
+
+**Status: Research: COMPLETED / APPROVED — Implementation: NOT STARTED**
+
+Research Artifact: [`docs/research/PHASE-20-RESEARCH-v4.md`](file:///c:/MERN_STACK/Documan/documan/docs/research/PHASE-20-RESEARCH-v4.md)
+
+### Capability Baseline
+
+- **Persistent Governance Waiver Model (`SystemGovernanceWaiver`)**: Scoped, persistent policy waiver records representing explicit, time-bounded, audit-defensible governance exceptions granted by Project Owners or System Admins.
+- **Deterministic Cross-Project Exception Matching**: Evaluation engine matching active waivers against cross-project topology gate failures during `evaluateSystemTopologyGovernanceGate` execution.
+- **Provider-Scoped Minimum Waiver Boundary**: Requires mandatory `targetProviderProjectId` for all cross-project waivers to eliminate implicit global topology wildcards.
+- **Document-Level Provider Gate Protection**: Requires mandatory `targetDocumentId` binding for `PROVIDER_LOCAL_GATE_BLOCKED` blockers to prevent whole-provider project gate bypass.
+- **Closed Blocker Taxonomy & Classification**: Explicit closed taxonomy classifying conditions as `WAIVABLE` (`CONTRACT_MISALIGNED`, `PROVIDER_ATTESTATION_MISSING`, `PROVIDER_ATTESTATION_STALE`, `PROVIDER_LOCAL_GATE_BLOCKED`, `PROVIDER_GOVERNANCE_DISABLED`) or `NON_WAIVABLE` (`ROOT_GOVERNANCE_DISABLED`, `ROOT_LOCAL_GATE_BLOCKED`, `TOPOLOGY_TRUNCATION`, `INDETERMINATE_EVIDENCE`).
+- **Query-Time Expiration Semantics**: `expiresAt` temporal boundary checked dynamically during query matching without background queue workers, cron jobs, or fake expiration audit events.
+- **Immediate Revocation Effect**: Instant query-time revocation (`isRevoked: true`) causing subsequent gate checks to immediately revert to `BLOCKED`.
+- **Immutable Provenance Audit Logging**: Real-time emission of `GOVERNANCE_SYSTEM_WAIVER_GRANTED` and `GOVERNANCE_SYSTEM_WAIVER_REVOKED` events to `DocumentAudit`.
+- **Exact Contract Version Binding**: Waivers bound to `v1` DO NOT automatically inherit to `v2` baseline updates.
+- **Duplicate Active-Scope Prevention**: Prevents creation of duplicate active waivers matching the exact same scope tuple (`409 CONFLICT`).
+- **System Gate Result (`PASSED_WITH_WAIVER`)**: Returns `PASSED_WITH_WAIVER` (`passed: true`) ONLY when all waivable dependency blockers are covered by valid active waivers, root local gate passes, and zero non-waivable or un-waived blockers remain.
+- **Phase 19 Consumer & Contract Compatibility**: Preserves boolean `passed: true` for programmatic gate check consumers and safe UI badge rendering across status switches.
+
+### Architectural Boundaries & System Authority
+
+- **Governance Exception Layer Only**: Phase 20 operates strictly as a policy exception decision layer above Phase 19 system gate evaluation without weakening Phase 10 local governance or Phase 17 attestations.
+- **System Authority Boundaries**: Preserves Phase 10 as local release gate authority, Phase 12 as baseline authority, Phase 14 as topology authority, Phase 17 as attestation authority, Phase 18 as baseline alignment authority, and Phase 19 as system topology gate authority.
+- **Zero Document / Code Mutations**: Does NOT edit document text, create `DocumentVersion` records, or mutate baselines.
+
+### Explicit Non-Scope
+
+Phase 20 strictly avoids:
+
+- Software deployment execution, release pipelines, Docker builds, or cloud infrastructure orchestration.
+- CI/CD build runner execution or deployment trigger management.
+- Background queue workers or cron sweep infrastructure.
+- Automatic waiver approval or AI-driven waiver generation.
+- Generic task, ticket, or workflow management.
 
 ---
 

@@ -4,8 +4,13 @@ import { AppError } from '../../errors/app-error.js';
 import { Project } from '../projects/project.model.js';
 import { ProjectTopologyLink } from '../projects/project-topology.model.js';
 import { checkUserProjectReadAccess } from '../projects/project-topology.service.js';
-import { evaluateReleaseGateInternal } from './release-gate-evaluator.service.js';
+import { evaluateReleaseGateInternal, BlockingDocumentInfo } from './release-gate-evaluator.service.js';
 import { calculateSystemBaselineAlignment } from './system-baseline-alignment.service.js';
+import {
+  SystemGovernanceWaiver,
+  SystemBlockerType,
+  ISystemGovernanceWaiver,
+} from './system-governance-waiver.model.js';
 import type {
   SystemGovernanceGateResult,
   SystemReleaseStatus,
@@ -16,6 +21,45 @@ function validateObjectId(id: string, errorMessage = 'Invalid project ID', code 
   if (!Types.ObjectId.isValid(id)) {
     throw new AppError(errorMessage, 404, code);
   }
+}
+
+export function matchWaiverForDependency(
+  blockerType: SystemBlockerType,
+  providerProjectId: string,
+  targetDocumentId?: string | null,
+  consumerContractVersion?: number | null,
+  activeWaivers: ISystemGovernanceWaiver[] = [],
+): ISystemGovernanceWaiver | undefined {
+  return activeWaivers.find((w) => {
+    // 1. Blocker Type must match exactly
+    if (w.blockerType !== blockerType) return false;
+
+    // 2. Target Provider Project ID must match exactly
+    if (w.targetProviderProjectId.toString() !== providerProjectId) return false;
+
+    // 3. Target Document ID Handling
+    if (w.targetDocumentId) {
+      if (!targetDocumentId || w.targetDocumentId.toString() !== targetDocumentId.toString()) {
+        return false;
+      }
+    } else if (blockerType === 'PROVIDER_LOCAL_GATE_BLOCKED') {
+      // PROVIDER_LOCAL_GATE_BLOCKED requires exact document match. A wildcard waiver never matches.
+      return false;
+    }
+
+    // 4. Contract Version Binding Handling
+    if (w.contractVersionNumber !== null && w.contractVersionNumber !== undefined) {
+      if (
+        consumerContractVersion === undefined ||
+        consumerContractVersion === null ||
+        w.contractVersionNumber !== consumerContractVersion
+      ) {
+        return false;
+      }
+    }
+
+    return true;
+  });
 }
 
 export async function evaluateSystemTopologyGovernanceGate(
@@ -36,22 +80,33 @@ export async function evaluateSystemTopologyGovernanceGate(
     throw new AppError('Access denied to project', 403, 'FORBIDDEN');
   }
 
-  const evaluatedAt = new Date();
+  // SINGLE EVALUATION TIMESTAMP ESTABLISHED ONCE AT ENTRY
+  const evaluationTimestamp = new Date();
+
+  // STAGE A: Batch Candidate Retrieval for Active Waivers
+  const activeWaivers = (await SystemGovernanceWaiver.find({
+    rootProjectId: projObjId,
+    scopeState: 'ACTIVE',
+    isRevoked: false,
+    expiresAt: { $gt: evaluationTimestamp },
+  }).lean()) as ISystemGovernanceWaiver[];
 
   // PRECEDENCE STEP 1: Root Project Governance Disabled
   if (rootProject.governanceSettings?.isGovernanceEnabled === false) {
     const rootGateDisabledResult = await evaluateReleaseGateInternal(projObjId);
     return {
-      passed: false, // Strictly: (systemReleaseStatus === 'PASSED')
+      passed: false,
       systemReleaseStatus: 'GOVERNANCE_DISABLED',
       rootProjectId: projObjId.toString(),
-      evaluatedAt,
+      evaluatedAt: evaluationTimestamp,
       summary: {
         totalDependencies: 0,
         alignedDependencies: 0,
         misalignedDependencies: 0,
         indeterminateDependencies: 0,
         blockedProviders: 0,
+        waivedBlockers: 0,
+        unwaivedBlockers: 0,
       },
       evidence: {
         rootLocalGate: {
@@ -63,6 +118,7 @@ export async function evaluateSystemTopologyGovernanceGate(
           alignmentScore: null,
           evidenceCompleteness: null,
         },
+        appliedWaiverIds: [],
         blockingDependencies: [],
       },
     };
@@ -85,7 +141,6 @@ export async function evaluateSystemTopologyGovernanceGate(
     const current = queue.shift()!;
 
     if (current.depth >= MAX_DEPTH || authorizedProjectIds.size >= MAX_NODES) {
-      // Check if unvisited DEPENDS_ON edges exist beyond current bound
       const currentObjId = new Types.ObjectId(current.id);
       const unvisitedOutgoingCount = await ProjectTopologyLink.countDocuments({
         sourceProjectId: currentObjId,
@@ -111,7 +166,7 @@ export async function evaluateSystemTopologyGovernanceGate(
       const tgtId = link.targetProjectId._id.toString();
 
       const canReadTgt = await checkUserProjectReadAccess(userId, role, tgtId);
-      if (!canReadTgt) continue; // Privacy rule: omit unauthorized nodes completely
+      if (!canReadTgt) continue;
 
       if (!authorizedProjectIds.has(tgtId)) {
         if (authorizedProjectIds.size < MAX_NODES) {
@@ -132,12 +187,13 @@ export async function evaluateSystemTopologyGovernanceGate(
   // Phase 18 System Baseline Alignment Calculation
   const alignmentResult = await calculateSystemBaselineAlignment(userId, role, projectId);
 
-  // Evaluate Provider Local Gates & Build Evidence
-  const blockingDependencies: BlockingDependencyDTO[] = [];
-  const providerGateStatusMap = new Map<string, { passed: boolean; status: string; freshnessPercentage: number }>();
+  // Evaluate Provider Local Gates
+  const providerGateMap = new Map<
+    string,
+    { passed: boolean; status: string; freshnessPercentage: number; blockingDocuments: BlockingDocumentInfo[] }
+  >();
   let blockedProvidersCount = 0;
 
-  // Inspect authorized provider projects (excluding root)
   for (const providerId of authorizedProjectIds) {
     if (providerId === projObjId.toString()) continue;
 
@@ -146,10 +202,11 @@ export async function evaluateSystemTopologyGovernanceGate(
     if (!providerProject) continue;
 
     const providerGate = await evaluateReleaseGateInternal(providerObjId);
-    providerGateStatusMap.set(providerId, {
+    providerGateMap.set(providerId, {
       passed: providerGate.passed,
       status: providerGate.status,
       freshnessPercentage: providerGate.freshnessPercentage,
+      blockingDocuments: providerGate.blockingDocuments || [],
     });
 
     if (!providerGate.passed || providerGate.status === 'BLOCKED') {
@@ -157,10 +214,15 @@ export async function evaluateSystemTopologyGovernanceGate(
     }
   }
 
-  // Map Phase 18 Alignment Units & Governance Evidence into Blocking Dependencies
+  // STAGE B: Map Alignment Units and Evaluate Blockers Against Active Waivers
+  const blockingDependencies: BlockingDependencyDTO[] = [];
+  const appliedWaiverIdsSet = new Set<string>();
+  let waivedBlockersCount = 0;
+  let unwaivedBlockersCount = 0;
+
   for (const unit of alignmentResult.alignmentUnits) {
     const providerId = unit.providerProject.id;
-    const providerGate = providerGateStatusMap.get(providerId);
+    const providerGate = providerGateMap.get(providerId);
     const providerLocalGateStatus = providerGate ? providerGate.status : 'UNKNOWN';
 
     const isMisaligned = unit.alignmentState === 'MISALIGNED';
@@ -169,39 +231,121 @@ export async function evaluateSystemTopologyGovernanceGate(
     const isProviderBlocked = providerGate ? (!providerGate.passed || providerGate.status === 'BLOCKED') : false;
 
     if (isMisaligned || isUnattested || isAttestationStale || isProviderBlocked) {
-      let reason = '';
+      let blockerType: SystemBlockerType;
+      let rawReason: string;
+      let targetDocumentId: string | null;
+      const contractVersionNumber = unit.consumerVersionRef?.versionNumber ?? null;
+
       if (isMisaligned) {
-        reason = `MISALIGNED: Consumer baseline snapshot references version v${unit.consumerVersionRef?.versionNumber ?? 'unknown'}, but Provider active baseline is v${unit.providerActiveVersion?.versionNumber ?? 'unknown'}`;
+        blockerType = 'CONTRACT_MISALIGNED';
+        rawReason = `MISALIGNED: Consumer baseline snapshot references version v${unit.consumerVersionRef?.versionNumber ?? 'unknown'}, but Provider active baseline is v${unit.providerActiveVersion?.versionNumber ?? 'unknown'}`;
       } else if (isUnattested) {
-        reason = `UNATTESTED: Provider active baseline snapshot lacks required Phase 17 fulfillment attestation`;
+        blockerType = 'PROVIDER_ATTESTATION_MISSING';
+        rawReason = `UNATTESTED: Provider active baseline snapshot lacks required Phase 17 fulfillment attestation`;
       } else if (isAttestationStale) {
-        reason = `STALE_ATTESTATION: Provider document head version has drifted beyond attested snapshot version`;
-      } else if (isProviderBlocked) {
-        reason = `PROVIDER_GATE_BLOCKED: Upstream provider project "${unit.providerProject.name}" has failing local document freshness or unreviewed drift`;
+        blockerType = 'PROVIDER_ATTESTATION_STALE';
+        rawReason = `STALE_ATTESTATION: Provider document head version has drifted beyond attested snapshot version`;
+      } else {
+        blockerType = 'PROVIDER_LOCAL_GATE_BLOCKED';
+        rawReason = `PROVIDER_GATE_BLOCKED: Upstream provider project "${unit.providerProject.name}" has failing local document freshness or unreviewed drift`;
       }
 
-      blockingDependencies.push({
-        providerProjectId: unit.providerProject.id,
-        providerProjectName: unit.providerProject.name,
-        consumerDocumentTitle: unit.consumerDocument.title,
-        providerDocumentTitle: unit.providerDocument.title,
-        reason,
-        governanceEvidence: {
-          providerBaselinePresent: unit.governanceEvidence.providerBaselinePresent,
-          consumerBaselinePresent: unit.governanceEvidence.consumerBaselinePresent,
-          providerAttested: unit.governanceEvidence.providerAttested,
-          attestationStale: unit.governanceEvidence.attestationStale,
-          providerGovernanceEnabled: providerGate ? providerGate.status !== 'GOVERNANCE_DISABLED' : true,
-          providerLocalGateStatus,
-        },
-      });
+      // If provider local gate is blocked, process granular blocking documents if present
+      if (blockerType === 'PROVIDER_LOCAL_GATE_BLOCKED' && providerGate && providerGate.blockingDocuments.length > 0) {
+        for (const blockDoc of providerGate.blockingDocuments) {
+          const docTargetId = blockDoc.id;
+          const matchedWaiver = matchWaiverForDependency(
+            'PROVIDER_LOCAL_GATE_BLOCKED',
+            providerId,
+            docTargetId,
+            contractVersionNumber,
+            activeWaivers,
+          );
+
+          const isWaived = Boolean(matchedWaiver);
+          const appliedWaiverId = matchedWaiver ? String((matchedWaiver as unknown as { _id: unknown })._id) : null;
+
+          if (isWaived && appliedWaiverId) {
+            waivedBlockersCount++;
+            appliedWaiverIdsSet.add(appliedWaiverId);
+          } else {
+            unwaivedBlockersCount++;
+          }
+
+          blockingDependencies.push({
+            providerProjectId: unit.providerProject.id,
+            providerProjectName: unit.providerProject.name,
+            consumerDocumentTitle: unit.consumerDocument.title,
+            providerDocumentTitle: blockDoc.title,
+            targetDocumentId: docTargetId,
+            contractVersionNumber,
+            blockerType: 'PROVIDER_LOCAL_GATE_BLOCKED',
+            reason: isWaived
+              ? `[WAIVED] ${rawReason} (${blockDoc.title}: ${blockDoc.reason}) (Waiver Reason: ${matchedWaiver!.reason})`
+              : `${rawReason} (${blockDoc.title}: ${blockDoc.reason})`,
+            isWaived,
+            appliedWaiverId,
+            governanceEvidence: {
+              providerBaselinePresent: unit.governanceEvidence.providerBaselinePresent,
+              consumerBaselinePresent: unit.governanceEvidence.consumerBaselinePresent,
+              providerAttested: unit.governanceEvidence.providerAttested,
+              attestationStale: unit.governanceEvidence.attestationStale,
+              providerGovernanceEnabled: providerGate ? providerGate.status !== 'GOVERNANCE_DISABLED' : true,
+              providerLocalGateStatus,
+            },
+          });
+        }
+      } else {
+        // Non-local-gate blockers or provider local gate without granular docs
+        targetDocumentId = unit.providerDocument?.id ?? null;
+        const matchedWaiver = matchWaiverForDependency(
+          blockerType,
+          providerId,
+          targetDocumentId,
+          contractVersionNumber,
+          activeWaivers,
+        );
+
+        const isWaived = Boolean(matchedWaiver);
+        const appliedWaiverId = matchedWaiver ? String((matchedWaiver as unknown as { _id: unknown })._id) : null;
+
+        if (isWaived && appliedWaiverId) {
+          waivedBlockersCount++;
+          appliedWaiverIdsSet.add(appliedWaiverId);
+        } else {
+          unwaivedBlockersCount++;
+        }
+
+        blockingDependencies.push({
+          providerProjectId: unit.providerProject.id,
+          providerProjectName: unit.providerProject.name,
+          consumerDocumentTitle: unit.consumerDocument.title,
+          providerDocumentTitle: unit.providerDocument.title,
+          targetDocumentId,
+          contractVersionNumber,
+          blockerType,
+          reason: isWaived
+            ? `[WAIVED] ${rawReason} (Waiver Reason: ${matchedWaiver!.reason})`
+            : rawReason,
+          isWaived,
+          appliedWaiverId,
+          governanceEvidence: {
+            providerBaselinePresent: unit.governanceEvidence.providerBaselinePresent,
+            consumerBaselinePresent: unit.governanceEvidence.consumerBaselinePresent,
+            providerAttested: unit.governanceEvidence.providerAttested,
+            attestationStale: unit.governanceEvidence.attestationStale,
+            providerGovernanceEnabled: providerGate ? providerGate.status !== 'GOVERNANCE_DISABLED' : true,
+            providerLocalGateStatus,
+          },
+        });
+      }
     }
   }
 
-  // Aggregate Decision Precedence Evaluation
+  // AGGREGATE DECISION PRECEDENCE EVALUATION
   let systemReleaseStatus: SystemReleaseStatus;
 
-  // PRECEDENCE STEP 2 (if root local gate was blocked)
+  // PRECEDENCE STEP 2 (if root local gate was blocked -> NON-WAIVABLE)
   if (isRootLocalGateBlocked) {
     systemReleaseStatus = 'BLOCKED';
     if (rootLocalGateResult.blockingDocuments.length > 0) {
@@ -211,7 +355,12 @@ export async function evaluateSystemTopologyGovernanceGate(
           providerProjectName: rootProject.name,
           consumerDocumentTitle: blockDoc.title,
           providerDocumentTitle: blockDoc.title,
+          targetDocumentId: blockDoc.id,
+          contractVersionNumber: null,
+          blockerType: 'PROVIDER_LOCAL_GATE_BLOCKED',
           reason: `ROOT_GATE_BLOCKED: ${blockDoc.reason}`,
+          isWaived: false,
+          appliedWaiverId: null,
           governanceEvidence: {
             providerBaselinePresent: true,
             consumerBaselinePresent: true,
@@ -224,44 +373,46 @@ export async function evaluateSystemTopologyGovernanceGate(
       }
     }
   }
-  // PRECEDENCE STEP 3: Topology Truncation Limit Exceeded
+  // PRECEDENCE STEP 3: Topology Truncation Limit Exceeded (NON-WAIVABLE)
   else if (isTruncated) {
     systemReleaseStatus = 'INDETERMINATE';
   }
-  // PRECEDENCE STEP 4: Missing Required Evidence (Indeterminate)
+  // PRECEDENCE STEP 4: Missing Required Evidence (INDETERMINATE -> NON-WAIVABLE)
   else if (
     alignmentResult.aggregateState === 'INDETERMINATE' ||
     alignmentResult.summary.indeterminateUnits > 0
   ) {
     systemReleaseStatus = 'INDETERMINATE';
   }
-  // PRECEDENCE STEP 5, 6, 7, 8: Contract Misalignment, Unattested, Stale Attestation, or Provider Gate Blocked
-  else if (
-    alignmentResult.aggregateState === 'MISALIGNED' ||
-    alignmentResult.summary.misalignedUnits > 0 ||
-    blockingDependencies.length > 0
-  ) {
+  // PRECEDENCE STEP 5: Any Un-Waived Blocker Exists -> BLOCKED
+  else if (unwaivedBlockersCount > 0) {
     systemReleaseStatus = 'BLOCKED';
   }
-  // PRECEDENCE STEP 9: Fully Satisfied -> PASSED
+  // PRECEDENCE STEP 6: All Waivable Blockers Waived & Zero Unwaived Blockers -> PASSED_WITH_WAIVER
+  else if (waivedBlockersCount > 0 && unwaivedBlockersCount === 0) {
+    systemReleaseStatus = 'PASSED_WITH_WAIVER';
+  }
+  // PRECEDENCE STEP 7: Fully Satisfied Without Waivers -> PASSED
   else {
     systemReleaseStatus = 'PASSED';
   }
 
-  // Strict passed boolean definition: ONLY true when systemReleaseStatus === 'PASSED'
-  const passed = systemReleaseStatus === 'PASSED';
+  // Boolean contract: passed === true ONLY for PASSED or PASSED_WITH_WAIVER
+  const passed = systemReleaseStatus === 'PASSED' || systemReleaseStatus === 'PASSED_WITH_WAIVER';
 
   return {
     passed,
     systemReleaseStatus,
     rootProjectId: projObjId.toString(),
-    evaluatedAt,
+    evaluatedAt: evaluationTimestamp,
     summary: {
       totalDependencies: alignmentResult.summary.totalUnits,
       alignedDependencies: alignmentResult.summary.alignedUnits,
       misalignedDependencies: alignmentResult.summary.misalignedUnits,
       indeterminateDependencies: alignmentResult.summary.indeterminateUnits,
       blockedProviders: blockedProvidersCount,
+      waivedBlockers: waivedBlockersCount,
+      unwaivedBlockers: unwaivedBlockersCount,
     },
     evidence: {
       rootLocalGate: {
@@ -273,6 +424,7 @@ export async function evaluateSystemTopologyGovernanceGate(
         alignmentScore: alignmentResult.alignmentScore,
         evidenceCompleteness: alignmentResult.evidenceCompleteness,
       },
+      appliedWaiverIds: Array.from(appliedWaiverIdsSet),
       blockingDependencies,
     },
   };
