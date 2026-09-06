@@ -12,6 +12,7 @@ import type {
   BlockingDependency,
 } from '../system-topology-governance-gate.types';
 import { SystemTopologySimulationSandbox } from './SystemTopologySimulationSandbox';
+import { SystemGovernanceLineageTimeline } from './SystemGovernanceLineageTimeline';
 
 interface SystemGovernanceGateSectionProps {
   projectId: string;
@@ -381,6 +382,9 @@ export function SystemGovernanceGateSection({ projectId }: SystemGovernanceGateS
 
       {/* Phase 21: What-If Simulation Sandbox */}
       <SystemTopologySimulationSandbox projectId={projectId} />
+
+      {/* Phase 22: System Governance Lineage & Longitudinal Timeline */}
+      <SystemGovernanceLineageTimeline projectId={projectId} />
 
       {/* Grant Waiver Modal */}
       {selectedDep && (
