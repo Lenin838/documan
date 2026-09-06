@@ -11,6 +11,7 @@ import { notificationRouter } from '../modules/notifications/notification.routes
 import webhookRouter from '../modules/webhooks/webhook.routes.js';
 import { projectGovernanceRouter } from '../modules/governance/governance.routes.js';
 import { baselineRouter } from '../modules/governance/baseline.routes.js';
+import { systemBaselineAlignmentRouter } from '../modules/governance/system-baseline-alignment.routes.js';
 import { projectApiSpecRouter } from '../modules/api-specs/api-spec.routes.js';
 import { knowledgeRouter } from '../modules/knowledge/knowledge.routes.js';
 import { evidenceRouter } from '../modules/knowledge/evidence.routes.js';
@@ -42,6 +43,7 @@ apiRouter.use('/verification-tasks', verificationTaskRouter);
 apiRouter.use('/projects/:projectId/webhooks', webhookRouter);
 apiRouter.use('/projects/:projectId/governance', projectGovernanceRouter);
 apiRouter.use('/projects/:projectId/baselines', baselineRouter);
+apiRouter.use('/projects/:projectId/system-baseline-alignment', systemBaselineAlignmentRouter);
 apiRouter.use('/projects/:projectId/api-specs', projectApiSpecRouter);
 apiRouter.use('/', workRequestRouter);
 apiRouter.use('/', changeProposalRouter);
