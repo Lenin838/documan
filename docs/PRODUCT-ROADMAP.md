@@ -110,7 +110,7 @@ Project / API Context (Phase 7.1 & Phase 7.2 Completed)
 Workflow Intelligence / Cross-Document Change Impact (Research Phase)
 ```
 
-The first five areas established the document-management foundation. Developer/productivity workflows and governance automation established a robust baseline. Documan has completed Phase 19 (Cross-Project System Topology Governance Gate), and has approved the research artifact for Phase 20 (Cross-Project System Governance Exception & Policy Waiver Lifecycle Management).
+The first five areas established the document-management foundation. Developer/productivity workflows and governance automation established a robust baseline. Documan has completed Phase 20 (Cross-Project System Governance Exception & Policy Waiver Lifecycle Management), and has completed Phase 21 (System Topology Pre-Release What-If Simulation & Gate Impact Analyzer).
 
 ---
 
@@ -630,6 +630,52 @@ Phase 20 strictly avoids:
 
 ---
 
+## Phase 21 — System Topology Pre-Release What-If Simulation & Gate Impact Analyzer
+
+**Status: COMPLETED — Implementation: 6ffffa2 / Merge: e0607a3**
+
+Research Artifact: [`docs/research/PHASE-21-RESEARCH.md`](file:///c:/MERN_STACK/Documan/documan/docs/research/PHASE-21-RESEARCH.md)
+Implementation Plan: [`docs/research/PHASE-21-IMPLEMENTATION-PLAN-v3.md`](file:///c:/MERN_STACK/Documan/documan/docs/research/PHASE-21-IMPLEMENTATION-PLAN-v3.md)
+
+### Verification Metrics
+- **Phase 21 QA**: 25/25 dynamically counted
+- **Vitest Suite**: 88 test files passed / 734 tests passed
+- **Phase 10 Regression**: 25/25 scenarios passed
+- **Phase 14 Regression**: 25/25 scenarios passed
+- **Phase 18 Regression**: 38/38 scenarios passed
+- **Phase 19 Regression**: 38/38 scenarios passed
+- **Phase 20 Regression**: 25/25 scenarios passed
+- **API Typecheck**: PASSED
+- **ESLint**: PASSED
+- **Web Build**: PASSED
+- **Manual QA**: PASSED
+
+### Capability Baseline
+
+- **In-Memory Request-Scoped What-If Simulation Engine (`system-topology-simulation.service.ts`)**: Pure, side-effect-free simulation engine enabling Project Owners and System Admins to preview the system-wide gate impact of proposed hypothetical baseline updates, hypothetical attestations, and hypothetical active waivers without committing database mutations, creating audit log events, or queueing background workers.
+- **Categorical Hypothetical Overrides**: Supports `hypotheticalBaselines` (project baseline bump simulation), `hypotheticalAttestations` (attestation presence/staleness simulation), and `hypotheticalWaivers` (temporary governance exception simulation) overlaid dynamically onto the current authorized system topology graph.
+- **Pure Phase 19 Gate Evaluator Extraction**: Pure composition of `evaluateSystemTopologyGovernanceGate` with simulated dynamic providers and in-memory waivers, executing full categorical gate logic (`PASSED`, `PASSED_WITH_WAIVER`, `BLOCKED`, `INDETERMINATE`, `GOVERNANCE_DISABLED`).
+- **Simulated Impact Diffing & Gate State Transition Analysis**: Calculates fine-grained gate state transitions (`gateStateChanged: boolean`, `previousSystemReleaseStatus`, `simulatedSystemReleaseStatus`) and isolated blocking dependency diffs (`newlyBlockedDependencies`, `newlyResolvedDependencies`, `unaffectedDependencies`).
+- **Zero-Database Persistence Architecture**: 0 database mutations, 0 audit log writes, 0 persistent simulation records, 0 background queue workers, and 0 external LLM/AI dependencies.
+- **Permission-Safe Subgraph Scoping**: Enforces Phase 14 `checkUserProjectReadAccess`. Unauthorized nodes, links, and documents are 100% omitted from simulation input/output without leaking hidden node IDs or topology structure.
+
+### Architectural Boundaries & System Authority
+
+- **Read-Only Simulation & Decision Support Layer Only**: Phase 21 operates strictly as a read-only, request-scoped simulation layer on top of Phase 10–20 governance authorities without altering underlying database models or persistent states.
+- **System Authority Boundaries**: Preserves Phase 10 as local release gate authority, Phase 12 as baseline authority, Phase 14 as project topology authority, Phase 17 as attestation authority, Phase 18 as baseline alignment authority, Phase 19 as system topology gate authority, and Phase 20 as waiver authority.
+- **Zero Database Mutations & Zero Audit Log Writes**: Guaranteed 100% side-effect-free execution for all simulation queries.
+
+### Explicit Non-Scope
+
+Phase 21 strictly avoids:
+- Persistent simulation storage, saved scenario databases, or stateful simulation runs.
+- Automatic application or execution of simulated changes (no auto-bumping baselines, no auto-granting waivers).
+- Software deployment execution, release pipelines, Docker builds, or cloud infrastructure orchestration.
+- Background queue workers, cron jobs, or asynchronous worker threads.
+- Mandatory AI, LLM, RAG, or non-deterministic machine learning features.
+
+---
+
 ## Phase 8 — Workflow Intelligence
 
 **Status: EXPLORATORY**
@@ -1050,6 +1096,8 @@ Cross-Project Baseline Contract Lineage & Attestation Alignment Verification (Ph
 Cross-Project System Topology Governance Gate (Phase 19 Completed)
         ↓
 Cross-Project System Governance Exception & Policy Waiver Lifecycle Management (Phase 20 Completed)
+        ↓
+System Topology Pre-Release What-If Simulation & Gate Impact Analyzer (Phase 21 Completed)
 ```
 
 The next concrete feature should emerge from research into the next meaningful user problem at this boundary.
@@ -1096,7 +1144,7 @@ This keeps the roadmap understandable even as individual implementation details 
 
 Documan has established the foundations of a document-management and productivity platform through the intended progression of:
 
-**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows → Project / API Context → Cross-Document Change Impact (Phase 7.3) → Immutable Versioning & Snapshots (Phase 7.4) → Technical Knowledge Risk Radar (Phase 7.5) → Authoritative Technical Knowledge Discovery & Traceability (Phase 8 Completed) → Documentation Evidence & Traceability (Phase 9 Completed) → Governance & Assurance Engine (Phase 10 Completed) → Documentation Change Intelligence & Verification Planning (Phase 11 Completed) → Authoritative Documentation Baseline & Drift Control (Phase 12 Completed) → Documentation Work Requests & Review Workflow (Phase 13 Completed) → System Architecture Topology & Cross-Project Contract Governance (Phase 14 Completed) → Pre-Change Impact Simulation & Change Proposal Engine (Phase 15 Completed) → Multi-Document Change Packages & Coordinated Impact Simulation (Phase 16 Completed) → Documentation Change Package Fulfillment Verification & Immutable Attestation (Phase 17 Completed) → Cross-Project Baseline Contract Lineage & Attestation Alignment Verification (Phase 18 Completed) → Cross-Project System Topology Governance Gate (Phase 19 Completed) → Cross-Project System Governance Exception & Policy Waiver Lifecycle Management (Phase 20 Completed).**
+**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows → Project / API Context → Cross-Document Change Impact (Phase 7.3) → Immutable Versioning & Snapshots (Phase 7.4) → Technical Knowledge Risk Radar (Phase 7.5) → Authoritative Technical Knowledge Discovery & Traceability (Phase 8 Completed) → Documentation Evidence & Traceability (Phase 9 Completed) → Governance & Assurance Engine (Phase 10 Completed) → Documentation Change Intelligence & Verification Planning (Phase 11 Completed) → Authoritative Documentation Baseline & Drift Control (Phase 12 Completed) → Documentation Work Requests & Review Workflow (Phase 13 Completed) → System Architecture Topology & Cross-Project Contract Governance (Phase 14 Completed) → Pre-Change Impact Simulation & Change Proposal Engine (Phase 15 Completed) → Multi-Document Change Packages & Coordinated Impact Simulation (Phase 16 Completed) → Documentation Change Package Fulfillment Verification & Immutable Attestation (Phase 17 Completed) → Cross-Project Baseline Contract Lineage & Attestation Alignment Verification (Phase 18 Completed) → Cross-Project System Topology Governance Gate (Phase 19 Completed) → Cross-Project System Governance Exception & Policy Waiver Lifecycle Management (Phase 20 Completed) → System Topology Pre-Release What-If Simulation & Gate Impact Analyzer (Phase 21 Completed).**
 
-With Phase 20 completed, Documan provides scoped, persistent policy waiver records (`SystemGovernanceWaiver`) and deterministic exception matching (`system-governance-waiver.service.ts`) integrated into the system governance release gate engine (`system-topology-governance-gate.service.ts`). It enables Project Owners and System Admins to grant time-bounded, audit-logged governance waivers for waivable cross-project blockers (`CONTRACT_MISALIGNED`, `PROVIDER_ATTESTATION_MISSING`, `PROVIDER_ATTESTATION_STALE`, `PROVIDER_LOCAL_GATE_BLOCKED`, `PROVIDER_GOVERNANCE_DISABLED`), yielding `PASSED_WITH_WAIVER` (`passed: true`) when all blockers are fully covered while enforcing strict non-waivable rules, document-level local gate boundaries, and query-time expiration semantics.
+With Phase 21 completed, Documan provides a pure, side-effect-free, in-memory what-if simulation engine (`system-topology-simulation.service.ts`) and interactive UI sandbox (`SystemTopologySimulationSandbox.tsx`). It enables Project Owners and System Admins to preview the system-wide gate impact of proposed hypothetical baseline updates, hypothetical attestations, and hypothetical active waivers across complex cross-project topology graphs with zero database mutations, zero audit log writes, and zero background workers.
 
