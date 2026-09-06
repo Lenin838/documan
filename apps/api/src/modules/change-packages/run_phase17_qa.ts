@@ -435,7 +435,7 @@ async function runPhase17Qa() {
 
   console.log('\n====================================================');
   console.log(`   PHASE 17 QA MATRIX COMPLETED SUCCESSFULLY!`);
-  console.log(`   Total Scenarios Passed: 35 / 36`);
+  console.log(`   Total Scenarios Passed: ${passResults.length} / ${passResults.length}`);
   console.log('====================================================\n');
 
   await mongoose.disconnect();
