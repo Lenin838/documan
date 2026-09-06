@@ -579,9 +579,23 @@ Phase 19 strictly avoids:
 
 ## Phase 20 — Cross-Project System Governance Exception & Policy Waiver Lifecycle Management
 
-**Status: Research: COMPLETED / APPROVED — Implementation: NOT STARTED**
+**Status: COMPLETED — Implementation: 9cbeafc / Merge: b1c6d40**
 
 Research Artifact: [`docs/research/PHASE-20-RESEARCH-v4.md`](file:///c:/MERN_STACK/Documan/documan/docs/research/PHASE-20-RESEARCH-v4.md)
+Implementation Plan: [`docs/research/PHASE-20-IMPLEMENTATION-PLAN-v4.md`](file:///c:/MERN_STACK/Documan/documan/docs/research/PHASE-20-IMPLEMENTATION-PLAN-v4.md)
+
+### Verification Metrics
+- **Phase 20 QA**: 25/25 scenarios passed
+- **Vitest Suite**: 87 test files passed / 727 tests passed
+- **Phase 10 Regression**: 25/25 scenarios passed
+- **Phase 14 Regression**: 25/25 scenarios passed
+- **Phase 17 Regression**: 34/34 scenarios passed
+- **Phase 18 Regression**: 38/38 scenarios passed
+- **Phase 19 Regression**: 38/38 scenarios passed
+- **API Typecheck**: PASSED (0 errors)
+- **ESLint**: PASSED (0 errors)
+- **Web Build**: PASSED (0 errors)
+- **Manual Browser QA**: PASSED
 
 ### Capability Baseline
 
@@ -1034,6 +1048,8 @@ Documentation Change Package Fulfillment Verification & Immutable Attestation (P
 Cross-Project Baseline Contract Lineage & Attestation Alignment Verification (Phase 18 Completed)
         ↓
 Cross-Project System Topology Governance Gate (Phase 19 Completed)
+        ↓
+Cross-Project System Governance Exception & Policy Waiver Lifecycle Management (Phase 20 Completed)
 ```
 
 The next concrete feature should emerge from research into the next meaningful user problem at this boundary.
@@ -1080,7 +1096,7 @@ This keeps the roadmap understandable even as individual implementation details 
 
 Documan has established the foundations of a document-management and productivity platform through the intended progression of:
 
-**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows → Project / API Context → Cross-Document Change Impact (Phase 7.3) → Immutable Versioning & Snapshots (Phase 7.4) → Technical Knowledge Risk Radar (Phase 7.5) → Authoritative Technical Knowledge Discovery & Traceability (Phase 8 Completed) → Documentation Evidence & Traceability (Phase 9 Completed) → Governance & Assurance Engine (Phase 10 Completed) → Documentation Change Intelligence & Verification Planning (Phase 11 Completed) → Authoritative Documentation Baseline & Drift Control (Phase 12 Completed) → Documentation Work Requests & Review Workflow (Phase 13 Completed) → System Architecture Topology & Cross-Project Contract Governance (Phase 14 Completed) → Pre-Change Impact Simulation & Change Proposal Engine (Phase 15 Completed) → Multi-Document Change Packages & Coordinated Impact Simulation (Phase 16 Completed) → Documentation Change Package Fulfillment Verification & Immutable Attestation (Phase 17 Completed) → Cross-Project Baseline Contract Lineage & Attestation Alignment Verification (Phase 18 Completed) → Cross-Project System Topology Governance Gate (Phase 19 Completed).**
+**Foundation → Core Document Management → Organization → Traceability → Collaboration & Access Control → Developer / Productivity Workflows → Project / API Context → Cross-Document Change Impact (Phase 7.3) → Immutable Versioning & Snapshots (Phase 7.4) → Technical Knowledge Risk Radar (Phase 7.5) → Authoritative Technical Knowledge Discovery & Traceability (Phase 8 Completed) → Documentation Evidence & Traceability (Phase 9 Completed) → Governance & Assurance Engine (Phase 10 Completed) → Documentation Change Intelligence & Verification Planning (Phase 11 Completed) → Authoritative Documentation Baseline & Drift Control (Phase 12 Completed) → Documentation Work Requests & Review Workflow (Phase 13 Completed) → System Architecture Topology & Cross-Project Contract Governance (Phase 14 Completed) → Pre-Change Impact Simulation & Change Proposal Engine (Phase 15 Completed) → Multi-Document Change Packages & Coordinated Impact Simulation (Phase 16 Completed) → Documentation Change Package Fulfillment Verification & Immutable Attestation (Phase 17 Completed) → Cross-Project Baseline Contract Lineage & Attestation Alignment Verification (Phase 18 Completed) → Cross-Project System Topology Governance Gate (Phase 19 Completed) → Cross-Project System Governance Exception & Policy Waiver Lifecycle Management (Phase 20 Completed).**
 
-With Phase 19 completed, Documan provides a derived, query-time, read-only multi-project system topology governance gate (`system-topology-governance-gate.service.ts`). It synthesizes Phase 10 local documentation health, Phase 14 ACL-safe topology links (`ProjectTopologyLink`), Phase 17 fulfillment attestations (`PackageFulfillmentAttestation`), and Phase 18 baseline contract alignment (`system-baseline-alignment.service.ts`) into an authoritative, 9-step precedence governance release decision (`PASSED`, `BLOCKED`, `INDETERMINATE`, `GOVERNANCE_DISABLED`).
+With Phase 20 completed, Documan provides scoped, persistent policy waiver records (`SystemGovernanceWaiver`) and deterministic exception matching (`system-governance-waiver.service.ts`) integrated into the system governance release gate engine (`system-topology-governance-gate.service.ts`). It enables Project Owners and System Admins to grant time-bounded, audit-logged governance waivers for waivable cross-project blockers (`CONTRACT_MISALIGNED`, `PROVIDER_ATTESTATION_MISSING`, `PROVIDER_ATTESTATION_STALE`, `PROVIDER_LOCAL_GATE_BLOCKED`, `PROVIDER_GOVERNANCE_DISABLED`), yielding `PASSED_WITH_WAIVER` (`passed: true`) when all blockers are fully covered while enforcing strict non-waivable rules, document-level local gate boundaries, and query-time expiration semantics.
 
