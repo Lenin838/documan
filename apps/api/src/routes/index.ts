@@ -29,6 +29,7 @@ import { changeProposalRouter } from '../modules/change-proposals/change-proposa
 import { changePackageRouter } from '../modules/change-packages/change-package.routes.js';
 
 import systemGovernanceLineageRouter from '../modules/governance/system-governance-lineage.routes.js';
+import { systemContractEvolutionRouter } from '../modules/governance/system-contract-evolution.routes.js';
 
 const apiRouter = Router();
 
@@ -55,6 +56,7 @@ apiRouter.use('/projects/:projectId/system-topology-gate', systemTopologySimulat
 apiRouter.use('/projects/:projectId/system-governance-waivers', systemGovernanceWaiverRouter);
 apiRouter.use('/projects/:projectId/api-specs', projectApiSpecRouter);
 apiRouter.use('/governance', systemGovernanceLineageRouter);
+apiRouter.use('/governance/system-governance', systemContractEvolutionRouter);
 apiRouter.use('/', workRequestRouter);
 apiRouter.use('/', changeProposalRouter);
 apiRouter.use('/', changePackageRouter);
