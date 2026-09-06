@@ -30,6 +30,7 @@ import { changePackageRouter } from '../modules/change-packages/change-package.r
 
 import systemGovernanceLineageRouter from '../modules/governance/system-governance-lineage.routes.js';
 import { systemContractEvolutionRouter } from '../modules/governance/system-contract-evolution.routes.js';
+import systemTraceabilityAuditRouter from '../modules/governance/system-traceability-audit.routes.js';
 
 const apiRouter = Router();
 
@@ -37,6 +38,7 @@ apiRouter.use('/health', healthRouter);
 apiRouter.use('/users', userRouter);
 apiRouter.use('/auth', authRouter);
 apiRouter.use('/documents', documentRouter);
+apiRouter.use('/', systemTraceabilityAuditRouter);
 apiRouter.use('/documents/:documentId/verification-plans', documentVerificationPlanRouter);
 apiRouter.use('/folders', folderRouter);
 apiRouter.use('/projects', projectRouter);
