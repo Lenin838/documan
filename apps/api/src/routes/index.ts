@@ -13,6 +13,7 @@ import { projectGovernanceRouter } from '../modules/governance/governance.routes
 import { baselineRouter } from '../modules/governance/baseline.routes.js';
 import { systemBaselineAlignmentRouter } from '../modules/governance/system-baseline-alignment.routes.js';
 import { systemTopologyGovernanceGateRouter } from '../modules/governance/system-topology-governance-gate.routes.js';
+import { systemTopologySimulationRouter } from '../modules/governance/system-topology-simulation.routes.js';
 import { systemGovernanceWaiverRouter } from '../modules/governance/system-governance-waiver.routes.js';
 import { projectApiSpecRouter } from '../modules/api-specs/api-spec.routes.js';
 import { knowledgeRouter } from '../modules/knowledge/knowledge.routes.js';
@@ -47,6 +48,8 @@ apiRouter.use('/projects/:projectId/governance', projectGovernanceRouter);
 apiRouter.use('/projects/:projectId/baselines', baselineRouter);
 apiRouter.use('/projects/:projectId/system-baseline-alignment', systemBaselineAlignmentRouter);
 apiRouter.use('/projects/:projectId/system-governance-gate', systemTopologyGovernanceGateRouter);
+apiRouter.use('/projects/:projectId/system-governance-gate', systemTopologySimulationRouter);
+apiRouter.use('/projects/:projectId/system-topology-gate', systemTopologySimulationRouter);
 apiRouter.use('/projects/:projectId/system-governance-waivers', systemGovernanceWaiverRouter);
 apiRouter.use('/projects/:projectId/api-specs', projectApiSpecRouter);
 apiRouter.use('/', workRequestRouter);

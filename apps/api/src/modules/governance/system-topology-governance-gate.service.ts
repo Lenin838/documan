@@ -6,6 +6,7 @@ import { ProjectTopologyLink } from '../projects/project-topology.model.js';
 import { checkUserProjectReadAccess } from '../projects/project-topology.service.js';
 import { evaluateReleaseGateInternal, BlockingDocumentInfo } from './release-gate-evaluator.service.js';
 import { calculateSystemBaselineAlignment } from './system-baseline-alignment.service.js';
+import type { AggregateAlignmentState } from './system-baseline-alignment.types.js';
 import {
   SystemGovernanceWaiver,
   SystemBlockerType,
@@ -342,7 +343,78 @@ export async function evaluateSystemTopologyGovernanceGate(
     }
   }
 
-  // AGGREGATE DECISION PRECEDENCE EVALUATION
+  return evaluateSystemGateFromState({
+    isRootLocalGateBlocked,
+    rootLocalGateResult: {
+      status: rootLocalGateResult.status as 'PASSED' | 'BLOCKED' | 'GOVERNANCE_DISABLED',
+      freshnessPercentage: rootLocalGateResult.freshnessPercentage,
+      blockingDocuments: rootLocalGateResult.blockingDocuments || [],
+    },
+    rootProjectId: projObjId.toString(),
+    rootProjectName: rootProject.name,
+    evaluationTimestamp,
+    isTruncated,
+    alignmentResult: {
+      aggregateState: alignmentResult.aggregateState,
+      alignmentScore: alignmentResult.alignmentScore,
+      evidenceCompleteness: alignmentResult.evidenceCompleteness,
+      summary: alignmentResult.summary,
+    },
+    blockedProvidersCount,
+    waivedBlockersCount,
+    unwaivedBlockersCount,
+    appliedWaiverIdsSet,
+    blockingDependencies,
+  });
+}
+
+export interface SystemGatePrecedenceStateInput {
+  isRootLocalGateBlocked: boolean;
+  rootLocalGateResult: {
+    status: 'PASSED' | 'BLOCKED' | 'GOVERNANCE_DISABLED';
+    freshnessPercentage: number;
+    blockingDocuments: BlockingDocumentInfo[];
+  };
+  rootProjectId: string;
+  rootProjectName: string;
+  evaluationTimestamp: Date;
+  isTruncated: boolean;
+  alignmentResult: {
+    aggregateState: AggregateAlignmentState;
+    alignmentScore: number | null;
+    evidenceCompleteness: number | null;
+    summary: {
+      totalUnits: number;
+      alignedUnits: number;
+      misalignedUnits: number;
+      indeterminateUnits: number;
+    };
+  };
+  blockedProvidersCount: number;
+  waivedBlockersCount: number;
+  unwaivedBlockersCount: number;
+  appliedWaiverIdsSet: Set<string>;
+  blockingDependencies: BlockingDependencyDTO[];
+}
+
+export function evaluateSystemGateFromState(
+  state: SystemGatePrecedenceStateInput,
+): SystemGovernanceGateResult {
+  const {
+    isRootLocalGateBlocked,
+    rootLocalGateResult,
+    rootProjectId,
+    rootProjectName,
+    evaluationTimestamp,
+    isTruncated,
+    alignmentResult,
+    blockedProvidersCount,
+    waivedBlockersCount,
+    unwaivedBlockersCount,
+    appliedWaiverIdsSet,
+    blockingDependencies,
+  } = state;
+
   let systemReleaseStatus: SystemReleaseStatus;
 
   // PRECEDENCE STEP 2 (if root local gate was blocked -> NON-WAIVABLE)
@@ -351,8 +423,8 @@ export async function evaluateSystemTopologyGovernanceGate(
     if (rootLocalGateResult.blockingDocuments.length > 0) {
       for (const blockDoc of rootLocalGateResult.blockingDocuments) {
         blockingDependencies.unshift({
-          providerProjectId: projObjId.toString(),
-          providerProjectName: rootProject.name,
+          providerProjectId: rootProjectId,
+          providerProjectName: rootProjectName,
           consumerDocumentTitle: blockDoc.title,
           providerDocumentTitle: blockDoc.title,
           targetDocumentId: blockDoc.id,
@@ -403,7 +475,7 @@ export async function evaluateSystemTopologyGovernanceGate(
   return {
     passed,
     systemReleaseStatus,
-    rootProjectId: projObjId.toString(),
+    rootProjectId,
     evaluatedAt: evaluationTimestamp,
     summary: {
       totalDependencies: alignmentResult.summary.totalUnits,
@@ -416,7 +488,7 @@ export async function evaluateSystemTopologyGovernanceGate(
     },
     evidence: {
       rootLocalGate: {
-        status: rootLocalGateResult.status as 'PASSED' | 'BLOCKED' | 'GOVERNANCE_DISABLED',
+        status: rootLocalGateResult.status,
         freshnessPercentage: rootLocalGateResult.freshnessPercentage,
       },
       baselineAlignment: {

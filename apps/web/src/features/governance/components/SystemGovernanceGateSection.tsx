@@ -11,6 +11,7 @@ import type {
   SystemGovernanceWaiverDTO,
   BlockingDependency,
 } from '../system-topology-governance-gate.types';
+import { SystemTopologySimulationSandbox } from './SystemTopologySimulationSandbox';
 
 interface SystemGovernanceGateSectionProps {
   projectId: string;
@@ -377,6 +378,9 @@ export function SystemGovernanceGateSection({ projectId }: SystemGovernanceGateS
           </div>
         </div>
       )}
+
+      {/* Phase 21: What-If Simulation Sandbox */}
+      <SystemTopologySimulationSandbox projectId={projectId} />
 
       {/* Grant Waiver Modal */}
       {selectedDep && (
