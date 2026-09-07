@@ -16,6 +16,7 @@ import { SystemGovernanceLineageTimeline } from './SystemGovernanceLineageTimeli
 import { ContractEvolutionAnalyzer } from './ContractEvolutionAnalyzer';
 import { TraceabilityAuditView } from './TraceabilityAuditView';
 import { SystemContractMatrixView } from './SystemContractMatrixView';
+import { SystemContractPlanningView } from './SystemContractPlanningView';
 
 interface SystemGovernanceGateSectionProps {
   projectId: string;
@@ -397,6 +398,9 @@ export function SystemGovernanceGateSection({ projectId }: SystemGovernanceGateS
 
       {/* Phase 25: Cross-Project Contract Interoperability Matrix & Topology Compatibility Analyzer */}
       <SystemContractMatrixView projectId={projectId} />
+
+      {/* Phase 26: System-Wide Contract Change Planning & Multi-Project Change Package Synthesis */}
+      <SystemContractPlanningView projectId={projectId} />
 
       {/* Grant Waiver Modal */}
       {selectedDep && (
