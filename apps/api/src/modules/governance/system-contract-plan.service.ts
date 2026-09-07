@@ -2,6 +2,7 @@ import { Types } from 'mongoose';
 
 import { AppError } from '../../errors/app-error.js';
 import { Project } from '../projects/project.model.js';
+import { ProjectTopologyLink } from '../projects/project-topology.model.js';
 import { User } from '../users/user.model.js';
 import { checkUserProjectReadAccess } from '../projects/project-topology.service.js';
 import { calculateSystemContractMatrix } from './system-contract-matrix.service.js';
@@ -312,7 +313,31 @@ export async function generateSystemContractChangePlan(
   const finalCandidateActions = candidateActions.slice(0, MAX_CANDIDATE_ACTIONS);
 
   // 4. Calculate Informational Topological Dependency Sequence
-  // Order: AUTHORITY_COMPLETION -> PROVIDER_COMPATIBILITY_RESTORATION -> COORDINATED_REALIGNMENT -> CONSUMER_ADAPTATION
+  // Primary ordering derived from actual topology dependency evidence (Provider/Upstream -> Consumer/Downstream)
+  // Role priority acts strictly as a deterministic tie-breaker when topological relationship is neutral/equal.
+  const allLinks = await ProjectTopologyLink.find({ type: 'DEPENDS_ON' }).lean();
+  const depMap = new Map<string, Set<string>>();
+  for (const link of allLinks) {
+    const src = link.sourceProjectId.toString();
+    const tgt = link.targetProjectId.toString();
+    if (!depMap.has(src)) depMap.set(src, new Set());
+    depMap.get(src)!.add(tgt);
+  }
+
+  function isProjectDependent(consumerId: string, providerId: string, visited = new Set<string>()): boolean {
+    if (consumerId === providerId) return false;
+    const targets = depMap.get(consumerId);
+    if (!targets) return false;
+    if (targets.has(providerId)) return true;
+    for (const t of targets) {
+      if (!visited.has(t)) {
+        visited.add(t);
+        if (isProjectDependent(t, providerId, visited)) return true;
+      }
+    }
+    return false;
+  }
+
   const rolePriority: Record<ActionRole, number> = {
     AUTHORITY_COMPLETION: 1,
     PROVIDER_COMPATIBILITY_RESTORATION: 2,
@@ -321,6 +346,18 @@ export async function generateSystemContractChangePlan(
   };
 
   const sortedActions = [...finalCandidateActions].sort((a, b) => {
+    const projA = a.targetProjectId || a.sourceProjectId;
+    const projB = b.targetProjectId || b.sourceProjectId;
+
+    if (projA !== projB) {
+      if (isProjectDependent(projA, projB)) {
+        return 1;
+      }
+      if (isProjectDependent(projB, projA)) {
+        return -1;
+      }
+    }
+
     const prioA = rolePriority[a.actionRole] || 5;
     const prioB = rolePriority[b.actionRole] || 5;
     if (prioA !== prioB) {
