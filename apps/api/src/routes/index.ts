@@ -32,6 +32,7 @@ import systemGovernanceLineageRouter from '../modules/governance/system-governan
 import { systemContractEvolutionRouter } from '../modules/governance/system-contract-evolution.routes.js';
 import systemTraceabilityAuditRouter from '../modules/governance/system-traceability-audit.routes.js';
 import { systemContractMatrixRouter } from '../modules/governance/system-contract-matrix.routes.js';
+import { systemContractPlanRouter } from '../modules/governance/system-contract-plan.routes.js';
 
 const apiRouter = Router();
 
@@ -41,6 +42,7 @@ apiRouter.use('/auth', authRouter);
 apiRouter.use('/documents', documentRouter);
 apiRouter.use('/', systemTraceabilityAuditRouter);
 apiRouter.use('/', systemContractMatrixRouter);
+apiRouter.use('/', systemContractPlanRouter);
 apiRouter.use('/documents/:documentId/verification-plans', documentVerificationPlanRouter);
 apiRouter.use('/folders', folderRouter);
 apiRouter.use('/projects', projectRouter);
