@@ -34,6 +34,8 @@ import systemTraceabilityAuditRouter from '../modules/governance/system-traceabi
 import { systemContractMatrixRouter } from '../modules/governance/system-contract-matrix.routes.js';
 import { systemContractPlanRouter } from '../modules/governance/system-contract-plan.routes.js';
 
+import systemReleaseCertificateRouter from '../modules/governance/system-release-certificate.routes.js';
+
 const apiRouter = Router();
 
 apiRouter.use('/health', healthRouter);
@@ -43,6 +45,7 @@ apiRouter.use('/documents', documentRouter);
 apiRouter.use('/', systemTraceabilityAuditRouter);
 apiRouter.use('/', systemContractMatrixRouter);
 apiRouter.use('/', systemContractPlanRouter);
+apiRouter.use('/', systemReleaseCertificateRouter);
 apiRouter.use('/documents/:documentId/verification-plans', documentVerificationPlanRouter);
 apiRouter.use('/folders', folderRouter);
 apiRouter.use('/projects', projectRouter);
