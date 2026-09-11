@@ -21,6 +21,7 @@ import { KnowledgeRiskRadarPanel } from '../components/KnowledgeRiskRadarPanel';
 import { ProjectArchitecturePanel } from '../features/projects/ProjectArchitecturePanel';
 import { ProjectProposalsTab } from '../features/change-proposals/components/ProjectProposalsTab';
 import { ProjectChangePackagesTab } from '../features/change-packages/components/ProjectChangePackagesTab';
+import { SystemReleaseLineageView } from '../features/governance/SystemReleaseLineageView';
 
 
 export default function ProjectDetailsPage() {
@@ -240,6 +241,12 @@ export default function ProjectDetailsPage() {
       {projectId && (
         <div style={{ marginBottom: '2rem' }}>
           <SystemGovernanceGateSection projectId={projectId} />
+        </div>
+      )}
+
+      {projectId && (
+        <div style={{ marginBottom: '2rem' }}>
+          <SystemReleaseLineageView projectId={projectId} projectName={project?.name} />
         </div>
       )}
 
