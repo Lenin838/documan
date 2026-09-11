@@ -8,6 +8,7 @@ import type {
   ProjectReleaseGateSettings,
   CreateGateTokenResponse,
   ProjectGateToken,
+  ReleaseCertificateComplianceAuditDTO,
 } from './governance.types';
 
 const API_URL = '/api/v1';
@@ -101,6 +102,17 @@ export async function getCertificateLineageGraph(
   const res = await axios.get<{ success: boolean; data: any }>(
     `${API_URL}/projects/${projectId}/release-certificates/lineage`,
     { params: headCertificateId ? { headCertificateId } : {} },
+  );
+  return res.data.data;
+}
+
+// Phase 29 Compliance Drift Audit API call
+export async function auditReleaseCertificateComplianceDrift(
+  certificateId: string,
+): Promise<ReleaseCertificateComplianceAuditDTO> {
+  const res = await axios.post<{ success: boolean; data: ReleaseCertificateComplianceAuditDTO }>(
+    `${API_URL}/release-certificates/compliance-drift-audit`,
+    { certificateId },
   );
   return res.data.data;
 }

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect */
 import React, { useState, useEffect } from 'react';
 import { getCertificateLineageGraph, compareReleaseCertificates } from './governance.api';
+import { ReleaseCertificateComplianceAuditView } from './ReleaseCertificateComplianceAuditView';
 
 interface SystemReleaseLineageViewProps {
   projectId: string;
@@ -364,6 +365,12 @@ export const SystemReleaseLineageView: React.FC<SystemReleaseLineageViewProps> =
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {targetCertId && (
+        <div style={{ marginTop: '24px' }}>
+          <ReleaseCertificateComplianceAuditView certificateId={targetCertId} projectId={projectId} />
         </div>
       )}
     </div>
