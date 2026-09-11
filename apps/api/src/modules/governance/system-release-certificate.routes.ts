@@ -12,8 +12,12 @@ import {
   compareReleaseCertificatesHandler,
   getCertificateLineageGraphHandler,
 } from './system-release-lineage.controller.js';
+import { auditComplianceDriftHandler } from './system-release-drift.controller.js';
 
 const router = Router();
+
+// Phase 29 Compliance Drift & Post-Certification Variance Audit endpoint
+router.post('/release-certificates/compliance-drift-audit', authenticate, auditComplianceDriftHandler);
 
 // Phase 28 Release Certificate Lineage & Comparison endpoints
 router.post('/release-certificates/compare', authenticate, compareReleaseCertificatesHandler);
