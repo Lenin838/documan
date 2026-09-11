@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from 'axios';
 import type {
   ProjectGovernanceResponse,
@@ -77,6 +78,29 @@ export async function revokeGateToken(
 ): Promise<{ id: string; name: string; revokedAt: string }> {
   const res = await axios.delete<{ success: boolean; data: { id: string; name: string; revokedAt: string } }>(
     `${API_URL}/projects/${projectId}/governance/gate-tokens/${tokenId}`,
+  );
+  return res.data.data;
+}
+
+// Phase 28 Release Lineage & Comparison API calls
+export async function compareReleaseCertificates(payload: {
+  sourceCertificateId: string;
+  targetCertificateId: string;
+}): Promise<any> {
+  const res = await axios.post<{ success: boolean; data: any }>(
+    `${API_URL}/release-certificates/compare`,
+    payload,
+  );
+  return res.data.data;
+}
+
+export async function getCertificateLineageGraph(
+  projectId: string,
+  headCertificateId?: string,
+): Promise<any> {
+  const res = await axios.get<{ success: boolean; data: any }>(
+    `${API_URL}/projects/${projectId}/release-certificates/lineage`,
+    { params: headCertificateId ? { headCertificateId } : {} },
   );
   return res.data.data;
 }
