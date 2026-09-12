@@ -24,6 +24,8 @@ const UserDetailsPage = lazy(() => import("./pages/UserDetailsPage"));
 const EditUserPage = lazy(() => import("./pages/EditUserPage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 
+import { AppLayout } from "./components/layout/AppLayout";
+
 function LoadingFallback() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -52,14 +54,15 @@ function App() {
       >
         Skip to main content
       </a>
-      <main id="main-content">
-        <Suspense fallback={<LoadingFallback />}>
-          <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
+      <Suspense fallback={<LoadingFallback />}>
+        <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
 
-            <Route element={<ProtectedRoute />}>
+          {/* Protected Standard Routes Wrapped in AppLayout */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route
                 path="/knowledge/search"
@@ -80,17 +83,20 @@ function App() {
               <Route path="/trash" element={<TrashPage />} />
               <Route path="/reviews" element={<ReviewsPage />} />
             </Route>
+          </Route>
 
-            <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+          {/* Protected Admin Routes Wrapped in AppLayout */}
+          <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+            <Route element={<AppLayout />}>
               <Route path="/users" element={<UsersPage />} />
               <Route path="/users/:id" element={<UserDetailsPage />} />
               <Route path="/users/:id/edit" element={<EditUserPage />} />
             </Route>
+          </Route>
 
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-        </Suspense>
-      </main>
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
     </ErrorBoundary>
   );
 }

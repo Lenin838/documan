@@ -1,24 +1,31 @@
-import { useEffect, useState } from 'react';
-import type { FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
+import { Link } from "react-router-dom";
 
-import { NotificationBell } from '../components/NotificationBell';
-import { getDocuments } from '../features/documents/document.api';
-import type { Document } from '../features/documents/document.types';
+import { getDocuments } from "../features/documents/document.api";
+import type { Document } from "../features/documents/document.types";
 import {
   createFolder,
   deleteFolder,
   getFolders,
   updateFolder,
-} from '../features/folders/folder.api';
-import type { Folder } from '../features/folders/folder.types';
-import { getProjects } from '../features/projects/project.api';
-import type { Project } from '../features/projects/project.types';
+} from "../features/folders/folder.api";
+import type { Folder } from "../features/folders/folder.types";
+import { getProjects } from "../features/projects/project.api";
+import type { Project } from "../features/projects/project.types";
+
+import { Card, CardBody, CardHeader } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { Badge } from "../components/ui/Badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/Table";
+import { LoadingSpinner } from "../components/ui/LoadingSpinner";
+import { EmptyState } from "../components/ui/EmptyState";
+import { Breadcrumb } from "../components/ui/Breadcrumb";
 
 function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 B';
+  if (bytes === 0) return "0 B";
   const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const sizes = ["B", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }
@@ -27,29 +34,29 @@ export default function DocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [search, setSearch] = useState('');
-  const [documentView, setDocumentView] = useState<'mine' | 'shared'>('mine');
-  const [selectedTag, setSelectedTag] = useState('');
-  const [fileTypeFilter, setFileTypeFilter] = useState('');
+  const [search, setSearch] = useState("");
+  const [documentView, setDocumentView] = useState<"mine" | "shared">("mine");
+  const [selectedTag, setSelectedTag] = useState("");
+  const [fileTypeFilter, setFileTypeFilter] = useState("");
 
   const [folders, setFolders] = useState<Folder[]>([]);
-  const [selectedFolderId, setSelectedFolderId] = useState('');
+  const [selectedFolderId, setSelectedFolderId] = useState("");
 
   const [projects, setProjects] = useState<Project[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [selectedProjectId, setSelectedProjectId] = useState("");
 
   const [showCreateFolder, setShowCreateFolder] = useState(false);
-  const [newFolderName, setNewFolderName] = useState('');
+  const [newFolderName, setNewFolderName] = useState("");
   const [creatingFolder, setCreatingFolder] = useState(false);
 
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
-  const [editingFolderName, setEditingFolderName] = useState('');
+  const [editingFolderName, setEditingFolderName] = useState("");
   const [savingFolder, setSavingFolder] = useState(false);
 
-  const [folderActionError, setFolderActionError] = useState('');
+  const [folderActionError, setFolderActionError] = useState("");
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     async function loadFoldersAndProjects() {
@@ -71,7 +78,7 @@ export default function DocumentsPage() {
   useEffect(() => {
     async function loadDocuments() {
       setLoading(true);
-      setError('');
+      setError("");
 
       try {
         const response = await getDocuments({
@@ -88,14 +95,22 @@ export default function DocumentsPage() {
         setDocuments(response.data.documents);
         setTotalPages(response.data.pagination.totalPages || 1);
       } catch {
-        setError('Failed to load documents');
+        setError("Failed to load documents");
       } finally {
         setLoading(false);
       }
     }
 
     void loadDocuments();
-  }, [page, search, selectedFolderId, selectedProjectId, documentView, selectedTag, fileTypeFilter]);
+  }, [
+    page,
+    search,
+    selectedFolderId,
+    selectedProjectId,
+    documentView,
+    selectedTag,
+    fileTypeFilter,
+  ]);
 
   function handleSearchChange(value: string) {
     setSearch(value);
@@ -112,7 +127,7 @@ export default function DocumentsPage() {
     setPage(1);
   }
 
-  function handleViewChange(view: 'mine' | 'shared') {
+  function handleViewChange(view: "mine" | "shared") {
     setDocumentView(view);
     setPage(1);
   }
@@ -126,21 +141,21 @@ export default function DocumentsPage() {
     event.preventDefault();
     const trimmed = newFolderName.trim();
     if (!trimmed) {
-      setFolderActionError('Folder name is required');
+      setFolderActionError("Folder name is required");
       return;
     }
 
     setCreatingFolder(true);
-    setFolderActionError('');
+    setFolderActionError("");
 
     try {
       const created = await createFolder({ name: trimmed });
       setFolders((prev) => [...prev, created.data]);
       setSelectedFolderId(created.data.id);
-      setNewFolderName('');
+      setNewFolderName("");
       setShowCreateFolder(false);
     } catch {
-      setFolderActionError('Failed to create folder');
+      setFolderActionError("Failed to create folder");
     } finally {
       setCreatingFolder(false);
     }
@@ -152,241 +167,262 @@ export default function DocumentsPage() {
 
     const trimmed = editingFolderName.trim();
     if (!trimmed) {
-      setFolderActionError('Folder name is required');
+      setFolderActionError("Folder name is required");
       return;
     }
 
     setSavingFolder(true);
-    setFolderActionError('');
+    setFolderActionError("");
 
     try {
       const updated = await updateFolder(editingFolderId, { name: trimmed });
       setFolders((prev) =>
-        prev.map((f) => (f.id === editingFolderId ? updated.data : f)),
+        prev.map((f) => (f.id === editingFolderId ? updated.data : f))
       );
       setEditingFolderId(null);
-      setEditingFolderName('');
     } catch {
-      setFolderActionError('Failed to rename folder');
+      setFolderActionError("Failed to rename folder");
     } finally {
       setSavingFolder(false);
     }
   }
 
-  async function handleDeleteFolder(folderIdToDelete: string) {
-    setFolderActionError('');
+  async function handleDeleteFolder(id: string) {
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this folder? Unfiled documents will not be deleted."
+      )
+    ) {
+      return;
+    }
 
+    setFolderActionError("");
     try {
-      await deleteFolder(folderIdToDelete);
-      setFolders((prev) => prev.filter((f) => f.id !== folderIdToDelete));
-      if (selectedFolderId === folderIdToDelete) {
-        setSelectedFolderId('');
+      await deleteFolder(id);
+      setFolders((prev) => prev.filter((f) => f.id !== id));
+      if (selectedFolderId === id) {
+        setSelectedFolderId("");
       }
     } catch {
-      setFolderActionError('Failed to delete folder');
+      setFolderActionError("Failed to delete folder");
     }
   }
 
   const activeFolder = folders.find((f) => f.id === selectedFolderId);
 
+  function getStatusVariant(status?: string) {
+    switch (status) {
+      case "APPROVED":
+        return "success";
+      case "IN_REVIEW":
+        return "warning";
+      case "DRAFT":
+        return "info";
+      case "STALE":
+        return "warning";
+      case "DEPRECATED":
+        return "error";
+      default:
+        return "neutral";
+    }
+  }
+
   return (
-    <main style={{ textAlign: 'left', maxWidth: '900px', margin: '0 auto', padding: '1rem' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h1>Documents</h1>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <NotificationBell />
-          <Link to="/documents/create">Create Document</Link>
-          <Link to="/trash">View Trash</Link>
-          <Link to="/dashboard">Back to Dashboard</Link>
+    <div className="space-y-6">
+      <Breadcrumb items={[{ label: "Documents" }]} />
+
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">
+            Documents Repository
+          </h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            Create, view, manage, and trace technical documents.
+          </p>
         </div>
-      </header>
+        <Link to="/documents/create">
+          <Button variant="primary" size="md">
+            + Create Document
+          </Button>
+        </Link>
+      </div>
 
-      {/* Main View Toggle: My Documents vs Shared with Me */}
-      <nav style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', borderBottom: '2px solid #eee', paddingBottom: '0.5rem' }}>
-        <button
-          type="button"
-          onClick={() => handleViewChange('mine')}
-          style={{
-            fontWeight: documentView === 'mine' ? 'bold' : 'normal',
-            borderBottom: documentView === 'mine' ? '3px solid #0056b3' : 'none',
-            borderRadius: 0,
-            background: 'none',
-            color: documentView === 'mine' ? '#0056b3' : '#555',
-            padding: '0.5rem 1rem',
-          }}
+      {/* View Toggle Tabs */}
+      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <Button
+          variant={documentView === "mine" ? "primary" : "ghost"}
+          size="sm"
+          onClick={() => handleViewChange("mine")}
         >
-          📄 My Documents
-        </button>
+          My Documents
+        </Button>
+        <Button
+          variant={documentView === "shared" ? "primary" : "ghost"}
+          size="sm"
+          onClick={() => handleViewChange("shared")}
+        >
+          Shared With Me
+        </Button>
+      </div>
 
-        <button
-          type="button"
-          onClick={() => handleViewChange('shared')}
-          style={{
-            fontWeight: documentView === 'shared' ? 'bold' : 'normal',
-            borderBottom: documentView === 'shared' ? '3px solid #0056b3' : 'none',
-            borderRadius: 0,
-            background: 'none',
-            color: documentView === 'shared' ? '#0056b3' : '#555',
-            padding: '0.5rem 1rem',
-          }}
-        >
-          🤝 Shared with Me
-        </button>
-      </nav>
-
-      {/* Folders Navigation / Filter Bar (Only shown in My Documents view) */}
-      {documentView === 'mine' && (
-        <section
-          style={{
-            marginBottom: '1.5rem',
-            padding: '1rem',
-            background: '#fafafa',
-            border: '1px solid #eee',
-            borderRadius: '6px',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <h2 style={{ margin: 0, fontSize: '1.1rem' }}>Folders</h2>
-            <button
-              type="button"
+      {/* Folders Section (Only in My Documents View) */}
+      {documentView === "mine" && (
+        <Card>
+          <CardHeader className="flex items-center justify-between">
+            <h3 className="font-bold text-gray-900 dark:text-white text-base">
+              Folders
+            </h3>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => {
                 setShowCreateFolder(!showCreateFolder);
-                setFolderActionError('');
+                setFolderActionError("");
               }}
             >
-              {showCreateFolder ? 'Cancel' : '+ New Folder'}
-            </button>
-          </div>
-
-          {showCreateFolder && (
-            <form onSubmit={(e) => void handleCreateFolderSubmit(e)} style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
-              <input
-                type="text"
-                placeholder="Folder name"
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                required
-                maxLength={100}
-              />
-              <button type="submit" disabled={creatingFolder}>
-                {creatingFolder ? 'Creating...' : 'Save Folder'}
-              </button>
-            </form>
-          )}
-
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            <button
-              type="button"
-              onClick={() => handleFolderSelect('')}
-              style={{
-                fontWeight: selectedFolderId === '' ? 'bold' : 'normal',
-                background: selectedFolderId === '' ? '#0056b3' : undefined,
-                color: selectedFolderId === '' ? 'white' : undefined,
-              }}
-            >
-              All Documents
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleFolderSelect('none')}
-              style={{
-                fontWeight: selectedFolderId === 'none' ? 'bold' : 'normal',
-                background: selectedFolderId === 'none' ? '#0056b3' : undefined,
-                color: selectedFolderId === 'none' ? 'white' : undefined,
-              }}
-            >
-              Unfiled
-            </button>
-
-            {folders.map((folder) => (
-              <button
-                key={folder.id}
-                type="button"
-                onClick={() => handleFolderSelect(folder.id)}
-                style={{
-                  fontWeight: selectedFolderId === folder.id ? 'bold' : 'normal',
-                  background: selectedFolderId === folder.id ? '#0056b3' : undefined,
-                  color: selectedFolderId === folder.id ? 'white' : undefined,
-                }}
+              {showCreateFolder ? "Cancel" : "+ New Folder"}
+            </Button>
+          </CardHeader>
+          <CardBody className="space-y-4">
+            {showCreateFolder && (
+              <form
+                onSubmit={(e) => void handleCreateFolderSubmit(e)}
+                className="flex gap-2"
               >
-                📁 {folder.name}
-              </button>
-            ))}
-          </div>
+                <input
+                  type="text"
+                  placeholder="Folder name"
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  required
+                  maxLength={100}
+                  className="flex-1 px-3 py-1.5 border border-gray-300 dark:border-gray-700 rounded-md text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                />
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  isLoading={creatingFolder}
+                >
+                  Save Folder
+                </Button>
+              </form>
+            )}
 
-          {activeFolder && (
-            <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.9rem', color: '#666' }}>Selected Folder: <strong>{activeFolder.name}</strong></span>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={selectedFolderId === "" ? "primary" : "outline"}
+                size="sm"
+                onClick={() => handleFolderSelect("")}
+              >
+                All Documents
+              </Button>
 
-              {editingFolderId === activeFolder.id ? (
-                <form onSubmit={(e) => void handleUpdateFolderSubmit(e)} style={{ display: 'inline-flex', gap: '0.5rem' }}>
-                  <input
-                    type="text"
-                    value={editingFolderName}
-                    onChange={(e) => setEditingFolderName(e.target.value)}
-                    required
-                    maxLength={100}
-                  />
-                  <button type="submit" disabled={savingFolder}>
-                    {savingFolder ? 'Saving...' : 'Save'}
-                  </button>
-                  <button type="button" onClick={() => setEditingFolderId(null)}>
-                    Cancel
-                  </button>
-                </form>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingFolderId(activeFolder.id);
-                      setEditingFolderName(activeFolder.name);
-                    }}
-                  >
-                    Rename
-                  </button>
+              <Button
+                variant={selectedFolderId === "none" ? "primary" : "outline"}
+                size="sm"
+                onClick={() => handleFolderSelect("none")}
+              >
+                Unfiled
+              </Button>
 
-                  <button
-                    type="button"
-                    onClick={() => void handleDeleteFolder(activeFolder.id)}
-                    style={{ color: 'red' }}
-                  >
-                    Delete Folder
-                  </button>
-                </>
-              )}
+              {folders.map((folder) => (
+                <Button
+                  key={folder.id}
+                  variant={selectedFolderId === folder.id ? "primary" : "outline"}
+                  size="sm"
+                  onClick={() => handleFolderSelect(folder.id)}
+                >
+                  📁 {folder.name}
+                </Button>
+              ))}
             </div>
-          )}
 
-          {folderActionError && (
-            <p style={{ color: 'red', margin: '0.5rem 0 0 0', fontSize: '0.9rem' }}>{folderActionError}</p>
-          )}
-        </section>
+            {activeFolder && (
+              <div className="pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center gap-3 text-xs">
+                <span className="text-gray-600 dark:text-gray-400">
+                  Selected Folder: <strong className="text-gray-900 dark:text-white">{activeFolder.name}</strong>
+                </span>
+
+                {editingFolderId === activeFolder.id ? (
+                  <form
+                    onSubmit={(e) => void handleUpdateFolderSubmit(e)}
+                    className="inline-flex gap-2"
+                  >
+                    <input
+                      type="text"
+                      value={editingFolderName}
+                      onChange={(e) => setEditingFolderName(e.target.value)}
+                      required
+                      maxLength={100}
+                      className="px-2 py-0.5 border border-gray-300 rounded text-xs"
+                    />
+                    <Button type="submit" variant="primary" size="sm" isLoading={savingFolder}>
+                      Save
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setEditingFolderId(null)}
+                    >
+                      Cancel
+                    </Button>
+                  </form>
+                ) : (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setEditingFolderId(activeFolder.id);
+                        setEditingFolderName(activeFolder.name);
+                      }}
+                    >
+                      Rename
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => void handleDeleteFolder(activeFolder.id)}
+                    >
+                      Delete Folder
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {folderActionError && (
+              <p className="text-xs text-red-600 font-medium">{folderActionError}</p>
+            )}
+          </CardBody>
+        </Card>
       )}
 
-      {/* Advanced Search & Filtering Controls */}
-      <section style={{ marginBottom: '1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+      {/* Filter Toolbar */}
+      <div className="flex flex-col sm:flex-row gap-3">
         <input
           type="search"
-          placeholder="Search title or file name"
+          placeholder="Search title or file name..."
           value={search}
           onChange={(event) => handleSearchChange(event.target.value)}
-          style={{ flex: '1 1 200px', padding: '0.5rem' }}
+          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
         />
 
         <input
           type="text"
-          placeholder="Filter by tag (e.g. spec)"
+          placeholder="Filter by tag..."
           value={selectedTag}
           onChange={(event) => handleTagChange(event.target.value)}
-          style={{ flex: '0 1 180px', padding: '0.5rem' }}
+          className="w-full sm:w-44 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
         />
 
         <select
           value={fileTypeFilter}
           onChange={(event) => handleFileTypeChange(event.target.value)}
-          style={{ padding: '0.5rem' }}
+          className="w-full sm:w-44 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
         >
           <option value="">All File Types</option>
           <option value="pdf">PDF Documents</option>
@@ -401,141 +437,125 @@ export default function DocumentsPage() {
             setSelectedProjectId(event.target.value);
             setPage(1);
           }}
-          style={{ padding: '0.5rem' }}
+          className="w-full sm:w-48 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
         >
           <option value="">All Projects</option>
-          <option value="none">No Project</option>
-          {projects.map((proj) => (
-            <option key={proj.id} value={proj.id}>
-              Project: {proj.name}
+          {projects.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
             </option>
           ))}
         </select>
-      </section>
+      </div>
 
-      {loading && <p>Loading documents...</p>}
-
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-
-      {!loading && !error && (
-        <>
-          <table>
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Status</th>
-                <th>Tags</th>
-                <th>File Name</th>
-                <th>File Type</th>
-                <th>File Size</th>
-                <th>Created Date</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {documents.map((doc) => (
-                <tr key={doc.id}>
-                  <td>
-                    <Link to={`/documents/${doc.id}`}>{doc.title}</Link>
-                  </td>
-                  <td>
-                    <span
-                      style={{
-                        background:
-                          doc.status === 'APPROVED'
-                            ? '#dcfce7'
-                            : doc.status === 'IN_REVIEW'
-                              ? '#fef3c7'
-                              : doc.status === 'STALE'
-                                ? '#ffedd5'
-                                : doc.status === 'DEPRECATED'
-                                  ? '#fee2e2'
-                                  : '#e2e8f0',
-                        color:
-                          doc.status === 'APPROVED'
-                            ? '#166534'
-                            : doc.status === 'IN_REVIEW'
-                              ? '#92400e'
-                              : doc.status === 'STALE'
-                                ? '#c2410c'
-                                : doc.status === 'DEPRECATED'
-                                  ? '#991b1b'
-                                  : '#334155',
-                        padding: '0.15rem 0.5rem',
-                        borderRadius: '4px',
-                        fontSize: '0.8rem',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {doc.status || 'DRAFT'}
-                    </span>
-                  </td>
-                  <td>
-                    {doc.tags && doc.tags.length > 0 ? (
-                      <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
-                        {doc.tags.map((t) => (
-                          <span
-                            key={t}
-                            onClick={() => handleTagChange(t)}
-                            style={{
-                              background: '#edf2f7',
-                              color: '#2b6cb0',
-                              cursor: 'pointer',
-                              padding: '0.1rem 0.4rem',
-                              borderRadius: '3px',
-                              fontSize: '0.8rem',
-                            }}
-                          >
-                            #{t}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <span style={{ color: '#aaa', fontSize: '0.85rem' }}>—</span>
-                    )}
-                  </td>
-                  <td>{doc.fileName}</td>
-                  <td>{doc.fileType}</td>
-                  <td>{formatFileSize(doc.fileSize)}</td>
-                  <td>{new Date(doc.createdAt).toLocaleDateString()}</td>
-                </tr>
-              ))}
-
-              {documents.length === 0 && (
-                <tr>
-                  <td colSpan={6}>
-                    {documentView === 'shared'
-                      ? 'No documents have been shared with you.'
-                      : 'No documents found in this view.'}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-
-          <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center' }}>
-            <button
-              type="button"
-              disabled={page === 1}
-              onClick={() => setPage((current) => current - 1)}
-            >
-              Previous
-            </button>
-
-            <span>
-              Page {page} of {totalPages}
-            </span>
-
-            <button
-              type="button"
-              disabled={page >= totalPages}
-              onClick={() => setPage((current) => current + 1)}
-            >
-              Next
-            </button>
-          </div>
-        </>
+      {/* Loading & Error */}
+      {loading && (
+        <div className="py-12 flex justify-center">
+          <LoadingSpinner label="Loading documents..." />
+        </div>
       )}
-    </main>
+
+      {error && (
+        <div className="p-4 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm font-medium">
+          {error}
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && !error && documents.length === 0 && (
+        <EmptyState
+          title="No documents found"
+          description="Try adjusting your search query, folder filter, or tag selection."
+          action={
+            <Link to="/documents/create">
+              <Button variant="primary">+ Create Document</Button>
+            </Link>
+          }
+        />
+      )}
+
+      {/* Responsive Data Table */}
+      {!loading && !error && documents.length > 0 && (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Title</TableHead>
+              <TableHead>File Name</TableHead>
+              <TableHead>File Size</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Tags</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {documents.map((doc) => (
+              <TableRow key={doc.id}>
+                <TableCell className="font-medium text-gray-900 dark:text-white">
+                  <Link
+                    to={`/documents/${doc.id}`}
+                    className="text-indigo-600 dark:text-indigo-400 hover:underline"
+                  >
+                    {doc.title}
+                  </Link>
+                </TableCell>
+                <TableCell>{doc.fileName}</TableCell>
+                <TableCell>{formatFileSize(doc.fileSize)}</TableCell>
+                <TableCell>
+                  <Badge variant={getStatusVariant(doc.status)}>
+                    {doc.status || "DRAFT"}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">
+                    {doc.tags?.map((t) => (
+                      <span
+                        key={t}
+                        className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[10px] rounded"
+                      >
+                        {t}
+                      </span>
+                    )) || "-"}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Link to={`/documents/${doc.id}`}>
+                    <Button variant="ghost" size="sm">
+                      View Details &rarr;
+                    </Button>
+                  </Link>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+
+      {/* Pagination Controls */}
+      {!loading && !error && totalPages > 1 && (
+        <div className="flex items-center justify-center gap-3 pt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => setPage(page - 1)}
+          >
+            &larr; Previous
+          </Button>
+
+          <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">
+            Page {page} of {totalPages}
+          </span>
+
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= totalPages}
+            onClick={() => setPage(page + 1)}
+          >
+            Next &rarr;
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }

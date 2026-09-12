@@ -1,12 +1,19 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 import {
   getPendingReviewsApi,
   approveDocumentReviewApi,
   requestChangesDocumentReviewApi,
-} from '../features/document-reviews/document-review.api';
-import type { DocumentReview } from '../features/document-reviews/document-review.types';
+} from "../features/document-reviews/document-review.api";
+import type { DocumentReview } from "../features/document-reviews/document-review.types";
+
+import { Card, CardBody } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { Badge } from "../components/ui/Badge";
+import { LoadingSpinner } from "../components/ui/LoadingSpinner";
+import { EmptyState } from "../components/ui/EmptyState";
+import { Breadcrumb } from "../components/ui/Breadcrumb";
 
 export function ReviewsPage() {
   const [reviews, setReviews] = useState<DocumentReview[]>([]);
@@ -23,7 +30,7 @@ export function ReviewsPage() {
       const data = await getPendingReviewsApi();
       setReviews(data);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to load pending reviews';
+      const msg = err instanceof Error ? err.message : "Failed to load pending reviews";
       setError(msg);
     } finally {
       setLoading(false);
@@ -41,7 +48,7 @@ export function ReviewsPage() {
         }
       } catch (err) {
         if (!ignore) {
-          const msg = err instanceof Error ? err.message : 'Failed to load pending reviews';
+          const msg = err instanceof Error ? err.message : "Failed to load pending reviews";
           setError(msg);
         }
       } finally {
@@ -63,10 +70,10 @@ export function ReviewsPage() {
       setActionSuccess(null);
       const comment = commentInputs[review.id] || undefined;
       await approveDocumentReviewApi(review.documentId, review.id, { comment });
-      setActionSuccess(`Approved review for "${review.document?.title || 'Document'}"`);
+      setActionSuccess(`Approved review for "${review.document?.title || "Document"}"`);
       await loadPendingReviews();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to approve review';
+      const msg = err instanceof Error ? err.message : "Failed to approve review";
       setError(msg);
     } finally {
       setResolvingId(null);
@@ -80,10 +87,10 @@ export function ReviewsPage() {
       setActionSuccess(null);
       const comment = commentInputs[review.id] || undefined;
       await requestChangesDocumentReviewApi(review.documentId, review.id, { comment });
-      setActionSuccess(`Requested changes for "${review.document?.title || 'Document'}"`);
+      setActionSuccess(`Requested changes for "${review.document?.title || "Document"}"`);
       await loadPendingReviews();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to request changes';
+      const msg = err instanceof Error ? err.message : "Failed to request changes";
       setError(msg);
     } finally {
       setResolvingId(null);
@@ -91,110 +98,98 @@ export function ReviewsPage() {
   };
 
   return (
-    <div style={{ padding: '1.5rem', maxWidth: '900px', margin: '0 auto' }}>
-      <h1>My Pending Reviews</h1>
-      <p style={{ color: 'var(--color-text-muted, #64748b)', marginBottom: '1.5rem' }}>
-        Documents assigned to you awaiting review decision.
-      </p>
+    <div className="space-y-6">
+      <Breadcrumb items={[{ label: "My Reviews" }]} />
+
+      <div>
+        <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">
+          My Pending Reviews
+        </h1>
+        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+          Documents assigned to you awaiting review decision.
+        </p>
+      </div>
 
       {error && (
-        <div style={{ padding: '0.75rem 1rem', background: '#fee2e2', color: '#991b1b', borderRadius: '4px', marginBottom: '1rem' }}>
+        <div className="p-3 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm font-medium">
           {error}
         </div>
       )}
 
       {actionSuccess && (
-        <div style={{ padding: '0.75rem 1rem', background: '#dcfce7', color: '#166534', borderRadius: '4px', marginBottom: '1rem' }}>
+        <div className="p-3 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-md text-sm font-medium">
           {actionSuccess}
         </div>
       )}
 
       {loading ? (
-        <p>Loading pending reviews...</p>
-      ) : reviews.length === 0 ? (
-        <div style={{ padding: '2rem', textAlign: 'center', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-          <p style={{ margin: 0, color: '#64748b' }}>No pending reviews assigned to you.</p>
+        <div className="py-12 flex justify-center">
+          <LoadingSpinner label="Loading pending reviews..." />
         </div>
+      ) : reviews.length === 0 ? (
+        <EmptyState
+          title="No Pending Reviews"
+          description="You have zero documents currently awaiting your review decision."
+        />
       ) : (
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div className="space-y-4">
           {reviews.map((rev) => (
-            <li
-              key={rev.id}
-              style={{
-                padding: '1.25rem',
-                border: '1px solid #e2e8f0',
-                borderRadius: '6px',
-                background: '#ffffff',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.75rem',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1.1rem' }}>
-                    <Link to={`/documents/${rev.documentId}`} style={{ color: '#0284c7', textDecoration: 'none' }}>
-                      {rev.document?.title || 'Untitled Document'}
-                    </Link>
-                  </h3>
-                  <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
-                    {rev.document?.fileName}
-                  </span>
+            <Card key={rev.id}>
+              <CardBody className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                      <Link
+                        to={`/documents/${rev.documentId}`}
+                        className="text-indigo-600 dark:text-indigo-400 hover:underline"
+                      >
+                        {rev.document?.title || "Untitled Document"}
+                      </Link>
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      {rev.document?.fileName} &bull; Requested on{" "}
+                      {new Date(rev.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <Badge variant="warning">PENDING REVIEW</Badge>
                 </div>
-                <span
-                  style={{
-                    background: '#fef3c7',
-                    color: '#92400e',
-                    padding: '0.25rem 0.6rem',
-                    borderRadius: '4px',
-                    fontSize: '0.8rem',
-                    fontWeight: 'bold',
-                  }}
-                >
-                  PENDING REVIEW
-                </span>
-              </div>
 
-              <div style={{ fontSize: '0.9rem', color: '#334155' }}>
-                <strong>Requested By:</strong> {rev.requester?.name || 'Unknown User'} ({rev.requester?.email}) on {new Date(rev.createdAt).toLocaleDateString()}
-              </div>
-
-              {rev.comment && (
-                <div style={{ background: '#f1f5f9', padding: '0.6rem 0.8rem', borderRadius: '4px', fontSize: '0.9rem', fontStyle: 'italic' }}>
-                  &quot;{rev.comment}&quot;
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    placeholder="Optional review resolution comment..."
+                    value={commentInputs[rev.id] || ""}
+                    onChange={(e) =>
+                      setCommentInputs((prev) => ({
+                        ...prev,
+                        [rev.id]: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => void handleApprove(rev)}
+                      isLoading={resolvingId === rev.id}
+                    >
+                      Approve Review
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => void handleRequestChanges(rev)}
+                      isLoading={resolvingId === rev.id}
+                    >
+                      Request Changes
+                    </Button>
+                  </div>
                 </div>
-              )}
-
-              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-                <input
-                  type="text"
-                  placeholder="Optional review comment..."
-                  value={commentInputs[rev.id] || ''}
-                  onChange={(e) =>
-                    setCommentInputs({ ...commentInputs, [rev.id]: e.target.value })
-                  }
-                  style={{ flex: '1 1 250px', padding: '0.4rem 0.6rem' }}
-                />
-                <button
-                  type="button"
-                  onClick={() => void handleApprove(rev)}
-                  disabled={resolvingId === rev.id}
-                  style={{ background: '#16a34a', color: 'white', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '4px', cursor: 'pointer' }}
-                >
-                  {resolvingId === rev.id ? 'Saving...' : 'Approve'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void handleRequestChanges(rev)}
-                  disabled={resolvingId === rev.id}
-                  style={{ background: '#dc2626', color: 'white', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '4px', cursor: 'pointer' }}
-                >
-                  {resolvingId === rev.id ? 'Saving...' : 'Request Changes'}
-                </button>
-              </div>
-            </li>
+              </CardBody>
+            </Card>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );
