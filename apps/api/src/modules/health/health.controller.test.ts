@@ -2,16 +2,28 @@ import type { Request, Response } from 'express';
 
 import { describe, expect, it, vi } from 'vitest';
 
-import { healthController } from './health.controller.js';
+import {
+  healthController,
+  readinessController,
+  livenessController,
+} from './health.controller.js';
 
-const { mockGetHealthStatus, mockSendSuccess } =
-  vi.hoisted(() => ({
-    mockGetHealthStatus: vi.fn(),
-    mockSendSuccess: vi.fn(),
-  }));
+const {
+  mockGetHealthStatus,
+  mockGetReadinessStatus,
+  mockGetLivenessStatus,
+  mockSendSuccess,
+} = vi.hoisted(() => ({
+  mockGetHealthStatus: vi.fn(),
+  mockGetReadinessStatus: vi.fn(),
+  mockGetLivenessStatus: vi.fn(),
+  mockSendSuccess: vi.fn(),
+}));
 
 vi.mock('./health.service.js', () => ({
   getHealthStatus: mockGetHealthStatus,
+  getReadinessStatus: mockGetReadinessStatus,
+  getLivenessStatus: mockGetLivenessStatus,
 }));
 
 vi.mock('../../utils/api-response.js', () => ({
@@ -19,15 +31,9 @@ vi.mock('../../utils/api-response.js', () => ({
 }));
 
 describe('healthController', () => {
-  it('should get the health status and send a success response', () => {
-    const healthStatus = {
-      status: 'ok',
-      service: 'documan-api',
-    };
-
-    mockGetHealthStatus.mockReturnValue(
-      healthStatus,
-    );
+  it('should get health status and send success response when ok', () => {
+    const healthStatus = { status: 'ok', service: 'documan-api' };
+    mockGetHealthStatus.mockReturnValue(healthStatus);
 
     const req = {} as Request;
     const res = {} as Response;
@@ -35,33 +41,33 @@ describe('healthController', () => {
     healthController(req, res);
 
     expect(mockGetHealthStatus).toHaveBeenCalledOnce();
-
-    expect(mockSendSuccess).toHaveBeenCalledWith(
-      res,
-      healthStatus,
-    );
+    expect(mockSendSuccess).toHaveBeenCalledWith(res, healthStatus, 200);
   });
 
-  it('should return the result of sendSuccess', () => {
-    const response = {
-      success: true,
-      data: {
-        status: 'ok',
-        service: 'documan-api',
-      },
-    };
-
-    mockGetHealthStatus.mockReturnValue(
-      response.data,
-    );
-
-    mockSendSuccess.mockReturnValue(response);
+  it('should send liveness status', () => {
+    const liveness = { live: true };
+    mockGetLivenessStatus.mockReturnValue(liveness);
 
     const req = {} as Request;
     const res = {} as Response;
 
-    const result = healthController(req, res);
+    livenessController(req, res);
 
-    expect(result).toBe(response);
+    expect(mockSendSuccess).toHaveBeenCalledWith(res, liveness);
+  });
+
+  it('should return 200 for readiness when ready', () => {
+    const readiness = { ready: true, database: 'connected' };
+    mockGetReadinessStatus.mockReturnValue(readiness);
+
+    const req = {} as Request;
+    const statusFn = vi.fn().mockReturnThis();
+    const jsonFn = vi.fn();
+    const res = { status: statusFn, json: jsonFn } as unknown as Response;
+
+    readinessController(req, res);
+
+    expect(statusFn).toHaveBeenCalledWith(200);
+    expect(jsonFn).toHaveBeenCalledWith({ success: true, data: readiness });
   });
 });
