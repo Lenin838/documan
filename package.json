@@ -9,6 +9,7 @@
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
+    "test:container": "powershell -ExecutionPolicy Bypass -File scripts/container-smoke-test.ps1",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

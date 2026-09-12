@@ -39,6 +39,7 @@ describe('connectDatabase', () => {
     expect(mockConnect).toHaveBeenCalledTimes(1);
     expect(mockConnect).toHaveBeenCalledWith(
       'mongodb://localhost:27017/documan',
+      expect.any(Object),
     );
   });
 

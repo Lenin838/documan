@@ -1,4 +1,4 @@
-git status --short# Dependencies
+# Dependencies
 node_modules/
 .pnpm-store/
 
@@ -37,3 +37,6 @@ Thumbs.db
 # Uploaded documents
 /uploads/
 apps/api/uploads/
+
+# Generated backups
+backups/
