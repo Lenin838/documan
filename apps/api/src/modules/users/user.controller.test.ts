@@ -1,10 +1,6 @@
-import type {
-  NextFunction,
-  Request,
-  Response,
-} from 'express';
+import type { NextFunction, Request, Response } from "express";
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
   mockCreateUser,
@@ -17,11 +13,9 @@ const {
   mockUpdateUserStatus,
   mockDeleteUser,
 } = vi.hoisted(() => {
-  process.env.MONGO_URI =
-    'mongodb://127.0.0.1:27017/documan_test';
+  process.env.MONGO_URI = "mongodb://127.0.0.1:27017/documan_test";
 
-  process.env.JWT_SECRET =
-    'test-secret-that-is-at-least-32-characters-long';
+  process.env.JWT_SECRET = "test-secret-that-is-at-least-32-characters-long";
 
   return {
     mockCreateUser: vi.fn(),
@@ -36,7 +30,7 @@ const {
   };
 });
 
-vi.mock('./user.service.js', () => ({
+vi.mock("./user.service.js", () => ({
   createUser: mockCreateUser,
   getCurrentUser: mockGetCurrentUser,
   updateCurrentUser: mockUpdateCurrentUser,
@@ -58,7 +52,7 @@ import {
   adminUpdateUserController,
   updateUserStatusController,
   deleteUserController,
-} from './user.controller.js';
+} from "./user.controller.js";
 
 function createMockResponse() {
   const res = {
@@ -76,48 +70,45 @@ function createMockNext() {
   return vi.fn() as unknown as NextFunction;
 }
 
-function createMockRequest(
-  overrides: Partial<Request> = {},
-): Request {
+function createMockRequest(overrides: Partial<Request> = {}): Request {
   return {
     ...overrides,
   } as Request;
 }
 
 const mockUser = {
-  id: 'user-123',
-  name: 'Test User',
-  email: 'user@example.com',
-  role: 'user' as const,
+  id: "user-123",
+  name: "Test User",
+  email: "user@example.com",
+  role: "user" as const,
   isActive: true,
-  createdAt: new Date('2026-01-01'),
-  updatedAt: new Date('2026-01-02'),
+  createdAt: new Date("2026-01-01"),
+  updatedAt: new Date("2026-01-02"),
 };
 
-describe('user controller', () => {
+describe("user controller", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('createUserController', () => {
-    it('should create a user successfully', async () => {
+  describe("createUserController", () => {
+    it("should create a user successfully", async () => {
       const req = createMockRequest({
         body: {
-          name: 'Test User',
-          email: 'user@example.com',
-          password: 'password123',
+          name: "Test User",
+          email: "user@example.com",
+          password: "password123",
         },
       });
 
       const res = createMockResponse();
+      const next = createMockNext();
 
       mockCreateUser.mockResolvedValue(mockUser);
 
-      await createUserController(req, res);
+      await createUserController(req, res, next);
 
-      expect(mockCreateUser).toHaveBeenCalledWith(
-        req.body,
-      );
+      expect(mockCreateUser).toHaveBeenCalledWith(req.body);
 
       expect(res.status).toHaveBeenCalledWith(201);
 
@@ -125,78 +116,69 @@ describe('user controller', () => {
         success: true,
         data: mockUser,
       });
+
+      expect(next).not.toHaveBeenCalled();
     });
 
-    it('should propagate service errors', async () => {
+    it("should propagate service errors", async () => {
       const req = createMockRequest({
         body: {
-          name: 'Test User',
-          email: 'user@example.com',
-          password: 'password123',
+          name: "Test User",
+          email: "user@example.com",
+          password: "password123",
         },
       });
 
       const res = createMockResponse();
+      const next = createMockNext();
 
-      const error = new Error('User already exists');
+      const error = new Error("User already exists");
 
       mockCreateUser.mockRejectedValue(error);
 
-      await expect(
-        createUserController(req, res),
-      ).rejects.toBe(error);
+      await createUserController(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(error);
 
       expect(res.status).not.toHaveBeenCalled();
     });
   });
 
-  describe('getCurrentUserController', () => {
-    it('should reject when authentication is missing', async () => {
+  describe("getCurrentUserController", () => {
+    it("should reject when authentication is missing", async () => {
       const req = createMockRequest({});
       const res = createMockResponse();
       const next = createMockNext();
 
-      await getCurrentUserController(
-        req,
-        res,
-        next,
-      );
+      await getCurrentUserController(req, res, next);
 
       expect(next).toHaveBeenCalledWith(
         expect.objectContaining({
           statusCode: 401,
-          code: 'AUTHENTICATION_REQUIRED',
-          message: 'Authentication required',
+          code: "AUTHENTICATION_REQUIRED",
+          message: "Authentication required",
         }),
       );
 
       expect(mockGetCurrentUser).not.toHaveBeenCalled();
     });
 
-    it('should return the current user', async () => {
+    it("should return the current user", async () => {
       const req = createMockRequest({
         user: {
-          userId: 'user-123',
-          role: 'user',
+          userId: "user-123",
+          role: "user",
         },
       });
 
       const res = createMockResponse();
       const next = createMockNext();
 
-      mockGetCurrentUser.mockResolvedValue(
-        mockUser,
-      );
+      mockGetCurrentUser.mockResolvedValue(mockUser);
 
-      await getCurrentUserController(
-        req,
-        res,
-        next,
-      );
+      await getCurrentUserController(req, res, next);
 
-      expect(mockGetCurrentUser).toHaveBeenCalledWith(
-        'user-123',
-      );
+      expect(mockGetCurrentUser).toHaveBeenCalledWith("user-123");
 
       expect(res.status).toHaveBeenCalledWith(200);
 
@@ -208,72 +190,60 @@ describe('user controller', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('should pass service errors to next', async () => {
+    it("should pass service errors to next", async () => {
       const req = createMockRequest({
         user: {
-          userId: 'user-123',
-          role: 'user',
+          userId: "user-123",
+          role: "user",
         },
       });
 
       const res = createMockResponse();
       const next = createMockNext();
 
-      const error = new Error(
-        'User not found',
-      );
+      const error = new Error("User not found");
 
       mockGetCurrentUser.mockRejectedValue(error);
 
-      await getCurrentUserController(
-        req,
-        res,
-        next,
-      );
+      await getCurrentUserController(req, res, next);
 
       expect(next).toHaveBeenCalledWith(error);
     });
   });
 
-  describe('updateCurrentUserController', () => {
-    it('should reject when authentication is missing', async () => {
+  describe("updateCurrentUserController", () => {
+    it("should reject when authentication is missing", async () => {
       const req = createMockRequest({
         body: {
-          name: 'Updated Name',
+          name: "Updated Name",
         },
       });
 
       const res = createMockResponse();
       const next = createMockNext();
 
-      await updateCurrentUserController(
-        req,
-        res,
-        next,
-      );
+      await updateCurrentUserController(req, res, next);
 
       expect(next).toHaveBeenCalledWith(
         expect.objectContaining({
           statusCode: 401,
-          code: 'AUTHENTICATION_REQUIRED',
+          code: "AUTHENTICATION_REQUIRED",
         }),
       );
 
-      expect(
-        mockUpdateCurrentUser,
-      ).not.toHaveBeenCalled();
+      expect(mockUpdateCurrentUser).not.toHaveBeenCalled();
     });
 
-    it('should update the current user successfully', async () => {
+    it("should update the current user successfully", async () => {
       const body = {
-        name: 'Updated Name',
+        name: "Updated Name",
       };
 
       const req = createMockRequest({
         body,
         user: {
-          userId: 'user-123',
-          role: 'user',
+          userId: "user-123",
+          role: "user",
         },
       });
 
@@ -282,25 +252,14 @@ describe('user controller', () => {
 
       const updatedUser = {
         ...mockUser,
-        name: 'Updated Name',
+        name: "Updated Name",
       };
 
-      mockUpdateCurrentUser.mockResolvedValue(
-        updatedUser,
-      );
+      mockUpdateCurrentUser.mockResolvedValue(updatedUser);
 
-      await updateCurrentUserController(
-        req,
-        res,
-        next,
-      );
+      await updateCurrentUserController(req, res, next);
 
-      expect(
-        mockUpdateCurrentUser,
-      ).toHaveBeenCalledWith(
-        'user-123',
-        body,
-      );
+      expect(mockUpdateCurrentUser).toHaveBeenCalledWith("user-123", body);
 
       expect(res.status).toHaveBeenCalledWith(200);
 
@@ -312,77 +271,65 @@ describe('user controller', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('should pass service errors to next', async () => {
+    it("should pass service errors to next", async () => {
       const req = createMockRequest({
         body: {
-          name: 'Updated Name',
+          name: "Updated Name",
         },
         user: {
-          userId: 'user-123',
-          role: 'user',
+          userId: "user-123",
+          role: "user",
         },
       });
 
       const res = createMockResponse();
       const next = createMockNext();
 
-      const error = new Error('Update failed');
+      const error = new Error("Update failed");
 
-      mockUpdateCurrentUser.mockRejectedValue(
-        error,
-      );
+      mockUpdateCurrentUser.mockRejectedValue(error);
 
-      await updateCurrentUserController(
-        req,
-        res,
-        next,
-      );
+      await updateCurrentUserController(req, res, next);
 
       expect(next).toHaveBeenCalledWith(error);
     });
   });
 
-  describe('changePasswordController', () => {
-    it('should reject when authentication is missing', async () => {
+  describe("changePasswordController", () => {
+    it("should reject when authentication is missing", async () => {
       const req = createMockRequest({
         body: {
-          currentPassword: 'old-password',
-          newPassword: 'new-password',
+          currentPassword: "old-password",
+          newPassword: "new-password",
         },
       });
 
       const res = createMockResponse();
       const next = createMockNext();
 
-      await changePasswordController(
-        req,
-        res,
-        next,
-      );
+      await changePasswordController(req, res, next);
 
       expect(next).toHaveBeenCalledWith(
         expect.objectContaining({
           statusCode: 401,
-          code: 'AUTHENTICATION_REQUIRED',
+          code: "AUTHENTICATION_REQUIRED",
         }),
       );
 
-      expect(
-        mockChangePassword,
-      ).not.toHaveBeenCalled();
+      expect(mockChangePassword).not.toHaveBeenCalled();
     });
 
-    it('should change the password successfully', async () => {
+    it("should change the password successfully", async () => {
       const body = {
-        currentPassword: 'old-password',
-        newPassword: 'new-password',
+        currentPassword: "old-password",
+        newPassword: "new-password",
       };
 
       const req = createMockRequest({
         body,
         user: {
-          userId: 'user-123',
-          role: 'user',
+          userId: "user-123",
+          role: "user",
         },
       });
 
@@ -390,23 +337,14 @@ describe('user controller', () => {
       const next = createMockNext();
 
       const result = {
-        message: 'Password changed successfully',
+        message: "Password changed successfully",
       };
 
-      mockChangePassword.mockResolvedValue(
-        result,
-      );
+      mockChangePassword.mockResolvedValue(result);
 
-      await changePasswordController(
-        req,
-        res,
-        next,
-      );
+      await changePasswordController(req, res, next);
 
-      expect(mockChangePassword).toHaveBeenCalledWith(
-        'user-123',
-        body,
-      );
+      expect(mockChangePassword).toHaveBeenCalledWith("user-123", body);
 
       expect(res.status).toHaveBeenCalledWith(200);
 
@@ -418,47 +356,39 @@ describe('user controller', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('should pass service errors to next', async () => {
+    it("should pass service errors to next", async () => {
       const req = createMockRequest({
         body: {
-          currentPassword: 'old-password',
-          newPassword: 'new-password',
+          currentPassword: "old-password",
+          newPassword: "new-password",
         },
         user: {
-          userId: 'user-123',
-          role: 'user',
+          userId: "user-123",
+          role: "user",
         },
       });
 
       const res = createMockResponse();
       const next = createMockNext();
 
-      const error = new Error(
-        'Invalid current password',
-      );
+      const error = new Error("Invalid current password");
 
-      mockChangePassword.mockRejectedValue(
-        error,
-      );
+      mockChangePassword.mockRejectedValue(error);
 
-      await changePasswordController(
-        req,
-        res,
-        next,
-      );
+      await changePasswordController(req, res, next);
 
       expect(next).toHaveBeenCalledWith(error);
     });
   });
 
-  describe('getAllUsersController', () => {
-    it('should get users using the validated query', async () => {
+  describe("getAllUsersController", () => {
+    it("should get users using the validated query", async () => {
       const validatedQuery = {
         page: 2,
         limit: 10,
-        role: 'user' as const,
+        role: "user" as const,
         isActive: true,
-        search: 'john',
+        search: "john",
       };
 
       const req = createMockRequest();
@@ -483,15 +413,9 @@ describe('user controller', () => {
 
       mockGetAllUsers.mockResolvedValue(users);
 
-      await getAllUsersController(
-        req,
-        res,
-        next,
-      );
+      await getAllUsersController(req, res, next);
 
-      expect(mockGetAllUsers).toHaveBeenCalledWith(
-        validatedQuery,
-      );
+      expect(mockGetAllUsers).toHaveBeenCalledWith(validatedQuery);
 
       expect(res.status).toHaveBeenCalledWith(200);
 
@@ -503,7 +427,7 @@ describe('user controller', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('should pass service errors to next', async () => {
+    it("should pass service errors to next", async () => {
       const validatedQuery = {
         page: 1,
         limit: 10,
@@ -519,49 +443,35 @@ describe('user controller', () => {
 
       const next = createMockNext();
 
-      const error = new Error(
-        'Failed to get users',
-      );
+      const error = new Error("Failed to get users");
 
       mockGetAllUsers.mockRejectedValue(error);
 
-      await getAllUsersController(
-        req,
-        res,
-        next,
-      );
+      await getAllUsersController(req, res, next);
 
       expect(next).toHaveBeenCalledWith(error);
     });
   });
 
-  describe('getUserByIdController', () => {
-    it('should get a user using the validated ID', async () => {
+  describe("getUserByIdController", () => {
+    it("should get a user using the validated ID", async () => {
       const req = createMockRequest();
 
       const res = createMockResponse();
 
       res.locals = {
         validatedParams: {
-          id: 'user-123',
+          id: "user-123",
         },
       };
 
       const next = createMockNext();
 
-      mockGetUserById.mockResolvedValue(
-        mockUser,
-      );
+      mockGetUserById.mockResolvedValue(mockUser);
 
-      await getUserByIdController(
-        req,
-        res,
-        next,
-      );
+      await getUserByIdController(req, res, next);
 
-      expect(mockGetUserById).toHaveBeenCalledWith(
-        'user-123',
-      );
+      expect(mockGetUserById).toHaveBeenCalledWith("user-123");
 
       expect(res.status).toHaveBeenCalledWith(200);
 
@@ -573,40 +483,34 @@ describe('user controller', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('should pass service errors to next', async () => {
+    it("should pass service errors to next", async () => {
       const req = createMockRequest();
 
       const res = createMockResponse();
 
       res.locals = {
         validatedParams: {
-          id: 'user-123',
+          id: "user-123",
         },
       };
 
       const next = createMockNext();
 
-      const error = new Error(
-        'User not found',
-      );
+      const error = new Error("User not found");
 
       mockGetUserById.mockRejectedValue(error);
 
-      await getUserByIdController(
-        req,
-        res,
-        next,
-      );
+      await getUserByIdController(req, res, next);
 
       expect(next).toHaveBeenCalledWith(error);
     });
   });
 
-  describe('adminUpdateUserController', () => {
-    it('should reject when authentication is missing', async () => {
+  describe("adminUpdateUserController", () => {
+    it("should reject when authentication is missing", async () => {
       const req = createMockRequest({
         body: {
-          name: 'Updated Name',
+          name: "Updated Name",
         },
       });
 
@@ -614,41 +518,35 @@ describe('user controller', () => {
 
       res.locals = {
         validatedParams: {
-          id: 'user-456',
+          id: "user-456",
         },
       };
 
       const next = createMockNext();
 
-      await adminUpdateUserController(
-        req,
-        res,
-        next,
-      );
+      await adminUpdateUserController(req, res, next);
 
       expect(next).toHaveBeenCalledWith(
         expect.objectContaining({
           statusCode: 401,
-          code: 'AUTHENTICATION_REQUIRED',
+          code: "AUTHENTICATION_REQUIRED",
         }),
       );
 
-      expect(
-        mockAdminUpdateUser,
-      ).not.toHaveBeenCalled();
+      expect(mockAdminUpdateUser).not.toHaveBeenCalled();
     });
 
-    it('should update another user successfully', async () => {
+    it("should update another user successfully", async () => {
       const body = {
-        name: 'Updated User',
-        role: 'admin' as const,
+        name: "Updated User",
+        role: "admin" as const,
       };
 
       const req = createMockRequest({
         body,
         user: {
-          userId: 'admin-123',
-          role: 'admin',
+          userId: "admin-123",
+          role: "admin",
         },
       });
 
@@ -656,7 +554,7 @@ describe('user controller', () => {
 
       res.locals = {
         validatedParams: {
-          id: 'user-456',
+          id: "user-456",
         },
       };
 
@@ -664,26 +562,18 @@ describe('user controller', () => {
 
       const updatedUser = {
         ...mockUser,
-        id: 'user-456',
-        name: 'Updated User',
-        role: 'admin' as const,
+        id: "user-456",
+        name: "Updated User",
+        role: "admin" as const,
       };
 
-      mockAdminUpdateUser.mockResolvedValue(
-        updatedUser,
-      );
+      mockAdminUpdateUser.mockResolvedValue(updatedUser);
 
-      await adminUpdateUserController(
-        req,
-        res,
-        next,
-      );
+      await adminUpdateUserController(req, res, next);
 
-      expect(
-        mockAdminUpdateUser,
-      ).toHaveBeenCalledWith(
-        'admin-123',
-        'user-456',
+      expect(mockAdminUpdateUser).toHaveBeenCalledWith(
+        "admin-123",
+        "user-456",
         body,
       );
 
@@ -697,14 +587,14 @@ describe('user controller', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('should pass service errors to next', async () => {
+    it("should pass service errors to next", async () => {
       const req = createMockRequest({
         body: {
-          name: 'Updated User',
+          name: "Updated User",
         },
         user: {
-          userId: 'admin-123',
-          role: 'admin',
+          userId: "admin-123",
+          role: "admin",
         },
       });
 
@@ -712,32 +602,24 @@ describe('user controller', () => {
 
       res.locals = {
         validatedParams: {
-          id: 'user-456',
+          id: "user-456",
         },
       };
 
       const next = createMockNext();
 
-      const error = new Error(
-        'Admin update failed',
-      );
+      const error = new Error("Admin update failed");
 
-      mockAdminUpdateUser.mockRejectedValue(
-        error,
-      );
+      mockAdminUpdateUser.mockRejectedValue(error);
 
-      await adminUpdateUserController(
-        req,
-        res,
-        next,
-      );
+      await adminUpdateUserController(req, res, next);
 
       expect(next).toHaveBeenCalledWith(error);
     });
   });
 
-  describe('updateUserStatusController', () => {
-    it('should reject when authentication is missing', async () => {
+  describe("updateUserStatusController", () => {
+    it("should reject when authentication is missing", async () => {
       const req = createMockRequest({
         body: {
           isActive: false,
@@ -748,31 +630,25 @@ describe('user controller', () => {
 
       res.locals = {
         validatedParams: {
-          id: 'user-456',
+          id: "user-456",
         },
       };
 
       const next = createMockNext();
 
-      await updateUserStatusController(
-        req,
-        res,
-        next,
-      );
+      await updateUserStatusController(req, res, next);
 
       expect(next).toHaveBeenCalledWith(
         expect.objectContaining({
           statusCode: 401,
-          code: 'AUTHENTICATION_REQUIRED',
+          code: "AUTHENTICATION_REQUIRED",
         }),
       );
 
-      expect(
-        mockUpdateUserStatus,
-      ).not.toHaveBeenCalled();
+      expect(mockUpdateUserStatus).not.toHaveBeenCalled();
     });
 
-    it('should update user status successfully', async () => {
+    it("should update user status successfully", async () => {
       const body = {
         isActive: false,
       };
@@ -780,8 +656,8 @@ describe('user controller', () => {
       const req = createMockRequest({
         body,
         user: {
-          userId: 'admin-123',
-          role: 'admin',
+          userId: "admin-123",
+          role: "admin",
         },
       });
 
@@ -789,7 +665,7 @@ describe('user controller', () => {
 
       res.locals = {
         validatedParams: {
-          id: 'user-456',
+          id: "user-456",
         },
       };
 
@@ -797,25 +673,17 @@ describe('user controller', () => {
 
       const updatedUser = {
         ...mockUser,
-        id: 'user-456',
+        id: "user-456",
         isActive: false,
       };
 
-      mockUpdateUserStatus.mockResolvedValue(
-        updatedUser,
-      );
+      mockUpdateUserStatus.mockResolvedValue(updatedUser);
 
-      await updateUserStatusController(
-        req,
-        res,
-        next,
-      );
+      await updateUserStatusController(req, res, next);
 
-      expect(
-        mockUpdateUserStatus,
-      ).toHaveBeenCalledWith(
-        'admin-123',
-        'user-456',
+      expect(mockUpdateUserStatus).toHaveBeenCalledWith(
+        "admin-123",
+        "user-456",
         false,
       );
 
@@ -829,14 +697,14 @@ describe('user controller', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('should pass service errors to next', async () => {
+    it("should pass service errors to next", async () => {
       const req = createMockRequest({
         body: {
           isActive: false,
         },
         user: {
-          userId: 'admin-123',
-          role: 'admin',
+          userId: "admin-123",
+          role: "admin",
         },
       });
 
@@ -844,65 +712,53 @@ describe('user controller', () => {
 
       res.locals = {
         validatedParams: {
-          id: 'user-456',
+          id: "user-456",
         },
       };
 
       const next = createMockNext();
 
-      const error = new Error(
-        'Status update failed',
-      );
+      const error = new Error("Status update failed");
 
-      mockUpdateUserStatus.mockRejectedValue(
-        error,
-      );
+      mockUpdateUserStatus.mockRejectedValue(error);
 
-      await updateUserStatusController(
-        req,
-        res,
-        next,
-      );
+      await updateUserStatusController(req, res, next);
 
       expect(next).toHaveBeenCalledWith(error);
     });
   });
 
-  describe('deleteUserController', () => {
-    it('should reject when authentication is missing', async () => {
+  describe("deleteUserController", () => {
+    it("should reject when authentication is missing", async () => {
       const req = createMockRequest();
 
       const res = createMockResponse();
 
       res.locals = {
         validatedParams: {
-          id: 'user-456',
+          id: "user-456",
         },
       };
 
       const next = createMockNext();
 
-      await deleteUserController(
-        req,
-        res,
-        next,
-      );
+      await deleteUserController(req, res, next);
 
       expect(next).toHaveBeenCalledWith(
         expect.objectContaining({
           statusCode: 401,
-          code: 'AUTHENTICATION_REQUIRED',
+          code: "AUTHENTICATION_REQUIRED",
         }),
       );
 
       expect(mockDeleteUser).not.toHaveBeenCalled();
     });
 
-    it('should delete another user successfully', async () => {
+    it("should delete another user successfully", async () => {
       const req = createMockRequest({
         user: {
-          userId: 'admin-123',
-          role: 'admin',
+          userId: "admin-123",
+          role: "admin",
         },
       });
 
@@ -910,28 +766,21 @@ describe('user controller', () => {
 
       res.locals = {
         validatedParams: {
-          id: 'user-456',
+          id: "user-456",
         },
       };
 
       const next = createMockNext();
 
       const result = {
-        message: 'User deleted successfully',
+        message: "User deleted successfully",
       };
 
       mockDeleteUser.mockResolvedValue(result);
 
-      await deleteUserController(
-        req,
-        res,
-        next,
-      );
+      await deleteUserController(req, res, next);
 
-      expect(mockDeleteUser).toHaveBeenCalledWith(
-        'admin-123',
-        'user-456',
-      );
+      expect(mockDeleteUser).toHaveBeenCalledWith("admin-123", "user-456");
 
       expect(res.status).toHaveBeenCalledWith(200);
 
@@ -943,11 +792,11 @@ describe('user controller', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('should pass service errors to next', async () => {
+    it("should pass service errors to next", async () => {
       const req = createMockRequest({
         user: {
-          userId: 'admin-123',
-          role: 'admin',
+          userId: "admin-123",
+          role: "admin",
         },
       });
 
@@ -955,23 +804,17 @@ describe('user controller', () => {
 
       res.locals = {
         validatedParams: {
-          id: 'user-456',
+          id: "user-456",
         },
       };
 
       const next = createMockNext();
 
-      const error = new Error(
-        'Delete failed',
-      );
+      const error = new Error("Delete failed");
 
       mockDeleteUser.mockRejectedValue(error);
 
-      await deleteUserController(
-        req,
-        res,
-        next,
-      );
+      await deleteUserController(req, res, next);
 
       expect(next).toHaveBeenCalledWith(error);
     });

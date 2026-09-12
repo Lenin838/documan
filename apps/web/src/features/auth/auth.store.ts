@@ -1,17 +1,15 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 import {
+  register as registerRequest,
   login as loginRequest,
   logout as logoutRequest,
   logoutAll as logoutAllRequest,
   refreshAccessToken as refreshRequest,
   getCurrentUser,
-} from './auth.api';
+} from "./auth.api";
 
-import type {
-  AuthUser,
-  LoginRequest,
-} from './auth.types';
+import type { AuthUser, LoginRequest, RegisterRequest } from "./auth.types";
 
 interface AuthState {
   accessToken: string | null;
@@ -20,6 +18,7 @@ interface AuthState {
   isLoading: boolean;
   isRestoring: boolean;
 
+  signup: (userData: RegisterRequest) => Promise<void>;
   login: (credentials: LoginRequest) => Promise<void>;
   restoreSession: () => Promise<void>;
   logout: () => Promise<void>;
@@ -35,6 +34,26 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   isLoading: false,
   isRestoring: true,
+
+  signup: async (userData) => {
+    set({
+      isLoading: true,
+    });
+
+    try {
+      const response = await registerRequest(userData);
+
+      set({
+        accessToken: response.data.accessToken,
+        user: response.data.user,
+        isAuthenticated: true,
+      });
+    } finally {
+      set({
+        isLoading: false,
+      });
+    }
+  },
 
   login: async (credentials) => {
     set({
@@ -69,8 +88,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       try {
         const refreshResponse = await refreshRequest();
 
-        const accessToken =
-          refreshResponse.data.accessToken;
+        const accessToken = refreshResponse.data.accessToken;
 
         set({
           accessToken,

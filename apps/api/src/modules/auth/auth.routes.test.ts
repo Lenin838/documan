@@ -2,48 +2,61 @@ import express, {
   type Request,
   type Response,
   type NextFunction,
-} from 'express';
-import request from 'supertest';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+} from "express";
+import request from "supertest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
+  mockRegisterController,
   mockLoginController,
   mockRefreshController,
   mockLogoutController,
   mockLogoutAllController,
   mockAuthenticate,
+  mockSignupRateLimiter,
   mockLoginRateLimiter,
   mockRefreshRateLimiter,
 } = vi.hoisted(() => ({
+  mockRegisterController: vi.fn((_req, res) => {
+    return res.status(201).json({
+      success: true,
+      data: "register",
+    });
+  }),
+
   mockLoginController: vi.fn((_req, res) => {
     return res.status(200).json({
       success: true,
-      data: 'login',
+      data: "login",
     });
   }),
 
   mockRefreshController: vi.fn((_req, res) => {
     return res.status(200).json({
       success: true,
-      data: 'refresh',
+      data: "refresh",
     });
   }),
 
   mockLogoutController: vi.fn((_req, res) => {
     return res.status(200).json({
       success: true,
-      data: 'logout',
+      data: "logout",
     });
   }),
 
   mockLogoutAllController: vi.fn((_req, res) => {
     return res.status(200).json({
       success: true,
-      data: 'logout-all',
+      data: "logout-all",
     });
   }),
 
   mockAuthenticate: vi.fn((_req, _res, next) => {
+    next();
+  }),
+
+  mockSignupRateLimiter: vi.fn((_req, _res, next) => {
     next();
   }),
 
@@ -56,143 +69,158 @@ const {
   }),
 }));
 
-vi.mock('./auth.controller.js', () => ({
+vi.mock("./auth.controller.js", () => ({
+  registerController: mockRegisterController,
   loginController: mockLoginController,
   refreshController: mockRefreshController,
   logoutController: mockLogoutController,
   logoutAllController: mockLogoutAllController,
 }));
 
-vi.mock('../../middleware/auth.middleware.js', () => ({
+vi.mock("../../middleware/auth.middleware.js", () => ({
   authenticate: mockAuthenticate,
 }));
 
-vi.mock('../../middleware/rate-limit.middleware.js', () => ({
+vi.mock("../../middleware/rate-limit.middleware.js", () => ({
+  signupRateLimiter: mockSignupRateLimiter,
   loginRateLimiter: mockLoginRateLimiter,
   refreshRateLimiter: mockRefreshRateLimiter,
 }));
 
-vi.mock('../../middleware/validate.middleware.js', () => ({
+vi.mock("../../middleware/validate.middleware.js", () => ({
   validateBody: vi.fn(
-    () =>
-      (
-        _req: Request,
-        _res: Response,
-        next: NextFunction,
-      ) => {
-        next();
-      },
-    ),
+    () => (_req: Request, _res: Response, next: NextFunction) => {
+      next();
+    },
+  ),
 }));
 
-import { authRouter } from './auth.routes.js';
+import { authRouter } from "./auth.routes.js";
 
 function createApp() {
   const app = express();
 
   app.use(express.json());
-  app.use('/auth', authRouter);
+  app.use("/auth", authRouter);
 
   return app;
 }
 
-describe('authRouter', () => {
+describe("authRouter", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('POST /login', () => {
-    it('should route the request to login controller', async () => {
+  describe("POST /register", () => {
+    it("should route the request to register controller", async () => {
       const app = createApp();
 
-      const response = await request(app)
-        .post('/auth/login')
-        .send({
-          email: 'user@example.com',
-          password: 'password123',
-        });
+      const response = await request(app).post("/auth/register").send({
+        name: "Jane Doe",
+        email: "jane@example.com",
+        password: "password123",
+      });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data).toBe("register");
+      expect(mockRegisterController).toHaveBeenCalledTimes(1);
+    });
+
+    it("should apply the signup rate limiter", async () => {
+      const app = createApp();
+
+      await request(app).post("/auth/register").send({
+        name: "Jane Doe",
+        email: "jane@example.com",
+        password: "password123",
+      });
+
+      expect(mockSignupRateLimiter).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("POST /login", () => {
+    it("should route the request to login controller", async () => {
+      const app = createApp();
+
+      const response = await request(app).post("/auth/login").send({
+        email: "user@example.com",
+        password: "password123",
+      });
 
       expect(response.status).toBe(200);
-      expect(response.body.data).toBe('login');
+      expect(response.body.data).toBe("login");
       expect(mockLoginController).toHaveBeenCalledTimes(1);
     });
 
-    it('should apply the login rate limiter', async () => {
+    it("should apply the login rate limiter", async () => {
       const app = createApp();
 
-      await request(app)
-        .post('/auth/login')
-        .send({
-          email: 'user@example.com',
-          password: 'password123',
-        });
+      await request(app).post("/auth/login").send({
+        email: "user@example.com",
+        password: "password123",
+      });
 
       expect(mockLoginRateLimiter).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe('POST /refresh', () => {
-    it('should route the request to refresh controller', async () => {
+  describe("POST /refresh", () => {
+    it("should route the request to refresh controller", async () => {
       const app = createApp();
 
-      const response = await request(app)
-        .post('/auth/refresh');
+      const response = await request(app).post("/auth/refresh");
 
       expect(response.status).toBe(200);
-      expect(response.body.data).toBe('refresh');
+      expect(response.body.data).toBe("refresh");
       expect(mockRefreshController).toHaveBeenCalledTimes(1);
     });
 
-    it('should apply the refresh rate limiter', async () => {
+    it("should apply the refresh rate limiter", async () => {
       const app = createApp();
 
-      await request(app)
-        .post('/auth/refresh');
+      await request(app).post("/auth/refresh");
 
       expect(mockRefreshRateLimiter).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe('POST /logout', () => {
-    it('should route the request to logout controller', async () => {
+  describe("POST /logout", () => {
+    it("should route the request to logout controller", async () => {
       const app = createApp();
 
-      const response = await request(app)
-        .post('/auth/logout');
+      const response = await request(app).post("/auth/logout");
 
       expect(response.status).toBe(200);
-      expect(response.body.data).toBe('logout');
+      expect(response.body.data).toBe("logout");
       expect(mockLogoutController).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe('POST /logout-all', () => {
-    it('should route the request to logout all controller', async () => {
+  describe("POST /logout-all", () => {
+    it("should route the request to logout all controller", async () => {
       const app = createApp();
 
-      const response = await request(app)
-        .post('/auth/logout-all');
+      const response = await request(app).post("/auth/logout-all");
 
       expect(response.status).toBe(200);
-      expect(response.body.data).toBe('logout-all');
+      expect(response.body.data).toBe("logout-all");
       expect(mockLogoutAllController).toHaveBeenCalledTimes(1);
     });
 
-    it('should apply authentication middleware', async () => {
+    it("should apply authentication middleware", async () => {
       const app = createApp();
 
-      await request(app)
-        .post('/auth/logout-all');
+      await request(app).post("/auth/logout-all");
 
       expect(mockAuthenticate).toHaveBeenCalledTimes(1);
     });
   });
 
-  it('should return 404 for an unsupported auth route', async () => {
+  it("should return 404 for an unsupported auth route", async () => {
     const app = createApp();
 
-    const response = await request(app)
-      .post('/auth/unknown');
+    const response = await request(app).post("/auth/unknown");
 
     expect(response.status).toBe(404);
   });

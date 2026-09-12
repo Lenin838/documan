@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import type { FormEvent } from 'react';
-import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { useState } from "react";
+import type { FormEvent } from "react";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 
-import { useAuthStore } from '../features/auth/auth.store';
+import { useAuthStore } from "../features/auth/auth.store";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -11,33 +11,31 @@ export default function LoginPage() {
   const login = useAuthStore((state) => state.login);
   const isLoading = useAuthStore((state) => state.isLoading);
 
-  const isAuthenticated = useAuthStore(
-    (state) => state.isAuthenticated,
-  );
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
-  const isRestoring = useAuthStore(
-    (state) => state.isRestoring,
-  );
+  const isRestoring = useAuthStore((state) => state.isRestoring);
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  const rawReturnUrl = searchParams.get('returnUrl');
+  const rawReturnUrl = searchParams.get("returnUrl");
   const targetUrl =
     rawReturnUrl &&
-    rawReturnUrl.startsWith('/') &&
-    !rawReturnUrl.startsWith('//') &&
-    rawReturnUrl !== '/login'
+    rawReturnUrl.startsWith("/") &&
+    !rawReturnUrl.startsWith("//") &&
+    rawReturnUrl !== "/login"
       ? rawReturnUrl
-      : '/dashboard';
+      : "/dashboard";
 
-  async function handleSubmit(
-    event: FormEvent<HTMLFormElement>,
-  ) {
+  const returnUrlQuery = rawReturnUrl
+    ? `?returnUrl=${encodeURIComponent(rawReturnUrl)}`
+    : "";
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    setError('');
+    setError("");
 
     try {
       await login({
@@ -47,7 +45,7 @@ export default function LoginPage() {
 
       navigate(targetUrl, { replace: true });
     } catch {
-      setError('Invalid email or password');
+      setError("Invalid email or password");
     }
   }
 
@@ -73,9 +71,7 @@ export default function LoginPage() {
             id="email"
             type="email"
             value={email}
-            onChange={(event) =>
-              setEmail(event.target.value)
-            }
+            onChange={(event) => setEmail(event.target.value)}
             required
           />
         </div>
@@ -87,21 +83,23 @@ export default function LoginPage() {
             id="password"
             type="password"
             value={password}
-            onChange={(event) =>
-              setPassword(event.target.value)
-            }
+            onChange={(event) => setPassword(event.target.value)}
             required
           />
         </div>
 
         {error && <p>{error}</p>}
 
-        <button
-          type="submit"
-          disabled={isLoading}
-        >
-          {isLoading ? 'Logging in...' : 'Login'}
+        <button type="submit" disabled={isLoading}>
+          {isLoading ? "Logging in..." : "Login"}
         </button>
+
+        <div>
+          <p>
+            Don't have an account?{" "}
+            <Link to={`/signup${returnUrlQuery}`}>Sign up</Link>
+          </p>
+        </div>
       </form>
     </main>
   );

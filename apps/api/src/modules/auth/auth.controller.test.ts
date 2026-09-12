@@ -1,10 +1,6 @@
-import type {
-  NextFunction,
-  Request,
-  Response,
-} from 'express';
+import type { NextFunction, Request, Response } from "express";
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
   mockLoginUser,
@@ -12,11 +8,9 @@ const {
   mockLogoutUser,
   mockLogoutAllSessions,
 } = vi.hoisted(() => {
-  process.env.MONGO_URI =
-    'mongodb://127.0.0.1:27017/documan_test';
+  process.env.MONGO_URI = "mongodb://127.0.0.1:27017/documan_test";
 
-  process.env.JWT_SECRET =
-    'test-secret-that-is-at-least-32-characters-long';
+  process.env.JWT_SECRET = "test-secret-that-is-at-least-32-characters-long";
 
   return {
     mockLoginUser: vi.fn(),
@@ -26,7 +20,7 @@ const {
   };
 });
 
-vi.mock('./auth.service.js', () => ({
+vi.mock("./auth.service.js", () => ({
   loginUser: mockLoginUser,
   refreshAccessToken: mockRefreshAccessToken,
   logoutUser: mockLogoutUser,
@@ -38,7 +32,7 @@ import {
   refreshController,
   logoutController,
   logoutAllController,
-} from './auth.controller.js';
+} from "./auth.controller.js";
 
 function createMockResponse() {
   const res = {
@@ -58,40 +52,38 @@ function createMockNext() {
   return vi.fn() as unknown as NextFunction;
 }
 
-function createMockRequest(
-  overrides: Partial<Request> = {},
-): Request {
+function createMockRequest(overrides: Partial<Request> = {}): Request {
   return {
     ...overrides,
   } as Request;
 }
 
-describe('auth controller', () => {
+describe("auth controller", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('loginController', () => {
-    it('should login successfully and set the refresh token cookie', async () => {
+  describe("loginController", () => {
+    it("should login successfully and set the refresh token cookie", async () => {
       const res = createMockResponse();
       const next = createMockNext();
 
       mockLoginUser.mockResolvedValue({
-        accessToken: 'access-token-123',
-        refreshToken: 'refresh-token-123',
+        accessToken: "access-token-123",
+        refreshToken: "refresh-token-123",
         user: {
-          id: 'user-123',
-          name: 'Test User',
-          email: 'user@example.com',
-          role: 'user',
+          id: "user-123",
+          name: "Test User",
+          email: "user@example.com",
+          role: "user",
           isActive: true,
         },
       });
 
       const req = createMockRequest({
         body: {
-          email: 'user@example.com',
-          password: 'password123',
+          email: "user@example.com",
+          password: "password123",
         },
       });
 
@@ -100,12 +92,12 @@ describe('auth controller', () => {
       expect(mockLoginUser).toHaveBeenCalledWith(req.body);
 
       expect(res.cookie).toHaveBeenCalledWith(
-        'documan_refresh_token',
-        'refresh-token-123',
+        "documan_refresh_token",
+        "refresh-token-123",
         expect.objectContaining({
           httpOnly: true,
-          sameSite: 'lax',
-          path: '/api/v1/auth',
+          sameSite: "lax",
+          path: "/api/v1/auth",
         }),
       );
 
@@ -114,12 +106,12 @@ describe('auth controller', () => {
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         data: {
-          accessToken: 'access-token-123',
+          accessToken: "access-token-123",
           user: {
-            id: 'user-123',
-            name: 'Test User',
-            email: 'user@example.com',
-            role: 'user',
+            id: "user-123",
+            name: "Test User",
+            email: "user@example.com",
+            role: "user",
             isActive: true,
           },
         },
@@ -128,20 +120,18 @@ describe('auth controller', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('should pass login errors to next', async () => {
+    it("should pass login errors to next", async () => {
       const res = createMockResponse();
       const next = createMockNext();
 
-      const error = new Error(
-        'Invalid email or password',
-      );
+      const error = new Error("Invalid email or password");
 
       mockLoginUser.mockRejectedValue(error);
 
       const req = createMockRequest({
         body: {
-          email: 'user@example.com',
-          password: 'wrong-password',
+          email: "user@example.com",
+          password: "wrong-password",
         },
       });
 
@@ -152,8 +142,8 @@ describe('auth controller', () => {
     });
   });
 
-  describe('refreshController', () => {
-    it('should reject when refresh token cookie is missing', async () => {
+  describe("refreshController", () => {
+    it("should reject when refresh token cookie is missing", async () => {
       const res = createMockResponse();
       const next = createMockNext();
 
@@ -166,46 +156,40 @@ describe('auth controller', () => {
       expect(next).toHaveBeenCalledWith(
         expect.objectContaining({
           statusCode: 401,
-          code: 'REFRESH_TOKEN_REQUIRED',
-          message: 'Refresh token is required',
+          code: "REFRESH_TOKEN_REQUIRED",
+          message: "Refresh token is required",
         }),
       );
 
-      expect(
-        mockRefreshAccessToken,
-      ).not.toHaveBeenCalled();
+      expect(mockRefreshAccessToken).not.toHaveBeenCalled();
     });
 
-    it('should refresh successfully and rotate the refresh token cookie', async () => {
+    it("should refresh successfully and rotate the refresh token cookie", async () => {
       const res = createMockResponse();
       const next = createMockNext();
 
       mockRefreshAccessToken.mockResolvedValue({
-        accessToken: 'new-access-token',
-        refreshToken: 'new-refresh-token',
+        accessToken: "new-access-token",
+        refreshToken: "new-refresh-token",
       });
 
       const req = createMockRequest({
         cookies: {
-          documan_refresh_token: 'old-refresh-token',
+          documan_refresh_token: "old-refresh-token",
         },
       });
 
       await refreshController(req, res, next);
 
-      expect(
-        mockRefreshAccessToken,
-      ).toHaveBeenCalledWith(
-        'old-refresh-token',
-      );
+      expect(mockRefreshAccessToken).toHaveBeenCalledWith("old-refresh-token");
 
       expect(res.cookie).toHaveBeenCalledWith(
-        'documan_refresh_token',
-        'new-refresh-token',
+        "documan_refresh_token",
+        "new-refresh-token",
         expect.objectContaining({
           httpOnly: true,
-          sameSite: 'lax',
-          path: '/api/v1/auth',
+          sameSite: "lax",
+          path: "/api/v1/auth",
         }),
       );
 
@@ -214,27 +198,24 @@ describe('auth controller', () => {
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         data: {
-          accessToken: 'new-access-token',
+          accessToken: "new-access-token",
         },
       });
 
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('should pass refresh service errors to next', async () => {
+    it("should pass refresh service errors to next", async () => {
       const res = createMockResponse();
       const next = createMockNext();
 
-      const error = new Error(
-        'Refresh token reuse detected',
-      );
+      const error = new Error("Refresh token reuse detected");
 
       mockRefreshAccessToken.mockRejectedValue(error);
 
       const req = createMockRequest({
         cookies: {
-          documan_refresh_token:
-            'reused-refresh-token',
+          documan_refresh_token: "reused-refresh-token",
         },
       });
 
@@ -245,8 +226,8 @@ describe('auth controller', () => {
     });
   });
 
-  describe('logoutController', () => {
-    it('should logout successfully and clear the refresh token cookie', async () => {
+  describe("logoutController", () => {
+    it("should logout successfully and clear the refresh token cookie", async () => {
       const res = createMockResponse();
       const next = createMockNext();
 
@@ -254,22 +235,20 @@ describe('auth controller', () => {
 
       const req = createMockRequest({
         cookies: {
-          documan_refresh_token: 'refresh-token-123',
+          documan_refresh_token: "refresh-token-123",
         },
       });
 
       await logoutController(req, res, next);
 
-      expect(mockLogoutUser).toHaveBeenCalledWith(
-        'refresh-token-123',
-      );
+      expect(mockLogoutUser).toHaveBeenCalledWith("refresh-token-123");
 
       expect(res.clearCookie).toHaveBeenCalledWith(
-        'documan_refresh_token',
+        "documan_refresh_token",
         expect.objectContaining({
           httpOnly: true,
-          sameSite: 'lax',
-          path: '/api/v1/auth',
+          sameSite: "lax",
+          path: "/api/v1/auth",
         }),
       );
 
@@ -278,14 +257,14 @@ describe('auth controller', () => {
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         data: {
-          message: 'Logged out successfully',
+          message: "Logged out successfully",
         },
       });
 
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('should logout even when the refresh token cookie is missing', async () => {
+    it("should logout even when the refresh token cookie is missing", async () => {
       const res = createMockResponse();
       const next = createMockNext();
 
@@ -298,31 +277,31 @@ describe('auth controller', () => {
       expect(mockLogoutUser).not.toHaveBeenCalled();
 
       expect(res.clearCookie).toHaveBeenCalledWith(
-        'documan_refresh_token',
+        "documan_refresh_token",
         expect.objectContaining({
-          path: '/api/v1/auth',
+          path: "/api/v1/auth",
         }),
       );
 
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         data: {
-          message: 'Logged out successfully',
+          message: "Logged out successfully",
         },
       });
     });
 
-    it('should pass logout errors to next', async () => {
+    it("should pass logout errors to next", async () => {
       const res = createMockResponse();
       const next = createMockNext();
 
-      const error = new Error('Logout failed');
+      const error = new Error("Logout failed");
 
       mockLogoutUser.mockRejectedValue(error);
 
       const req = createMockRequest({
         cookies: {
-          documan_refresh_token: 'refresh-token-123',
+          documan_refresh_token: "refresh-token-123",
         },
       });
 
@@ -332,8 +311,8 @@ describe('auth controller', () => {
     });
   });
 
-  describe('logoutAllController', () => {
-    it('should reject when the user is not authenticated', async () => {
+  describe("logoutAllController", () => {
+    it("should reject when the user is not authenticated", async () => {
       const res = createMockResponse();
       const next = createMockNext();
 
@@ -343,43 +322,37 @@ describe('auth controller', () => {
       expect(next).toHaveBeenCalledWith(
         expect.objectContaining({
           statusCode: 401,
-          code: 'AUTHENTICATION_REQUIRED',
-          message: 'Authentication required',
+          code: "AUTHENTICATION_REQUIRED",
+          message: "Authentication required",
         }),
       );
 
-      expect(
-        mockLogoutAllSessions,
-      ).not.toHaveBeenCalled();
+      expect(mockLogoutAllSessions).not.toHaveBeenCalled();
     });
 
-    it('should logout all sessions and clear the refresh cookie', async () => {
+    it("should logout all sessions and clear the refresh cookie", async () => {
       const res = createMockResponse();
       const next = createMockNext();
 
-      mockLogoutAllSessions.mockResolvedValue(
-        undefined,
-      );
+      mockLogoutAllSessions.mockResolvedValue(undefined);
 
       const req = createMockRequest({
         user: {
-          userId: 'user-123',
-          role: 'admin',
+          userId: "user-123",
+          role: "admin",
         },
       });
 
       await logoutAllController(req, res, next);
 
-      expect(
-        mockLogoutAllSessions,
-      ).toHaveBeenCalledWith('user-123');
+      expect(mockLogoutAllSessions).toHaveBeenCalledWith("user-123");
 
       expect(res.clearCookie).toHaveBeenCalledWith(
-        'documan_refresh_token',
+        "documan_refresh_token",
         expect.objectContaining({
           httpOnly: true,
-          sameSite: 'lax',
-          path: '/api/v1/auth',
+          sameSite: "lax",
+          path: "/api/v1/auth",
         }),
       );
 
@@ -388,26 +361,25 @@ describe('auth controller', () => {
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         data: {
-          message:
-            'Logged out from all sessions successfully',
+          message: "Logged out from all sessions successfully",
         },
       });
 
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('should pass logout-all errors to next', async () => {
+    it("should pass logout-all errors to next", async () => {
       const res = createMockResponse();
       const next = createMockNext();
 
-      const error = new Error('Logout all failed');
+      const error = new Error("Logout all failed");
 
       mockLogoutAllSessions.mockRejectedValue(error);
 
       const req = createMockRequest({
         user: {
-          userId: 'user-123',
-          role: 'admin',
+          userId: "user-123",
+          role: "admin",
         },
       });
 
