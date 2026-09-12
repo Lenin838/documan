@@ -1,16 +1,53 @@
-import bcrypt from 'bcrypt';
-import { randomUUID } from 'node:crypto';
+import bcrypt from "bcrypt";
+import { randomUUID } from "node:crypto";
 
-import { env } from '../../config/env.js';
-import { AppError } from '../../errors/app-error.js';
+import { env } from "../../config/env.js";
+import { AppError } from "../../errors/app-error.js";
 import {
   generateRefreshToken,
   hashRefreshToken,
-} from '../../utils/refresh-token.js';
-import { generateAccessToken } from '../../utils/jwt.js';
-import { RefreshToken } from './refresh-token.model.js';
-import type { LoginInput } from './auth.schema.js';
-import { User } from '../users/user.model.js';
+} from "../../utils/refresh-token.js";
+import { generateAccessToken } from "../../utils/jwt.js";
+import { RefreshToken } from "./refresh-token.model.js";
+import type { LoginInput, RegisterInput } from "./auth.schema.js";
+import { User } from "../users/user.model.js";
+import { createUser } from "../users/user.service.js";
+
+export async function registerUser(input: RegisterInput) {
+  const createdUser = await createUser({
+    name: input.name,
+    email: input.email,
+    password: input.password,
+  });
+
+  const accessToken = generateAccessToken(createdUser.id);
+  const refreshToken = generateRefreshToken();
+  const refreshTokenHash = hashRefreshToken(refreshToken);
+  const familyId = randomUUID();
+
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + env.REFRESH_TOKEN_EXPIRES_IN_DAYS);
+
+  await RefreshToken.create({
+    userId: createdUser.id,
+    tokenHash: refreshTokenHash,
+    familyId,
+    expiresAt,
+    revokedAt: null,
+  });
+
+  return {
+    accessToken,
+    refreshToken,
+    user: {
+      id: createdUser.id,
+      name: createdUser.name,
+      email: createdUser.email,
+      role: createdUser.role,
+      isActive: createdUser.isActive,
+    },
+  };
+}
 
 export async function loginUser(input: LoginInput) {
   const user = await User.findOne({
@@ -18,19 +55,11 @@ export async function loginUser(input: LoginInput) {
   });
 
   if (!user) {
-    throw new AppError(
-      'Invalid email or password',
-      401,
-      'INVALID_CREDENTIALS',
-    );
+    throw new AppError("Invalid email or password", 401, "INVALID_CREDENTIALS");
   }
 
   if (!user.isActive) {
-    throw new AppError(
-      'User account is inactive',
-      403,
-      'ACCOUNT_INACTIVE',
-    );
+    throw new AppError("User account is inactive", 403, "ACCOUNT_INACTIVE");
   }
 
   const passwordMatches = await bcrypt.compare(
@@ -39,11 +68,7 @@ export async function loginUser(input: LoginInput) {
   );
 
   if (!passwordMatches) {
-    throw new AppError(
-      'Invalid email or password',
-      401,
-      'INVALID_CREDENTIALS',
-    );
+    throw new AppError("Invalid email or password", 401, "INVALID_CREDENTIALS");
   }
 
   const accessToken = generateAccessToken(user.id);
@@ -53,9 +78,7 @@ export async function loginUser(input: LoginInput) {
 
   const expiresAt = new Date();
 
-  expiresAt.setDate(
-    expiresAt.getDate() + env.REFRESH_TOKEN_EXPIRES_IN_DAYS,
-  );
+  expiresAt.setDate(expiresAt.getDate() + env.REFRESH_TOKEN_EXPIRES_IN_DAYS);
 
   await RefreshToken.create({
     userId: user._id,
@@ -78,9 +101,7 @@ export async function loginUser(input: LoginInput) {
   };
 }
 
-export async function refreshAccessToken(
-  refreshToken: string,
-) {
+export async function refreshAccessToken(refreshToken: string) {
   const tokenHash = hashRefreshToken(refreshToken);
 
   const storedToken = await RefreshToken.findOne({
@@ -88,11 +109,7 @@ export async function refreshAccessToken(
   });
 
   if (!storedToken) {
-    throw new AppError(
-      'Invalid refresh token',
-      401,
-      'INVALID_REFRESH_TOKEN',
-    );
+    throw new AppError("Invalid refresh token", 401, "INVALID_REFRESH_TOKEN");
   }
 
   if (storedToken.revokedAt) {
@@ -110,36 +127,28 @@ export async function refreshAccessToken(
     );
 
     throw new AppError(
-      'Refresh token reuse detected',
+      "Refresh token reuse detected",
       401,
-      'REFRESH_TOKEN_REUSE_DETECTED',
+      "REFRESH_TOKEN_REUSE_DETECTED",
     );
   }
 
   if (storedToken.expiresAt <= new Date()) {
     throw new AppError(
-      'Refresh token has expired',
+      "Refresh token has expired",
       401,
-      'REFRESH_TOKEN_EXPIRED',
+      "REFRESH_TOKEN_EXPIRED",
     );
   }
 
   const user = await User.findById(storedToken.userId);
 
   if (!user) {
-    throw new AppError(
-      'User not found',
-      401,
-      'INVALID_REFRESH_TOKEN',
-    );
+    throw new AppError("User not found", 401, "INVALID_REFRESH_TOKEN");
   }
 
   if (!user.isActive) {
-    throw new AppError(
-      'User account is inactive',
-      403,
-      'ACCOUNT_INACTIVE',
-    );
+    throw new AppError("User account is inactive", 403, "ACCOUNT_INACTIVE");
   }
 
   storedToken.revokedAt = new Date();
@@ -150,9 +159,7 @@ export async function refreshAccessToken(
 
   const expiresAt = new Date();
 
-  expiresAt.setDate(
-    expiresAt.getDate() + env.REFRESH_TOKEN_EXPIRES_IN_DAYS,
-  );
+  expiresAt.setDate(expiresAt.getDate() + env.REFRESH_TOKEN_EXPIRES_IN_DAYS);
 
   await RefreshToken.create({
     userId: user._id,

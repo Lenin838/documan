@@ -1,7 +1,7 @@
-import type { Request, Response, RequestHandler } from 'express';
+import type { RequestHandler } from "express";
 
-import { AppError } from '../../errors/app-error.js';
-import { sendSuccess } from '../../utils/api-response.js';
+import { AppError } from "../../errors/app-error.js";
+import { sendSuccess } from "../../utils/api-response.js";
 
 import {
   createUser,
@@ -12,16 +12,17 @@ import {
   getUserById,
   adminUpdateUser,
   updateUserStatus,
-  deleteUser
-} from './user.service.js';
-export async function createUserController(
-  req: Request,
-  res: Response,
-) {
-  const user = await createUser(req.body);
+  deleteUser,
+} from "./user.service.js";
+export const createUserController: RequestHandler = async (req, res, next) => {
+  try {
+    const user = await createUser(req.body);
 
-  return sendSuccess(res, user, 201);
-}
+    return sendSuccess(res, user, 201);
+  } catch (error) {
+    return next(error);
+  }
+};
 
 export const getCurrentUserController: RequestHandler = async (
   req,
@@ -31,11 +32,7 @@ export const getCurrentUserController: RequestHandler = async (
   try {
     if (!req.user) {
       return next(
-        new AppError(
-          'Authentication required',
-          401,
-          'AUTHENTICATION_REQUIRED',
-        ),
+        new AppError("Authentication required", 401, "AUTHENTICATION_REQUIRED"),
       );
     }
 
@@ -47,7 +44,6 @@ export const getCurrentUserController: RequestHandler = async (
   }
 };
 
-
 export const updateCurrentUserController: RequestHandler = async (
   req,
   res,
@@ -56,18 +52,11 @@ export const updateCurrentUserController: RequestHandler = async (
   try {
     if (!req.user) {
       return next(
-        new AppError(
-          'Authentication required',
-          401,
-          'AUTHENTICATION_REQUIRED',
-        ),
+        new AppError("Authentication required", 401, "AUTHENTICATION_REQUIRED"),
       );
     }
 
-    const user = await updateCurrentUser(
-      req.user.userId,
-      req.body,
-    );
+    const user = await updateCurrentUser(req.user.userId, req.body);
 
     return sendSuccess(res, user);
   } catch (error) {
@@ -83,18 +72,11 @@ export const changePasswordController: RequestHandler = async (
   try {
     if (!req.user) {
       return next(
-        new AppError(
-          'Authentication required',
-          401,
-          'AUTHENTICATION_REQUIRED',
-        ),
+        new AppError("Authentication required", 401, "AUTHENTICATION_REQUIRED"),
       );
     }
 
-    const result = await changePassword(
-      req.user.userId,
-      req.body,
-    );
+    const result = await changePassword(req.user.userId, req.body);
 
     return sendSuccess(res, result);
   } catch (error) {
@@ -108,9 +90,7 @@ export const getAllUsersController: RequestHandler = async (
   next,
 ) => {
   try {
-    const users = await getAllUsers(
-      res.locals.validatedQuery,
-    );
+    const users = await getAllUsers(res.locals.validatedQuery);
 
     return sendSuccess(res, users);
   } catch (error) {
@@ -118,11 +98,7 @@ export const getAllUsersController: RequestHandler = async (
   }
 };
 
-export const getUserByIdController: RequestHandler = async (
-  req,
-  res,
-  next,
-) => {
+export const getUserByIdController: RequestHandler = async (req, res, next) => {
   try {
     const { id } = res.locals.validatedParams;
 
@@ -144,19 +120,11 @@ export const adminUpdateUserController: RequestHandler = async (
 
     if (!req.user) {
       return next(
-        new AppError(
-          'Authentication required',
-          401,
-          'AUTHENTICATION_REQUIRED',
-        ),
+        new AppError("Authentication required", 401, "AUTHENTICATION_REQUIRED"),
       );
     }
 
-    const user = await adminUpdateUser(
-      req.user.userId,
-      id,
-      req.body,
-    );
+    const user = await adminUpdateUser(req.user.userId, id, req.body);
 
     return sendSuccess(res, user);
   } catch (error) {
@@ -174,19 +142,11 @@ export const updateUserStatusController: RequestHandler = async (
 
     if (!req.user) {
       return next(
-        new AppError(
-          'Authentication required',
-          401,
-          'AUTHENTICATION_REQUIRED',
-        ),
+        new AppError("Authentication required", 401, "AUTHENTICATION_REQUIRED"),
       );
     }
 
-    const user = await updateUserStatus(
-      req.user.userId,
-      id,
-      req.body.isActive,
-    );
+    const user = await updateUserStatus(req.user.userId, id, req.body.isActive);
 
     return sendSuccess(res, user);
   } catch (error) {
@@ -194,28 +154,17 @@ export const updateUserStatusController: RequestHandler = async (
   }
 };
 
-export const deleteUserController: RequestHandler = async (
-  req,
-  res,
-  next,
-) => {
+export const deleteUserController: RequestHandler = async (req, res, next) => {
   try {
     const { id } = res.locals.validatedParams;
 
     if (!req.user) {
       return next(
-        new AppError(
-          'Authentication required',
-          401,
-          'AUTHENTICATION_REQUIRED',
-        ),
+        new AppError("Authentication required", 401, "AUTHENTICATION_REQUIRED"),
       );
     }
 
-    const result = await deleteUser(
-      req.user.userId,
-      id,
-    );
+    const result = await deleteUser(req.user.userId, id);
 
     return sendSuccess(res, result);
   } catch (error) {

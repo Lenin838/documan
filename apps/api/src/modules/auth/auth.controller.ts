@@ -1,34 +1,51 @@
-import type { RequestHandler } from 'express';
+import type { RequestHandler } from "express";
 
-import { sendSuccess } from '../../utils/api-response.js';
-import { AppError } from '../../errors/app-error.js';
-import { env } from '../../config/env.js';
+import { sendSuccess } from "../../utils/api-response.js";
+import { AppError } from "../../errors/app-error.js";
+import { env } from "../../config/env.js";
 import {
+  registerUser,
   loginUser,
   logoutUser,
   logoutAllSessions,
   refreshAccessToken,
-} from './auth.service.js';
+} from "./auth.service.js";
 
-export const loginController: RequestHandler = async (
-  req,
-  res,
-  next,
-) => {
+export const registerController: RequestHandler = async (req, res, next) => {
+  try {
+    const result = await registerUser(req.body);
+
+    res.cookie("documan_refresh_token", result.refreshToken, {
+      httpOnly: true,
+      secure: env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: env.REFRESH_TOKEN_EXPIRES_IN_DAYS * 24 * 60 * 60 * 1000,
+      path: "/api/v1/auth",
+    });
+
+    return sendSuccess(
+      res,
+      {
+        accessToken: result.accessToken,
+        user: result.user,
+      },
+      201,
+    );
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const loginController: RequestHandler = async (req, res, next) => {
   try {
     const result = await loginUser(req.body);
 
-    res.cookie('documan_refresh_token', result.refreshToken, {
+    res.cookie("documan_refresh_token", result.refreshToken, {
       httpOnly: true,
-      secure: env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge:
-        env.REFRESH_TOKEN_EXPIRES_IN_DAYS *
-        24 *
-        60 *
-        60 *
-        1000,
-      path: '/api/v1/auth',
+      secure: env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: env.REFRESH_TOKEN_EXPIRES_IN_DAYS * 24 * 60 * 60 * 1000,
+      path: "/api/v1/auth",
     });
 
     return sendSuccess(res, {
@@ -40,37 +57,28 @@ export const loginController: RequestHandler = async (
   }
 };
 
-export const refreshController: RequestHandler = async (
-  req,
-  res,
-  next,
-) => {
+export const refreshController: RequestHandler = async (req, res, next) => {
   try {
     const refreshToken = req.cookies?.documan_refresh_token;
 
     if (!refreshToken) {
       return next(
         new AppError(
-          'Refresh token is required',
+          "Refresh token is required",
           401,
-          'REFRESH_TOKEN_REQUIRED',
+          "REFRESH_TOKEN_REQUIRED",
         ),
       );
     }
 
     const result = await refreshAccessToken(refreshToken);
 
-    res.cookie('documan_refresh_token', result.refreshToken, {
+    res.cookie("documan_refresh_token", result.refreshToken, {
       httpOnly: true,
-      secure: env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge:
-        env.REFRESH_TOKEN_EXPIRES_IN_DAYS *
-        24 *
-        60 *
-        60 *
-        1000,
-      path: '/api/v1/auth',
+      secure: env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: env.REFRESH_TOKEN_EXPIRES_IN_DAYS * 24 * 60 * 60 * 1000,
+      path: "/api/v1/auth",
     });
 
     return sendSuccess(res, {
@@ -81,11 +89,7 @@ export const refreshController: RequestHandler = async (
   }
 };
 
-export const logoutController: RequestHandler = async (
-  req,
-  res,
-  next,
-) => {
+export const logoutController: RequestHandler = async (req, res, next) => {
   try {
     const refreshToken = req.cookies?.documan_refresh_token;
 
@@ -93,48 +97,40 @@ export const logoutController: RequestHandler = async (
       await logoutUser(refreshToken);
     }
 
-    res.clearCookie('documan_refresh_token', {
+    res.clearCookie("documan_refresh_token", {
       httpOnly: true,
-      secure: env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/api/v1/auth',
+      secure: env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/api/v1/auth",
     });
 
     return sendSuccess(res, {
-      message: 'Logged out successfully',
+      message: "Logged out successfully",
     });
   } catch (error) {
     return next(error);
   }
 };
 
-export const logoutAllController: RequestHandler = async (
-  req,
-  res,
-  next,
-) => {
+export const logoutAllController: RequestHandler = async (req, res, next) => {
   try {
     if (!req.user) {
       return next(
-        new AppError(
-          'Authentication required',
-          401,
-          'AUTHENTICATION_REQUIRED',
-        ),
+        new AppError("Authentication required", 401, "AUTHENTICATION_REQUIRED"),
       );
     }
 
     await logoutAllSessions(req.user.userId);
 
-    res.clearCookie('documan_refresh_token', {
+    res.clearCookie("documan_refresh_token", {
       httpOnly: true,
-      secure: env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/api/v1/auth',
+      secure: env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/api/v1/auth",
     });
 
     return sendSuccess(res, {
-      message: 'Logged out from all sessions successfully',
+      message: "Logged out from all sessions successfully",
     });
   } catch (error) {
     return next(error);

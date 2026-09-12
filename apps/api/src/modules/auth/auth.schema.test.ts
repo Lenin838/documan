@@ -1,43 +1,41 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vitest";
 
-import { loginSchema } from './auth.schema.js';
+import { loginSchema, registerSchema } from "./auth.schema.js";
 
-describe('loginSchema', () => {
-  it('should accept valid login credentials', () => {
+describe("loginSchema", () => {
+  it("should accept valid login credentials", () => {
     const result = loginSchema.safeParse({
-      email: 'user@example.com',
-      password: 'password123',
+      email: "user@example.com",
+      password: "password123",
     });
 
     expect(result.success).toBe(true);
 
     if (result.success) {
       expect(result.data).toEqual({
-        email: 'user@example.com',
-        password: 'password123',
+        email: "user@example.com",
+        password: "password123",
       });
     }
   });
 
-  it('should trim the email', () => {
+  it("should trim the email", () => {
     const result = loginSchema.safeParse({
-      email: '  user@example.com  ',
-      password: 'password123',
+      email: "  user@example.com  ",
+      password: "password123",
     });
 
     expect(result.success).toBe(true);
 
     if (result.success) {
-      expect(result.data.email).toBe(
-        'user@example.com',
-      );
+      expect(result.data.email).toBe("user@example.com");
     }
   });
 
-  it('should reject an invalid email', () => {
+  it("should reject an invalid email", () => {
     const result = loginSchema.safeParse({
-      email: 'invalid-email',
-      password: 'password123',
+      email: "invalid-email",
+      password: "password123",
     });
 
     expect(result.success).toBe(false);
@@ -46,18 +44,18 @@ describe('loginSchema', () => {
       expect(result.error.issues).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            path: ['email'],
-            message: 'Invalid email address',
+            path: ["email"],
+            message: "Invalid email address",
           }),
         ]),
       );
     }
   });
 
-  it('should reject a password shorter than 8 characters', () => {
+  it("should reject a password shorter than 8 characters", () => {
     const result = loginSchema.safeParse({
-      email: 'user@example.com',
-      password: 'short',
+      email: "user@example.com",
+      password: "short",
     });
 
     expect(result.success).toBe(false);
@@ -66,18 +64,17 @@ describe('loginSchema', () => {
       expect(result.error.issues).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            path: ['password'],
-            message:
-              'Password must be at least 8 characters',
+            path: ["password"],
+            message: "Password must be at least 8 characters",
           }),
         ]),
       );
     }
   });
 
-  it('should reject a missing email', () => {
+  it("should reject a missing email", () => {
     const result = loginSchema.safeParse({
-      password: 'password123',
+      password: "password123",
     });
 
     expect(result.success).toBe(false);
@@ -86,16 +83,16 @@ describe('loginSchema', () => {
       expect(result.error.issues).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            path: ['email'],
+            path: ["email"],
           }),
         ]),
       );
     }
   });
 
-  it('should reject a missing password', () => {
+  it("should reject a missing password", () => {
     const result = loginSchema.safeParse({
-      email: 'user@example.com',
+      email: "user@example.com",
     });
 
     expect(result.success).toBe(false);
@@ -104,55 +101,104 @@ describe('loginSchema', () => {
       expect(result.error.issues).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            path: ['password'],
+            path: ["password"],
           }),
         ]),
       );
     }
   });
 
-  it('should reject a non-string email', () => {
+  it("should reject a non-string email", () => {
     const result = loginSchema.safeParse({
       email: 12345,
-      password: 'password123',
+      password: "password123",
     });
 
     expect(result.success).toBe(false);
   });
 
-  it('should reject a non-string password', () => {
+  it("should reject a non-string password", () => {
     const result = loginSchema.safeParse({
-      email: 'user@example.com',
+      email: "user@example.com",
       password: 12345678,
     });
 
     expect(result.success).toBe(false);
   });
 
-  it('should reject an empty email', () => {
+  it("should reject an empty email", () => {
     const result = loginSchema.safeParse({
-      email: '',
-      password: 'password123',
+      email: "",
+      password: "password123",
     });
 
     expect(result.success).toBe(false);
   });
 
-  it('should reject an empty password', () => {
+  it("should reject an empty password", () => {
     const result = loginSchema.safeParse({
-      email: 'user@example.com',
-      password: '',
+      email: "user@example.com",
+      password: "",
     });
 
     expect(result.success).toBe(false);
   });
 
-  it('should accept a password with exactly 8 characters', () => {
+  it("should accept a password with exactly 8 characters", () => {
     const result = loginSchema.safeParse({
-      email: 'user@example.com',
-      password: '12345678',
+      email: "user@example.com",
+      password: "12345678",
     });
 
     expect(result.success).toBe(true);
+  });
+});
+
+describe("registerSchema", () => {
+  it("should accept valid registration details and normalize email", () => {
+    const result = registerSchema.safeParse({
+      name: "Jane Doe",
+      email: "JANE@EXAMPLE.COM ",
+      password: "password123",
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({
+        name: "Jane Doe",
+        email: "jane@example.com",
+        password: "password123",
+      });
+    }
+  });
+
+  it("should reject a name shorter than 2 characters", () => {
+    const result = registerSchema.safeParse({
+      name: "J",
+      email: "jane@example.com",
+      password: "password123",
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("should reject an invalid email", () => {
+    const result = registerSchema.safeParse({
+      name: "Jane Doe",
+      email: "not-an-email",
+      password: "password123",
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("should reject a password shorter than 8 characters", () => {
+    const result = registerSchema.safeParse({
+      name: "Jane Doe",
+      email: "jane@example.com",
+      password: "short",
+    });
+
+    expect(result.success).toBe(false);
   });
 });

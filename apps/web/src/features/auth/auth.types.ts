@@ -1,4 +1,4 @@
-export type UserRole = 'user' | 'admin';
+export type UserRole = "user" | "admin";
 
 export interface AuthUser {
   id: string;
@@ -32,3 +32,11 @@ export interface CurrentUserResponse {
   success: boolean;
   data: AuthUser;
 }
+
+export interface RegisterRequest {
+  name: string;
+  email: string;
+  password: string;
+}
+
+export type RegisterResponse = LoginResponse;
