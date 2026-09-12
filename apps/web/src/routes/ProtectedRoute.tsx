@@ -31,9 +31,18 @@ export default function ProtectedRoute({
 
 
   if (!isAuthenticated) {
+    const currentPath = window.location.pathname + window.location.search;
+    const isSafePath =
+      currentPath.startsWith('/') &&
+      !currentPath.startsWith('//') &&
+      currentPath !== '/login';
+    const returnUrlQuery = isSafePath
+      ? `?returnUrl=${encodeURIComponent(currentPath)}`
+      : '';
+
     return (
       <Navigate
-        to="/login"
+        to={`/login${returnUrlQuery}`}
         replace
       />
     );

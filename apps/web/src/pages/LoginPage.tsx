@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useAuthStore } from '../features/auth/auth.store';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const login = useAuthStore((state) => state.login);
   const isLoading = useAuthStore((state) => state.isLoading);
@@ -22,6 +23,15 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
+  const rawReturnUrl = searchParams.get('returnUrl');
+  const targetUrl =
+    rawReturnUrl &&
+    rawReturnUrl.startsWith('/') &&
+    !rawReturnUrl.startsWith('//') &&
+    rawReturnUrl !== '/login'
+      ? rawReturnUrl
+      : '/dashboard';
+
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
   ) {
@@ -35,7 +45,7 @@ export default function LoginPage() {
         password,
       });
 
-      navigate('/dashboard');
+      navigate(targetUrl, { replace: true });
     } catch {
       setError('Invalid email or password');
     }
@@ -48,7 +58,7 @@ export default function LoginPage() {
 
   // If already logged in, don't show the login page.
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={targetUrl} replace />;
   }
 
   return (
