@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import type { VersionCompareResult } from '../features/documents/version.types';
 
 interface VersionCompareModalProps {
@@ -16,10 +16,26 @@ export const VersionCompareModal: React.FC<VersionCompareModalProps> = ({
   isLoading,
   error,
 }) => {
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="version-compare-modal-title"
       style={{
         position: 'fixed',
         top: 0,
@@ -47,7 +63,7 @@ export const VersionCompareModal: React.FC<VersionCompareModalProps> = ({
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0 }}>
+          <h2 id="version-compare-modal-title" style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0 }}>
             Compare Document Versions
           </h2>
           <button
