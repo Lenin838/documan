@@ -1,16 +1,21 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from "react";
 
 import {
   getDeletedDocuments,
   restoreDocument,
-} from '../features/documents/document.api';
-import type { Document } from '../features/documents/document.types';
+} from "../features/documents/document.api";
+import type { Document } from "../features/documents/document.types";
+
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/Table";
+import { Button } from "../components/ui/Button";
+import { LoadingSpinner } from "../components/ui/LoadingSpinner";
+import { EmptyState } from "../components/ui/EmptyState";
+import { Breadcrumb } from "../components/ui/Breadcrumb";
 
 function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 B';
+  if (bytes === 0) return "0 B";
   const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const sizes = ["B", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }
@@ -19,17 +24,17 @@ export default function TrashPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [restoringId, setRestoringId] = useState<string | null>(null);
-  const [actionError, setActionError] = useState('');
+  const [actionError, setActionError] = useState("");
 
   useEffect(() => {
     async function loadTrash() {
       setLoading(true);
-      setError('');
+      setError("");
 
       try {
         const response = await getDeletedDocuments({
@@ -41,7 +46,7 @@ export default function TrashPage() {
         setDocuments(response.data.documents);
         setTotalPages(response.data.pagination.totalPages || 1);
       } catch {
-        setError('Unable to load deleted documents.');
+        setError("Unable to load deleted documents.");
       } finally {
         setLoading(false);
       }
@@ -61,109 +66,142 @@ export default function TrashPage() {
     }
 
     setRestoringId(documentId);
-    setActionError('');
+    setActionError("");
 
     try {
       await restoreDocument(documentId);
       setDocuments((prev) => prev.filter((doc) => doc.id !== documentId));
     } catch {
-      setActionError('Unable to restore this document.');
+      setActionError("Unable to restore this document.");
     } finally {
       setRestoringId(null);
     }
   }
 
   return (
-    <main style={{ textAlign: 'left', maxWidth: '800px', margin: '0 auto', padding: '1rem' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h1>Trash</h1>
-        <Link to="/documents">Back to Documents</Link>
-      </header>
+    <div className="space-y-6">
+      <Breadcrumb
+        items={[
+          { label: "Documents", href: "/documents" },
+          { label: "Trash" },
+        ]}
+      />
 
-      <section style={{ marginBottom: '1rem' }}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">
+            Trash & Soft-Deleted Documents
+          </h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            Recover deleted documents or review historical soft deletions.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3">
         <input
           type="search"
           placeholder="Search deleted documents..."
           value={search}
           onChange={(event) => handleSearchChange(event.target.value)}
+          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
         />
-      </section>
+      </div>
 
       {actionError && (
-        <p style={{ color: 'red', marginBottom: '1rem' }}>{actionError}</p>
+        <div className="p-3 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm font-medium">
+          {actionError}
+        </div>
       )}
 
-      {loading && <p>Loading trash...</p>}
-
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-
-      {!loading && !error && (
-        <>
-          <table>
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>File Name</th>
-                <th>File Type</th>
-                <th>File Size</th>
-                <th>Created Date</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {documents.map((doc) => (
-                <tr key={doc.id}>
-                  <td>{doc.title}</td>
-                  <td>{doc.fileName}</td>
-                  <td>{doc.fileType}</td>
-                  <td>{formatFileSize(doc.fileSize)}</td>
-                  <td>{new Date(doc.createdAt).toLocaleDateString()}</td>
-                  <td>
-                    <button
-                      type="button"
-                      onClick={() => void handleRestore(doc.id)}
-                      disabled={restoringId === doc.id}
-                    >
-                      {restoringId === doc.id ? 'Restoring...' : 'Restore'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-
-              {documents.length === 0 && (
-                <tr>
-                  <td colSpan={6}>
-                    {search ? 'No deleted documents found for this search.' : 'No deleted documents found.'}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-
-          <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center' }}>
-            <button
-              type="button"
-              disabled={page === 1 || Boolean(restoringId)}
-              onClick={() => setPage((current) => current - 1)}
-            >
-              Previous
-            </button>
-
-            <span>
-              Page {page} of {totalPages}
-            </span>
-
-            <button
-              type="button"
-              disabled={page >= totalPages || Boolean(restoringId)}
-              onClick={() => setPage((current) => current + 1)}
-            >
-              Next
-            </button>
-          </div>
-        </>
+      {loading && (
+        <div className="py-12 flex justify-center">
+          <LoadingSpinner label="Loading trash..." />
+        </div>
       )}
-    </main>
+
+      {error && (
+        <div className="p-4 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm font-medium">
+          {error}
+        </div>
+      )}
+
+      {!loading && !error && documents.length === 0 && (
+        <EmptyState
+          title="Trash is Empty"
+          description={
+            search
+              ? "No deleted documents found matching your search query."
+              : "No deleted documents currently in trash."
+          }
+        />
+      )}
+
+      {!loading && !error && documents.length > 0 && (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Title</TableHead>
+              <TableHead>File Name</TableHead>
+              <TableHead>File Type</TableHead>
+              <TableHead>File Size</TableHead>
+              <TableHead>Created Date</TableHead>
+              <TableHead>Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {documents.map((doc) => (
+              <TableRow key={doc.id}>
+                <TableCell className="font-medium text-gray-900 dark:text-white">
+                  {doc.title}
+                </TableCell>
+                <TableCell>{doc.fileName}</TableCell>
+                <TableCell>{doc.fileType}</TableCell>
+                <TableCell>{formatFileSize(doc.fileSize)}</TableCell>
+                <TableCell>
+                  {new Date(doc.createdAt).toLocaleDateString()}
+                </TableCell>
+                <TableCell>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void handleRestore(doc.id)}
+                    isLoading={restoringId === doc.id}
+                  >
+                    Restore
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+
+      {!loading && !error && totalPages > 1 && (
+        <div className="flex items-center justify-center gap-3 pt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1 || Boolean(restoringId)}
+            onClick={() => setPage(page - 1)}
+          >
+            &larr; Previous
+          </Button>
+
+          <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">
+            Page {page} of {totalPages}
+          </span>
+
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= totalPages || Boolean(restoringId)}
+            onClick={() => setPage(page + 1)}
+          >
+            Next &rarr;
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }

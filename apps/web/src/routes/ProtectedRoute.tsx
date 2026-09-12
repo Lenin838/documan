@@ -6,6 +6,8 @@ import {
 import { useAuthStore } from '../features/auth/auth.store';
 import type { UserRole } from '../features/auth/auth.types';
 
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+
 interface ProtectedRouteProps {
   allowedRoles?: UserRole[];
 }
@@ -26,7 +28,11 @@ export default function ProtectedRoute({
   );
 
   if (isRestoring) {
-    return <p>Loading...</p>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <LoadingSpinner label="Restoring session..." />
+      </div>
+    );
   }
 
 

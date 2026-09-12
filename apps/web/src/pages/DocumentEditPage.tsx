@@ -11,6 +11,9 @@ import type { Document } from '../features/documents/document.types';
 import type { Folder } from '../features/folders/folder.types';
 import { getProjects } from '../features/projects/project.api';
 import type { Project } from '../features/projects/project.types';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -56,18 +59,14 @@ export default function DocumentEditPage() {
   }, []);
 
   useEffect(() => {
-    if (!id) {
-      return;
-    }
-
-    const documentId = id;
+    if (!id) return;
 
     async function loadDocument() {
       setLoading(true);
       setError('');
 
       try {
-        const response = await getDocumentById(documentId);
+        const response = await getDocumentById(id!);
         setDoc(response.data);
         setTitle(response.data.title);
         setDescription(response.data.description || '');
@@ -131,194 +130,181 @@ export default function DocumentEditPage() {
 
   if (!id) {
     return (
-      <main>
-        <p>Invalid document ID</p>
-        <Link to="/documents">Back to Documents</Link>
+      <main className="p-8 text-center text-slate-400">
+        <p className="mb-4">Invalid document ID</p>
+        <Link to="/documents">
+          <Button variant="secondary">Back to Documents</Button>
+        </Link>
       </main>
     );
   }
 
   if (loading) {
-    return <main>Loading document...</main>;
+    return (
+      <main className="p-12 flex flex-col items-center justify-center min-h-[50vh]">
+        <LoadingSpinner size="lg" />
+        <p className="text-sm text-slate-400 mt-4">Loading document details...</p>
+      </main>
+    );
   }
 
   if (error && !doc) {
     return (
-      <main>
-        <p>{error}</p>
-        <Link to="/documents">Back to Documents</Link>
+      <main className="p-8 text-center">
+        <p className="text-red-400 mb-4">{error}</p>
+        <Link to="/documents">
+          <Button variant="secondary">Back to Documents</Button>
+        </Link>
       </main>
     );
   }
 
   if (!doc) {
     return (
-      <main>
-        <p>Document not found</p>
-        <Link to="/documents">Back to Documents</Link>
+      <main className="p-8 text-center">
+        <p className="text-slate-400 mb-4">Document not found</p>
+        <Link to="/documents">
+          <Button variant="secondary">Back to Documents</Button>
+        </Link>
       </main>
     );
   }
 
   return (
-    <main
-      style={{
-        textAlign: 'left',
-        maxWidth: '800px',
-        margin: '0 auto',
-        padding: '1rem',
-      }}
-    >
-      <header
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '1.5rem',
-        }}
-      >
-        <h1>Edit Document</h1>
-        <Link to={`/documents/${id}`}>Cancel</Link>
-      </header>
-
-      {error && (
-        <p style={{ color: 'red', marginBottom: '1rem' }}>{error}</p>
-      )}
-
-      <form onSubmit={(e) => void handleSubmit(e)}>
-        <div style={{ marginBottom: '1.25rem' }}>
-          <label
-            htmlFor="title"
-            style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}
-          >
-            Title
-          </label>
-          <input
-            id="title"
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-            minLength={2}
-            maxLength={200}
-            style={{ width: '100%', padding: '0.5rem', boxSizing: 'border-box' }}
-          />
+    <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Edit Document</h1>
+          <p className="text-sm text-slate-400 mt-1">Update metadata, project placement, or replace source file.</p>
         </div>
+        <Link to={`/documents/${id}`}>
+          <Button variant="secondary">Cancel</Button>
+        </Link>
+      </div>
 
-        <div style={{ marginBottom: '1.25rem' }}>
-          <label
-            htmlFor="description"
-            style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}
-          >
-            Description
-          </label>
-          <textarea
-            id="description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            maxLength={1000}
-            rows={4}
-            style={{ width: '100%', padding: '0.5rem', boxSizing: 'border-box' }}
-          />
-        </div>
+      <Card className="border-slate-800 bg-slate-900/80 shadow-md">
+        {error && (
+          <div className="p-3 bg-red-950/40 border border-red-800 rounded text-sm text-red-300 mb-6">
+            {error}
+          </div>
+        )}
 
-        <div style={{ marginBottom: '1.25rem' }}>
-          <label
-            htmlFor="folder"
-            style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}
-          >
-            Folder
-          </label>
-          <select
-            id="folder"
-            value={folderId}
-            onChange={(e) => setFolderId(e.target.value)}
-            style={{ width: '100%', padding: '0.5rem', boxSizing: 'border-box' }}
-          >
-            <option value="">-- No Folder (Unfiled) --</option>
-            {folders.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <form onSubmit={(e) => void handleSubmit(e)} className="space-y-6">
+          <div>
+            <label htmlFor="title" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              Title *
+            </label>
+            <input
+              id="title"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+              minLength={2}
+              maxLength={200}
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            />
+          </div>
 
-        <div style={{ marginBottom: '1.25rem' }}>
-          <label
-            htmlFor="project"
-            style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}
-          >
-            Project Context
-          </label>
-          <select
-            id="project"
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
-            style={{ width: '100%', padding: '0.5rem', boxSizing: 'border-box' }}
-          >
-            <option value="">-- No Project --</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </div>
+          <div>
+            <label htmlFor="description" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              Description
+            </label>
+            <textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              maxLength={1000}
+              rows={4}
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            />
+          </div>
 
-        <div style={{ marginBottom: '1.25rem' }}>
-          <label
-            htmlFor="tags"
-            style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}
-          >
-            Tags (comma-separated)
-          </label>
-          <input
-            id="tags"
-            type="text"
-            value={tagsInput}
-            onChange={(e) => setTagsInput(e.target.value)}
-            placeholder="e.g. engineering, spec, v2"
-            style={{ width: '100%', padding: '0.5rem', boxSizing: 'border-box' }}
-          />
-        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label htmlFor="folder" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                Folder
+              </label>
+              <select
+                id="folder"
+                value={folderId}
+                onChange={(e) => setFolderId(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              >
+                <option value="">-- No Folder (Unfiled) --</option>
+                {folders.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-        <div
-          style={{
-            marginBottom: '1.25rem',
-            padding: '0.75rem',
-            background: '#fafafa',
-            border: '1px solid #eee',
-            borderRadius: '4px',
-          }}
-        >
-          <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem' }}>Current File</h3>
-          <p style={{ margin: 0, fontSize: '0.9rem', color: '#555' }}>
-            <strong>{doc.fileName}</strong> ({doc.fileType} • {formatFileSize(doc.fileSize)})
-          </p>
-        </div>
+            <div>
+              <label htmlFor="project" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                Project Context
+              </label>
+              <select
+                id="project"
+                value={projectId}
+                onChange={(e) => setProjectId(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              >
+                <option value="">-- No Project --</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
 
-        <div style={{ marginBottom: '1.5rem' }}>
-          <label
-            htmlFor="file"
-            style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}
-          >
-            Replace File (optional)
-          </label>
-          <input
-            id="file"
-            type="file"
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
-          />
-        </div>
+          <div>
+            <label htmlFor="tags" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              Tags (comma-separated)
+            </label>
+            <input
+              id="tags"
+              type="text"
+              value={tagsInput}
+              onChange={(e) => setTagsInput(e.target.value)}
+              placeholder="e.g. engineering, spec, v2"
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            />
+          </div>
 
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <button type="submit" disabled={saving}>
-            {saving ? 'Saving...' : 'Save Changes'}
-          </button>
-          <Link to={`/documents/${id}`}>Cancel</Link>
-        </div>
-      </form>
+          <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-lg">
+            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Current File</h3>
+            <p className="text-sm text-slate-200 font-mono">
+              {doc.fileName} <span className="text-slate-400 font-sans">({doc.fileType} &bull; {formatFileSize(doc.fileSize)})</span>
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="file" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              Replace File (optional)
+            </label>
+            <input
+              id="file"
+              type="file"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              className="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-slate-200 hover:file:bg-slate-700 cursor-pointer"
+            />
+          </div>
+
+          <div className="flex items-center gap-4 pt-4 border-t border-slate-800">
+            <Button type="submit" variant="primary" isLoading={saving}>
+              Save Changes
+            </Button>
+            <Link to={`/documents/${id}`}>
+              <Button type="button" variant="secondary">
+                Cancel
+              </Button>
+            </Link>
+          </div>
+        </form>
+      </Card>
     </main>
   );
 }

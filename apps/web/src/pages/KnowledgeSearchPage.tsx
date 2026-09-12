@@ -1,32 +1,37 @@
-import { useEffect, useState } from 'react';
-import type { FormEvent } from 'react';
-import { Link } from 'react-router-dom';
-import { NotificationBell } from '../components/NotificationBell';
-import { searchKnowledge } from '../features/knowledge/knowledge.api';
-import type { KnowledgeSearchResultItem } from '../features/knowledge/knowledge.types';
-import { getProjects } from '../features/projects/project.api';
-import type { Project } from '../features/projects/project.types';
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
+import { Link } from "react-router-dom";
+import { searchKnowledge } from "../features/knowledge/knowledge.api";
+import type { KnowledgeSearchResultItem } from "../features/knowledge/knowledge.types";
+import { getProjects } from "../features/projects/project.api";
+import type { Project } from "../features/projects/project.types";
+
+import { Card, CardBody } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { Badge } from "../components/ui/Badge";
+import { LoadingSpinner } from "../components/ui/LoadingSpinner";
+import { EmptyState } from "../components/ui/EmptyState";
 
 function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 B';
+  if (bytes === 0) return "0 B";
   const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const sizes = ["B", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }
 
 export default function KnowledgeSearchPage() {
-  const [query, setQuery] = useState('');
-  const [searchInput, setSearchInput] = useState('');
-  const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [query, setQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [selectedProjectId, setSelectedProjectId] = useState("");
   const [page, setPage] = useState(1);
-  const [limit] = useState(20);
+  const [limit] = useState(10);
 
   const [results, setResults] = useState<KnowledgeSearchResultItem[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [expandedTraceabilityDocId, setExpandedTraceabilityDocId] = useState<string | null>(null);
@@ -40,7 +45,7 @@ export default function KnowledgeSearchPage() {
           setProjects(res.data.projects || []);
         }
       } catch (err) {
-        console.warn('Failed to load projects dropdown:', err);
+        console.warn("Failed to load projects dropdown:", err);
       }
     }
     void loadProjects();
@@ -59,7 +64,7 @@ export default function KnowledgeSearchPage() {
   useEffect(() => {
     async function executeSearch() {
       setLoading(true);
-      setError('');
+      setError("");
 
       try {
         const res = await searchKnowledge({
@@ -74,13 +79,15 @@ export default function KnowledgeSearchPage() {
           setTotal(res.data.pagination.total);
           setTotalPages(res.data.pagination.totalPages);
         } else {
-          setError('Failed to fetch search results.');
+          setError("Failed to fetch search results.");
         }
       } catch (err: unknown) {
-        const errMsg = err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { error?: { message?: string } } } }).response?.data?.error?.message
-          : 'Error searching technical knowledge';
-        setError(errMsg || 'Error searching technical knowledge');
+        const errMsg =
+          err && typeof err === "object" && "response" in err
+            ? (err as { response?: { data?: { error?: { message?: string } } } })
+                .response?.data?.error?.message
+            : "Error searching technical knowledge";
+        setError(errMsg || "Error searching technical knowledge");
       } finally {
         setLoading(false);
       }
@@ -95,63 +102,57 @@ export default function KnowledgeSearchPage() {
     setPage(1);
   }
 
-  function getStatusBadgeStyle(status: string) {
+  function getStatusBadgeVariant(status: string) {
     switch (status) {
-      case 'APPROVED':
-        return { backgroundColor: '#d1fae5', color: '#065f46' };
-      case 'IN_REVIEW':
-        return { backgroundColor: '#fef3c7', color: '#92400e' };
-      case 'DRAFT':
-        return { backgroundColor: '#e0e7ff', color: '#3730a3' };
-      case 'STALE':
-        return { backgroundColor: '#ffedd5', color: '#9a3412' };
-      case 'DEPRECATED':
-        return { backgroundColor: '#fee2e2', color: '#991b1b' };
+      case "APPROVED":
+        return "success";
+      case "IN_REVIEW":
+        return "warning";
+      case "DRAFT":
+        return "info";
+      case "STALE":
+        return "warning";
+      case "DEPRECATED":
+        return "error";
       default:
-        return { backgroundColor: '#f3f4f6', color: '#374151' };
+        return "neutral";
     }
   }
 
-  function getRiskBadgeStyle(level: string) {
+  function getRiskBadgeVariant(level: string) {
     switch (level) {
-      case 'LOW':
-        return { backgroundColor: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0' };
-      case 'MEDIUM':
-        return { backgroundColor: '#fffbeb', color: '#b45309', border: '1px solid #fde68a' };
-      case 'HIGH':
-        return { backgroundColor: '#fff7ed', color: '#c2410c', border: '1px solid #ffedd5' };
-      case 'CRITICAL':
-        return { backgroundColor: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca' };
+      case "LOW":
+        return "success";
+      case "MEDIUM":
+        return "warning";
+      case "HIGH":
+      case "CRITICAL":
+        return "error";
       default:
-        return { backgroundColor: '#f9fafb', color: '#4b5563', border: '1px solid #e5e7eb' };
+        return "neutral";
     }
   }
 
   return (
-    <main style={{ padding: '1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
+    <div className="space-y-6">
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <div>
-          <h1 style={{ margin: 0 }}>Authoritative Technical Knowledge Discovery</h1>
-          <p style={{ margin: '0.25rem 0 0 0', color: '#6b7280' }}>
-            Find trusted technical knowledge, verify authority, and trace system dependencies.
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <Link to="/dashboard">Dashboard</Link>
-          <Link to="/documents">Documents</Link>
-          <NotificationBell />
-        </div>
+      <div>
+        <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">
+          Authoritative Technical Knowledge Discovery
+        </h1>
+        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+          Find trusted technical knowledge, verify authority, and trace system dependencies.
+        </p>
       </div>
 
       {/* Search Bar & Project Filter Form */}
-      <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+      <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-3">
         <input
           type="text"
           placeholder="Search technical knowledge (e.g. /api/v1/auth/token, ADR-001, OAuth)..."
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          style={{ flex: 1, minWidth: '300px', padding: '0.75rem 1rem', fontSize: '1rem', borderRadius: '0.375rem', border: '1px solid #d1d5db' }}
+          className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
         />
 
         <select
@@ -160,7 +161,7 @@ export default function KnowledgeSearchPage() {
             setSelectedProjectId(e.target.value);
             setPage(1);
           }}
-          style={{ padding: '0.75rem 1rem', fontSize: '1rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: '#fff' }}
+          className="px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
         >
           <option value="">All Projects</option>
           {projects.map((p) => (
@@ -170,176 +171,203 @@ export default function KnowledgeSearchPage() {
           ))}
         </select>
 
-        <button type="submit" style={{ padding: '0.75rem 1.5rem', fontSize: '1rem', borderRadius: '0.375rem', backgroundColor: '#2563eb', color: '#fff', border: 'none', cursor: 'pointer' }}>
+        <Button type="submit" variant="primary">
           Search
-        </button>
+        </Button>
       </form>
 
-      {/* Status Indicators */}
-      {loading && <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>Loading knowledge search results...</div>}
+      {/* Loading & Error States */}
+      {loading && (
+        <div className="py-12 flex justify-center">
+          <LoadingSpinner label="Loading knowledge search results..." />
+        </div>
+      )}
 
       {error && (
-        <div style={{ padding: '1rem', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '0.375rem', marginBottom: '1.5rem' }}>
+        <div className="p-4 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm font-medium">
           {error}
         </div>
       )}
 
       {!loading && !error && results.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '3rem', backgroundColor: '#f9fafb', borderRadius: '0.5rem', color: '#6b7280' }}>
-          <h3>No matching technical knowledge found</h3>
-          <p>Try searching for exact API paths (e.g. <code>/api/v1/auth/token</code>), technical identifiers (e.g. <code>ADR-001</code>), or keywords.</p>
-        </div>
+        <EmptyState
+          title="No matching technical knowledge found"
+          description="Try searching for exact API paths (e.g. /api/v1/auth/token), technical identifiers (e.g. ADR-001), or keywords."
+        />
       )}
 
-      {/* Results Header */}
+      {/* Results Summary */}
       {!loading && !error && results.length > 0 && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', color: '#4b5563' }}>
+        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-medium border-b border-gray-200 dark:border-gray-700 pb-2">
           <span>
-            {query ? `Evaluated ${total} candidate documents for "${query}"` : `Browsing ${total} accessible technical documents`}
+            {query
+              ? `Evaluated ${total} candidate documents for "${query}"`
+              : `Browsing ${total} accessible technical documents`}
           </span>
-          <span>Page {page} of {totalPages}</span>
+          <span>
+            Page {page} of {totalPages}
+          </span>
         </div>
       )}
 
-      {/* Results List */}
-      {!loading && !error && results.map((item) => (
-        <article
-          key={item.documentId}
-          style={{
-            border: '1px solid #e5e7eb',
-            borderRadius: '0.5rem',
-            padding: '1.25rem',
-            marginBottom: '1rem',
-            backgroundColor: '#ffffff',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-          }}
-        >
-          {/* Top Line: Title & Badges */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap' }}>
-            <div>
-              <h2 style={{ margin: '0 0 0.25rem 0', fontSize: '1.25rem' }}>
-                <Link to={`/documents/${item.documentId}`} style={{ color: '#1d4ed8', textDecoration: 'none' }}>
-                  {item.title}
-                </Link>
-              </h2>
-
-              <div style={{ fontSize: '0.875rem', color: '#6b7280', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
-                {item.projectName && <span>📁 Project: {item.projectName}</span>}
-                <span>📄 File: {item.fileName} ({formatFileSize(item.fileSize)})</span>
-                <span>👤 Owner: {item.owner.name}</span>
-                {item.steward && <span>🛡️ Steward: {item.steward.name} {item.steward.isExplicitSteward ? '(Assigned)' : '(Owner Fallback)'}</span>}
-              </div>
-            </div>
-
-            {/* Badges */}
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ padding: '0.25rem 0.625rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600, ...getStatusBadgeStyle(item.status) }}>
-                {item.status}
-              </span>
-
-              <span style={{ padding: '0.25rem 0.625rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600, backgroundColor: '#f3f4f6', color: '#1f2937' }}>
-                v{item.version} {item.isApprovedVersion ? '(Approved)' : ''}
-              </span>
-
-              <span style={{ padding: '0.25rem 0.625rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600, ...getRiskBadgeStyle(item.health.riskLevel) }}>
-                RISK: {item.health.riskLevel} ({item.health.riskScore})
-              </span>
-            </div>
-          </div>
-
-          {/* Description */}
-          {item.description && (
-            <p style={{ margin: '0.75rem 0 0.5rem 0', color: '#374151', fontSize: '0.9375rem', lineHeight: 1.5 }}>
-              {item.description}
-            </p>
-          )}
-
-          {/* Relevance Reasons */}
-          <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', margin: '0.75rem 0 0.5rem 0' }}>
-            <span style={{ fontSize: '0.75rem', color: '#6b7280', alignSelf: 'center', marginRight: '0.25rem' }}>Why this result:</span>
-            {item.ranking.relevanceReasons.map((reason, idx) => (
-              <span key={idx} style={{ padding: '0.125rem 0.5rem', backgroundColor: '#eff6ff', color: '#1e40af', borderRadius: '0.25rem', fontSize: '0.75rem' }}>
-                {reason}
-              </span>
-            ))}
-          </div>
-
-          {/* Traceability Toggle */}
-          <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-              Traceability: {item.traceability.linkedApiEndpoints.length} Linked API(s), {item.traceability.relatedDocuments.length} Related Document(s)
-            </div>
-
-            {(item.traceability.linkedApiEndpoints.length > 0 || item.traceability.relatedDocuments.length > 0) && (
-              <button
-                type="button"
-                onClick={() => setExpandedTraceabilityDocId(expandedTraceabilityDocId === item.documentId ? null : item.documentId)}
-                style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: '0.875rem', padding: 0 }}
-              >
-                {expandedTraceabilityDocId === item.documentId ? 'Hide Traceability ▲' : 'View Traceability Details ▼'}
-              </button>
-            )}
-          </div>
-
-          {/* Expanded Traceability Details */}
-          {expandedTraceabilityDocId === item.documentId && (
-            <div style={{ marginTop: '0.75rem', padding: '0.75rem', backgroundColor: '#f9fafb', borderRadius: '0.375rem', fontSize: '0.875rem' }}>
-              {item.traceability.linkedApiEndpoints.length > 0 && (
-                <div style={{ marginBottom: '0.5rem' }}>
-                  <strong>Linked OpenAPI Endpoints:</strong>
-                  <ul style={{ margin: '0.25rem 0 0.5rem 0', paddingLeft: '1.25rem' }}>
-                    {item.traceability.linkedApiEndpoints.map((ep) => (
-                      <li key={ep.endpointId}>
-                        <code style={{ fontWeight: 'bold' }}>{ep.method} {ep.path}</code> {ep.summary ? `— ${ep.summary}` : ''}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {item.traceability.relatedDocuments.length > 0 && (
+      {/* Results Roster */}
+      {!loading &&
+        !error &&
+        results.map((item) => (
+          <Card key={item.documentId} className="hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors">
+            <CardBody className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                 <div>
-                  <strong>Related Documents & Dependencies:</strong>
-                  <ul style={{ margin: '0.25rem 0 0 0', paddingLeft: '1.25rem' }}>
-                    {item.traceability.relatedDocuments.map((rel) => (
-                      <li key={rel.documentId}>
-                        <Link to={`/documents/${rel.documentId}`}>{rel.title}</Link> ({rel.type}) — {rel.status}
-                      </li>
-                    ))}
-                  </ul>
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                    <Link
+                      to={`/documents/${item.documentId}`}
+                      className="text-indigo-600 dark:text-indigo-400 hover:underline"
+                    >
+                      {item.title}
+                    </Link>
+                  </h2>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+                    {item.projectName && <span>📁 Project: {item.projectName}</span>}
+                    <span>📄 File: {item.fileName} ({formatFileSize(item.fileSize)})</span>
+                    <span>👤 Owner: {item.owner.name}</span>
+                    {item.steward && (
+                      <span>
+                        🛡️ Steward: {item.steward.name}{" "}
+                        {item.steward.isExplicitSteward ? "(Assigned)" : "(Owner Fallback)"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant={getStatusBadgeVariant(item.status)}>
+                    {item.status}
+                  </Badge>
+                  <Badge variant="neutral">
+                    v{item.version} {item.isApprovedVersion ? "(Approved)" : ""}
+                  </Badge>
+                  <Badge variant={getRiskBadgeVariant(item.health.riskLevel)}>
+                    RISK: {item.health.riskLevel} ({item.health.riskScore})
+                  </Badge>
+                </div>
+              </div>
+
+              {item.description && (
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  {item.description}
+                </p>
+              )}
+
+              <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                <span className="text-gray-400 dark:text-gray-500 font-medium mr-1">
+                  Why this result:
+                </span>
+                {item.ranking.relevanceReasons.map((reason, idx) => (
+                  <span
+                    key={idx}
+                    className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded font-medium"
+                  >
+                    {reason}
+                  </span>
+                ))}
+              </div>
+
+              <div className="pt-3 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-between text-xs">
+                <span className="text-gray-500 dark:text-gray-400">
+                  Traceability: {item.traceability.linkedApiEndpoints.length} Linked API(s),{" "}
+                  {item.traceability.relatedDocuments.length} Related Document(s)
+                </span>
+
+                {(item.traceability.linkedApiEndpoints.length > 0 ||
+                  item.traceability.relatedDocuments.length > 0) && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandedTraceabilityDocId(
+                        expandedTraceabilityDocId === item.documentId
+                          ? null
+                          : item.documentId
+                      )
+                    }
+                    className="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline"
+                  >
+                    {expandedTraceabilityDocId === item.documentId
+                      ? "Hide Traceability ▲"
+                      : "View Traceability Details ▼"}
+                  </button>
+                )}
+              </div>
+
+              {expandedTraceabilityDocId === item.documentId && (
+                <div className="p-4 bg-gray-50 dark:bg-gray-800/60 rounded-md text-xs space-y-3">
+                  {item.traceability.linkedApiEndpoints.length > 0 && (
+                    <div>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        Linked OpenAPI Endpoints:
+                      </span>
+                      <ul className="mt-1 list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
+                        {item.traceability.linkedApiEndpoints.map((ep) => (
+                          <li key={ep.endpointId}>
+                            <code className="font-bold">{ep.method} {ep.path}</code>{" "}
+                            {ep.summary ? `— ${ep.summary}` : ""}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {item.traceability.relatedDocuments.length > 0 && (
+                    <div>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        Related Documents & Dependencies:
+                      </span>
+                      <ul className="mt-1 list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
+                        {item.traceability.relatedDocuments.map((rel) => (
+                          <li key={rel.documentId}>
+                            <Link
+                              to={`/documents/${rel.documentId}`}
+                              className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
+                            >
+                              {rel.title}
+                            </Link>{" "}
+                            ({rel.type}) — {rel.status}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
-          )}
-        </article>
-      ))}
+            </CardBody>
+          </Card>
+        ))}
 
-      {/* Pagination Controls */}
+      {/* Pagination Controls (Addresses PARTIAL-1) */}
       {!loading && !error && totalPages > 1 && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginTop: '1.5rem' }}>
-          <button
-            type="button"
+        <div className="flex items-center justify-center gap-3 pt-4">
+          <Button
+            variant="outline"
+            size="sm"
             disabled={page <= 1}
             onClick={() => setPage(page - 1)}
-            style={{ padding: '0.5rem 1rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: page <= 1 ? '#f3f4f6' : '#fff', cursor: page <= 1 ? 'not-allowed' : 'pointer' }}
           >
-            Previous
-          </button>
+            &larr; Previous
+          </Button>
 
-          <span style={{ alignSelf: 'center', padding: '0 0.5rem', color: '#4b5563' }}>
+          <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">
             Page {page} of {totalPages}
           </span>
 
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
             disabled={page >= totalPages}
             onClick={() => setPage(page + 1)}
-            style={{ padding: '0.5rem 1rem', borderRadius: '0.375rem', border: '1px solid #d1d5db', backgroundColor: page >= totalPages ? '#f3f4f6' : '#fff', cursor: page >= totalPages ? 'not-allowed' : 'pointer' }}
           >
-            Next
-          </button>
+            Next &rarr;
+          </Button>
         </div>
       )}
-    </main>
+    </div>
   );
 }

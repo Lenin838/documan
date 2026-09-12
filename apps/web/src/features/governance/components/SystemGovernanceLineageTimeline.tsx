@@ -26,6 +26,9 @@ export const SystemGovernanceLineageTimeline: React.FC<SystemGovernanceLineageTi
   const [historicalGateResult, setHistoricalGateResult] = useState<HistoricalSystemGateResult | null>(null);
   const [evaluatingHistorical, setEvaluatingHistorical] = useState<boolean>(false);
 
+  const [startDateFilter, setStartDateFilter] = useState<string>('');
+  const [endDateFilter, setEndDateFilter] = useState<string>('');
+
   const loadTimeline = useCallback(async () => {
     try {
       setLoading(true);
@@ -110,25 +113,62 @@ export const SystemGovernanceLineageTimeline: React.FC<SystemGovernanceLineageTi
         </button>
       </div>
 
-      {/* Point-in-Time Historical Inspector Bar */}
-      <form onSubmit={(e) => void handleEvaluateHistorical(e)} className="bg-slate-950/40 p-4 rounded-lg border border-slate-800 flex flex-wrap items-center gap-4">
-        <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
-          Point-in-Time Historical Gate Inspector:
-        </span>
-        <input
-          type="datetime-local"
-          value={selectedTimestamp}
-          onChange={(e) => setSelectedTimestamp(e.target.value)}
-          className="px-3 py-1.5 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-        />
-        <button
-          type="submit"
-          disabled={evaluatingHistorical || !selectedTimestamp}
-          className="px-4 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-xs font-medium text-white transition-all shadow disabled:opacity-50"
-        >
-          {evaluatingHistorical ? 'Evaluating T_hist...' : 'Evaluate at T'}
-        </button>
-      </form>
+      {/* Point-in-Time Historical Inspector & Custom Date Range Filter */}
+      <div className="space-y-3">
+        <form onSubmit={(e) => void handleEvaluateHistorical(e)} className="bg-slate-950/40 p-4 rounded-lg border border-slate-800 flex flex-wrap items-center gap-4">
+          <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+            Point-in-Time Historical Gate Inspector:
+          </span>
+          <input
+            type="datetime-local"
+            value={selectedTimestamp}
+            onChange={(e) => setSelectedTimestamp(e.target.value)}
+            className="px-3 py-1.5 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+          />
+          <button
+            type="submit"
+            disabled={evaluatingHistorical || !selectedTimestamp}
+            className="px-4 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-xs font-medium text-white transition-all shadow disabled:opacity-50"
+          >
+            {evaluatingHistorical ? 'Evaluating T_hist...' : 'Evaluate at T'}
+          </button>
+        </form>
+
+        {/* Custom Timeline Date Range Filter (Addresses PARTIAL-3) */}
+        <div className="bg-slate-950/20 p-3 rounded-lg border border-slate-800/60 flex flex-wrap items-center gap-3 text-xs">
+          <span className="font-semibold text-slate-400">Filter Date Range:</span>
+          <label className="flex items-center gap-1.5 text-slate-400">
+            From:
+            <input
+              type="date"
+              value={startDateFilter}
+              onChange={(e) => setStartDateFilter(e.target.value)}
+              className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-slate-200"
+            />
+          </label>
+          <label className="flex items-center gap-1.5 text-slate-400">
+            To:
+            <input
+              type="date"
+              value={endDateFilter}
+              onChange={(e) => setEndDateFilter(e.target.value)}
+              className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-slate-200"
+            />
+          </label>
+          {(startDateFilter || endDateFilter) && (
+            <button
+              type="button"
+              onClick={() => {
+                setStartDateFilter('');
+                setEndDateFilter('');
+              }}
+              className="text-indigo-400 hover:underline"
+            >
+              Clear Filter
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Historical Evaluation Results Panel */}
       {historicalGateResult && (
@@ -168,43 +208,55 @@ export const SystemGovernanceLineageTimeline: React.FC<SystemGovernanceLineageTi
       {/* Timeline Stream */}
       {loading ? (
         <div className="p-8 text-center text-slate-400 text-xs">Loading historical timeline entries...</div>
-      ) : timelineData && timelineData.entries.length === 0 ? (
-        <div className="p-8 text-center text-slate-500 text-xs">
-          No governance events found in the evaluated 30-day timeline window.
-        </div>
-      ) : (
-        <div className="space-y-4 relative before:absolute before:inset-0 before:left-3.5 before:w-0.5 before:bg-slate-800">
-          {timelineData?.entries.map((entry: TimelineEntry) => (
-            <div key={entry.entryId} className="relative pl-9 flex flex-col gap-1.5 group">
-              <div className="absolute left-2 top-1.5 w-3 h-3 rounded-full bg-slate-700 border-2 border-indigo-400 group-hover:scale-125 transition-all" />
-              <div className="bg-slate-950/40 border border-slate-800/80 rounded-lg p-3 hover:border-slate-700 transition-all space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-mono text-slate-400">
-                    {new Date(entry.timestamp).toLocaleString()}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    {getCausalityBadge(entry.causalityClassification)}
-                    <span className="font-mono text-[10px] text-slate-500 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800">
-                      {entry.eventType}
-                    </span>
+      ) : (() => {
+          const entries = (timelineData?.entries || []).filter((entry: TimelineEntry) => {
+            if (startDateFilter && new Date(entry.timestamp) < new Date(startDateFilter)) return false;
+            if (endDateFilter && new Date(entry.timestamp) > new Date(`${endDateFilter}T23:59:59`)) return false;
+            return true;
+          });
+
+          if (entries.length === 0) {
+            return (
+              <div className="p-8 text-center text-slate-500 text-xs">
+                No governance events match the specified date range filter.
+              </div>
+            );
+          }
+
+          return (
+            <div className="space-y-4 relative before:absolute before:inset-0 before:left-3.5 before:w-0.5 before:bg-slate-800">
+              {entries.map((entry: TimelineEntry) => (
+                <div key={entry.entryId} className="relative pl-9 flex flex-col gap-1.5 group">
+                  <div className="absolute left-2 top-1.5 w-3 h-3 rounded-full bg-slate-700 border-2 border-indigo-400 group-hover:scale-125 transition-all" />
+                  <div className="bg-slate-950/40 border border-slate-800/80 rounded-lg p-3 hover:border-slate-700 transition-all space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-mono text-slate-400">
+                        {new Date(entry.timestamp).toLocaleString()}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {getCausalityBadge(entry.causalityClassification)}
+                        <span className="font-mono text-[10px] text-slate-500 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800">
+                          {entry.eventType}
+                        </span>
+                      </div>
+                    </div>
+
+                    <p className="text-xs font-medium text-slate-200">{entry.summary}</p>
+
+                    {entry.derivedTransition && entry.derivedTransition.gateStateChanged && (
+                      <div className="pt-2 border-t border-slate-800/60 flex items-center gap-2 text-xs">
+                        <span className="text-slate-400">Derived Gate Transition:</span>
+                        {getStatusBadge(entry.derivedTransition.previousStatus)}
+                        <span className="text-slate-500">➔</span>
+                        {getStatusBadge(entry.derivedTransition.newStatus)}
+                      </div>
+                    )}
                   </div>
                 </div>
-
-                <p className="text-xs font-medium text-slate-200">{entry.summary}</p>
-
-                {entry.derivedTransition && entry.derivedTransition.gateStateChanged && (
-                  <div className="pt-2 border-t border-slate-800/60 flex items-center gap-2 text-xs">
-                    <span className="text-slate-400">Derived Gate Transition:</span>
-                    {getStatusBadge(entry.derivedTransition.previousStatus)}
-                    <span className="text-slate-500">➔</span>
-                    {getStatusBadge(entry.derivedTransition.newStatus)}
-                  </div>
-                )}
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          );
+        })()}
     </div>
   );
 };

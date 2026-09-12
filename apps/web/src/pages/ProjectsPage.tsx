@@ -1,30 +1,41 @@
-import { useEffect, useState } from 'react';
-import type { FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
+import { Link } from "react-router-dom";
 
-import { createProject, getProjects, archiveProject } from '../features/projects/project.api';
-import type { Project } from '../features/projects/project.types';
+import {
+  createProject,
+  getProjects,
+  archiveProject,
+} from "../features/projects/project.api";
+import type { Project } from "../features/projects/project.types";
+
+import { Card, CardBody, CardFooter, CardHeader } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { Badge } from "../components/ui/Badge";
+import { LoadingSpinner } from "../components/ui/LoadingSpinner";
+import { EmptyState } from "../components/ui/EmptyState";
+import { Breadcrumb } from "../components/ui/Breadcrumb";
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState('');
+  const [formError, setFormError] = useState("");
 
   useEffect(() => {
     async function loadProjects() {
       setLoading(true);
-      setError('');
+      setError("");
       try {
         const response = await getProjects();
         setProjects(response.data.projects);
       } catch {
-        setError('Failed to load projects');
+        setError("Failed to load projects");
       } finally {
         setLoading(false);
       }
@@ -38,7 +49,7 @@ export default function ProjectsPage() {
     if (!name.trim()) return;
 
     setSubmitting(true);
-    setFormError('');
+    setFormError("");
 
     try {
       const response = await createProject({
@@ -47,134 +58,162 @@ export default function ProjectsPage() {
       });
 
       setProjects((prev) => [response.data.project, ...prev]);
-      setName('');
-      setDescription('');
+      setName("");
+      setDescription("");
       setShowCreateForm(false);
     } catch {
-      setFormError('Failed to create project');
+      setFormError("Failed to create project");
     } finally {
       setSubmitting(false);
     }
   }
 
   async function handleArchiveProject(projectId: string) {
-    if (!confirm('Are you sure you want to archive this project?')) return;
+    if (!confirm("Are you sure you want to archive this project?")) return;
 
     try {
       await archiveProject(projectId);
       setProjects((prev) => prev.filter((p) => p.id !== projectId));
     } catch {
-      alert('Failed to archive project');
+      alert("Failed to archive project");
     }
   }
 
   return (
-    <main style={{ maxWidth: '900px', margin: '2rem auto', padding: '0 1rem' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+    <div className="space-y-6">
+      <Breadcrumb items={[{ label: "Projects" }]} />
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1>Projects</h1>
-          <p style={{ color: '#666' }}>Group and manage documents within project context</p>
+          <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">
+            Projects & Workspaces
+          </h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            Group and manage documents within project context and technical boundaries.
+          </p>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button
-            type="button"
-            onClick={() => setShowCreateForm((prev) => !prev)}
-            style={{ padding: '0.5rem 1rem', cursor: 'pointer' }}
-          >
-            {showCreateForm ? 'Cancel' : '+ New Project'}
-          </button>
-          <Link to="/documents" style={{ textDecoration: 'none', padding: '0.5rem 1rem', border: '1px solid #ccc', borderRadius: '4px' }}>
-            Back to Documents
-          </Link>
-        </div>
-      </header>
+        <Button
+          variant="primary"
+          onClick={() => setShowCreateForm((prev) => !prev)}
+        >
+          {showCreateForm ? "Cancel" : "+ New Project"}
+        </Button>
+      </div>
 
       {showCreateForm && (
-        <form onSubmit={handleCreateProject} style={{ background: '#f9f9f9', padding: '1rem', borderRadius: '6px', marginBottom: '1.5rem', border: '1px solid #ddd' }}>
-          <h3>Create New Project</h3>
-          {formError && <p style={{ color: 'red' }}>{formError}</p>}
-          <div style={{ marginBottom: '0.75rem' }}>
-            <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.25rem' }}>
-              Project Name *
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Payment Microservice Redesign"
-              required
-              style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
-            />
-          </div>
-          <div style={{ marginBottom: '0.75rem' }}>
-            <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.25rem' }}>
-              Description
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Optional brief description of this project"
-              rows={3}
-              style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
-            />
-          </div>
-          <button type="submit" disabled={submitting} style={{ padding: '0.5rem 1rem', cursor: 'pointer' }}>
-            {submitting ? 'Creating...' : 'Create Project'}
-          </button>
-        </form>
-      )}
-
-      {loading && <p>Loading projects...</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-
-      {!loading && !error && projects.length === 0 && (
-        <section style={{ textAlign: 'center', padding: '3rem 1rem', background: '#fafafa', borderRadius: '6px', border: '1px dashed #ccc' }}>
-          <h3>No Projects Found</h3>
-          <p style={{ color: '#666' }}>Create a project to start grouping your documents together.</p>
-        </section>
-      )}
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem' }}>
-        {projects.map((project) => (
-          <div
-            key={project.id}
-            style={{
-              border: '1px solid #e0e0e0',
-              borderRadius: '8px',
-              padding: '1rem',
-              background: '#fff',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-            }}
-          >
-            <div>
-              <h3 style={{ margin: '0 0 0.5rem 0' }}>
-                <Link to={`/projects/${project.id}`} style={{ color: '#0066cc', textDecoration: 'none' }}>
-                  {project.name}
-                </Link>
-              </h3>
-              {project.description && (
-                <p style={{ color: '#555', fontSize: '0.9rem', margin: '0 0 0.75rem 0' }}>
-                  {project.description}
+        <Card>
+          <CardHeader>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+              Create New Project
+            </h3>
+          </CardHeader>
+          <CardBody>
+            <form onSubmit={handleCreateProject} className="space-y-4">
+              {formError && (
+                <p className="text-xs text-red-600 dark:text-red-400 font-medium">
+                  {formError}
                 </p>
               )}
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', paddingTop: '0.5rem', borderTop: '1px solid #eee' }}>
-              <Link to={`/projects/${project.id}`} style={{ fontSize: '0.85rem', color: '#0066cc' }}>
-                View Project Details →
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Project Name *
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. Payment Microservice Redesign"
+                  required
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Description
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Optional brief description of this project"
+                  rows={3}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                />
+              </div>
+              <Button type="submit" variant="primary" isLoading={submitting}>
+                Create Project
+              </Button>
+            </form>
+          </CardBody>
+        </Card>
+      )}
+
+      {loading && (
+        <div className="py-12 flex justify-center">
+          <LoadingSpinner label="Loading projects..." />
+        </div>
+      )}
+
+      {error && (
+        <div className="p-4 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm font-medium">
+          {error}
+        </div>
+      )}
+
+      {!loading && !error && projects.length === 0 && (
+        <EmptyState
+          title="No Projects Found"
+          description="Create a project to start grouping your documents together."
+          action={
+            <Button variant="primary" onClick={() => setShowCreateForm(true)}>
+              + New Project
+            </Button>
+          }
+        />
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {projects.map((project) => (
+          <Card
+            key={project.id}
+            className="flex flex-col justify-between hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors"
+          >
+            <CardBody className="space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="font-bold text-lg text-gray-900 dark:text-white">
+                  <Link
+                    to={`/projects/${project.id}`}
+                    className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                  >
+                    {project.name}
+                  </Link>
+                </h3>
+                {project.isOwner && <Badge variant="info">Owner</Badge>}
+              </div>
+
+              <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">
+                {project.description || "No description provided."}
+              </p>
+            </CardBody>
+
+            <CardFooter className="flex items-center justify-between text-xs">
+              <Link
+                to={`/projects/${project.id}`}
+                className="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+              >
+                View Project Details &rarr;
               </Link>
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => handleArchiveProject(project.id)}
-                style={{ background: 'none', border: 'none', color: '#cc0000', cursor: 'pointer', fontSize: '0.85rem' }}
+                className="text-red-600 hover:text-red-700 dark:text-red-400"
               >
                 Archive
-              </button>
-            </div>
-          </div>
+              </Button>
+            </CardFooter>
+          </Card>
         ))}
       </div>
-    </main>
+    </div>
   );
 }
