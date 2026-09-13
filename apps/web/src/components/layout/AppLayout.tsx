@@ -56,7 +56,7 @@ export function AppLayout() {
             <div className="flex items-center gap-8">
               <Link
                 to="/dashboard"
-                className="flex items-center gap-2.5 font-extrabold text-xl text-indigo-400 hover:text-indigo-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-md"
+                className="flex items-center gap-2.5 font-extrabold text-xl text-indigo-400 hover:text-indigo-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 rounded-md"
               >
                 <div className="w-8 h-8 rounded-lg bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center text-indigo-400 shadow-inner">
                   <svg
@@ -64,6 +64,7 @@ export function AppLayout() {
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
+                    aria-hidden="true"
                   >
                     <path
                       strokeLinecap="round"
@@ -83,9 +84,9 @@ export function AppLayout() {
                     key={item.path}
                     to={item.path}
                     className={({ isActive }) =>
-                      `px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                      `px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
                         isActive
-                          ? "bg-indigo-900/40 text-indigo-300 border border-indigo-500/30 shadow-sm"
+                          ? "bg-indigo-950/60 text-indigo-300 border border-indigo-500/40 shadow-sm"
                           : "text-slate-300 hover:bg-slate-800 hover:text-slate-100"
                       }`
                     }
@@ -102,10 +103,11 @@ export function AppLayout() {
               <button
                 type="button"
                 onClick={() => navigate("/knowledge/search")}
-                className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-lg text-xs text-slate-400 hover:text-slate-200 transition-colors"
+                className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-lg text-xs text-slate-400 hover:text-slate-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
                 title="Global Search (Cmd+K)"
+                aria-label="Global Search (Cmd+K)"
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <span>Search...</span>
@@ -134,16 +136,19 @@ export function AppLayout() {
               {/* Mobile Menu Button */}
               <button
                 type="button"
+                id="mobile-menu-trigger"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden p-2 rounded-lg text-slate-300 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                className="md:hidden p-2 rounded-lg text-slate-300 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
                 aria-label="Toggle Navigation Menu"
                 aria-expanded={mobileMenuOpen}
+                aria-controls="mobile-navigation-menu"
               >
                 <svg
                   className="w-6 h-6"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   {mobileMenuOpen ? (
                     <path
@@ -169,6 +174,7 @@ export function AppLayout() {
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
           <nav
+            id="mobile-navigation-menu"
             className="md:hidden border-b border-slate-800 bg-slate-900 px-4 pt-2 pb-4 space-y-1"
             aria-label="Mobile Navigation"
           >
@@ -178,9 +184,9 @@ export function AppLayout() {
                 to={item.path}
                 onClick={() => setMobileMenuOpen(false)}
                 className={({ isActive }) =>
-                  `block px-3 py-2 rounded-lg text-base font-medium transition-colors ${
+                  `block px-3 py-2 rounded-lg text-base font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                     isActive
-                      ? "bg-indigo-900/40 text-indigo-300 border border-indigo-500/30"
+                      ? "bg-indigo-950/60 text-indigo-300 border-l-2 border-indigo-500 font-semibold"
                       : "text-slate-300 hover:bg-slate-800"
                   }`
                 }

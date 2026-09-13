@@ -129,31 +129,20 @@ export function NotificationBell() {
   }
 
   return (
-    <div ref={dropdownRef} style={{ position: 'relative', display: 'inline-block' }}>
+    <div ref={dropdownRef} className="relative inline-block">
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        style={{
-          position: 'relative',
-          padding: '0.4rem 0.8rem',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.4rem',
-        }}
+        aria-label="Notifications"
+        aria-expanded={isOpen}
+        aria-haspopup="true"
+        className="relative inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-slate-100 text-xs font-medium transition-all duration-150 hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
       >
-        <span>🔔</span>
-        <span>Notifications</span>
+        <span className="text-sm leading-none" aria-hidden="true">🔔</span>
+        <span className="hidden sm:inline">Notifications</span>
         {unreadCount > 0 && (
           <span
-            style={{
-              background: '#ef4444',
-              color: 'white',
-              borderRadius: '9999px',
-              padding: '0.1rem 0.45rem',
-              fontSize: '0.75rem',
-              fontWeight: 'bold',
-            }}
+            className="bg-red-600 text-white rounded-full px-1.5 py-0.5 text-[11px] font-bold leading-none min-w-[18px] text-center shadow-sm"
           >
             {unreadCount}
           </span>
@@ -162,61 +151,32 @@ export function NotificationBell() {
 
       {isOpen && (
         <div
-          style={{
-            position: 'absolute',
-            right: 0,
-            top: '110%',
-            width: '360px',
-            maxHeight: '420px',
-            backgroundColor: 'white',
-            border: '1px solid #cbd5e1',
-            borderRadius: '8px',
-            boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
-            zIndex: 1000,
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-          }}
+          className="absolute right-0 top-[110%] w-[360px] max-h-[420px] bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-50 flex flex-col overflow-hidden text-slate-100"
         >
           <header
-            style={{
-              padding: '0.75rem 1rem',
-              borderBottom: '1px solid #e2e8f0',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              backgroundColor: '#f8fafc',
-            }}
+            className="px-4 py-3 border-b border-slate-800 flex justify-between items-center bg-slate-900/90"
           >
-            <strong style={{ fontSize: '0.9rem', color: '#0f172a' }}>
+            <strong className="text-xs font-semibold text-slate-200">
               Notifications ({unreadCount} unread)
             </strong>
             {unreadCount > 0 && (
               <button
                 type="button"
                 onClick={() => void handleMarkAllAsRead()}
-                style={{
-                  fontSize: '0.75rem',
-                  background: 'none',
-                  border: 'none',
-                  color: '#2563eb',
-                  cursor: 'pointer',
-                  padding: 0,
-                  textDecoration: 'underline',
-                }}
+                className="text-xs text-indigo-400 hover:text-indigo-300 font-medium hover:underline bg-transparent border-0 p-0 cursor-pointer"
               >
                 Mark all read
               </button>
             )}
           </header>
 
-          <div style={{ overflowY: 'auto', flex: 1 }}>
+          <div className="overflow-y-auto flex-1 divide-y divide-slate-800/60">
             {loading && notifications.length === 0 ? (
-              <p style={{ padding: '1rem', textAlign: 'center', color: '#64748b', fontSize: '0.85rem' }}>
+              <p className="p-4 text-center text-slate-400 text-xs">
                 Loading notifications...
               </p>
             ) : notifications.length === 0 ? (
-              <p style={{ padding: '1.5rem', textAlign: 'center', color: '#64748b', fontSize: '0.85rem' }}>
+              <p className="p-6 text-center text-slate-400 text-xs">
                 No notifications yet
               </p>
             ) : (
@@ -224,56 +184,36 @@ export function NotificationBell() {
                 <div
                   key={item.id}
                   onClick={() => void handleMarkAsRead(item)}
-                  style={{
-                    padding: '0.75rem 1rem',
-                    borderBottom: '1px solid #f1f5f9',
-                    backgroundColor: item.isRead ? '#ffffff' : '#f0f9ff',
-                    cursor: item.isAccessible ? 'pointer' : 'default',
-                    display: 'flex',
-                    gap: '0.75rem',
-                    alignItems: 'flex-start',
-                    transition: 'background-color 0.15s ease',
-                  }}
+                  className={`p-3 text-xs transition-colors flex gap-3 items-start ${
+                    item.isRead
+                      ? "bg-slate-900/60 hover:bg-slate-800/80 text-slate-300"
+                      : "bg-indigo-950/40 hover:bg-indigo-900/50 text-slate-100"
+                  } ${item.isAccessible ? "cursor-pointer" : "cursor-default"}`}
                 >
-                  <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>
+                  <span className="text-base leading-none" aria-hidden="true">
                     {getNotificationIcon(item.type)}
                   </span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '0.85rem', fontWeight: item.isRead ? 'normal' : 'bold', color: '#1e293b' }}>
+                  <div className="flex-1 min-w-0">
+                    <div className={`text-xs ${item.isRead ? "font-normal text-slate-300" : "font-semibold text-slate-100"}`}>
                       {getNotificationMessage(item)}
                     </div>
                     {item.isAccessible && item.document ? (
-                      <div
-                        style={{
-                          fontSize: '0.8rem',
-                          color: '#2563eb',
-                          marginTop: '0.2rem',
-                          fontWeight: 'bold',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
+                      <div className="text-xs text-indigo-400 hover:text-indigo-300 mt-1 font-semibold truncate">
                         📄 {item.document.title}
                       </div>
                     ) : (
-                      <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.2rem', fontStyle: 'italic' }}>
+                      <div className="text-[11px] text-slate-500 italic mt-1">
                         Document (Access Revoked)
                       </div>
                     )}
-                    <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                    <div className="text-[10px] text-slate-500 mt-1">
                       {new Date(item.createdAt).toLocaleString()}
                     </div>
                   </div>
                   {!item.isRead && (
                     <span
-                      style={{
-                        width: '8px',
-                        height: '8px',
-                        borderRadius: '50%',
-                        backgroundColor: '#3b82f6',
-                        marginTop: '0.3rem',
-                      }}
+                      className="w-2 h-2 rounded-full bg-indigo-500 mt-1 shrink-0"
+                      aria-hidden="true"
                     />
                   )}
                 </div>
