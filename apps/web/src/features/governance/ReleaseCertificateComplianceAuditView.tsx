@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import React, { useState, useEffect, useCallback } from 'react';
+import { Badge } from '../../components/ui/Badge';
 import { auditReleaseCertificateComplianceDrift, exportReleaseCertificateJson } from './governance.api';
 import type {
   ReleaseCertificateComplianceAuditDTO,
@@ -181,15 +182,15 @@ export const ReleaseCertificateComplianceAuditView: React.FC<ReleaseCertificateC
           )}
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-3 text-xs bg-slate-800/80 px-3 py-2 rounded-lg border border-slate-700">
-            <div>
-              <span className="text-slate-400">Cert Status:</span>{' '}
-              <span className="font-semibold text-slate-200">{auditMetadata.certificateStatus}</span>
+          <div className="flex items-center gap-3 text-xs bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-400">Cert Status:</span>
+              <Badge variant="historical" size="sm">{auditMetadata.certificateStatus}</Badge>
             </div>
-            <div className="h-3 w-px bg-slate-700"></div>
-            <div>
-              <span className="text-slate-400">Live Readiness:</span>{' '}
-              <span className="font-semibold text-slate-200">{auditMetadata.liveSystemReleaseStatus}</span>
+            <div className="h-4 w-px bg-slate-700"></div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-400">Live Readiness:</span>
+              <Badge variant="drift" size="sm">{auditMetadata.liveSystemReleaseStatus}</Badge>
             </div>
           </div>
           <div className="flex items-center gap-2">

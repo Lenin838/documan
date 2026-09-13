@@ -8,9 +8,9 @@ export function Table({
   className?: string;
 }) {
   return (
-    <div className="w-full overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+    <div className="w-full overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900/90">
       <table
-        className={`w-full text-left text-sm text-gray-600 dark:text-gray-300 ${className}`}
+        className={`w-full text-left text-sm text-slate-700 dark:text-slate-300 ${className}`}
       >
         {children}
       </table>
@@ -20,7 +20,7 @@ export function Table({
 
 export function TableHeader({ children }: { children: React.ReactNode }) {
   return (
-    <thead className="bg-gray-50 dark:bg-gray-800/80 text-xs uppercase font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
+    <thead className="bg-slate-50 dark:bg-slate-800/80 text-xs uppercase tracking-wider font-semibold text-slate-700 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
       {children}
     </thead>
   );
@@ -28,7 +28,7 @@ export function TableHeader({ children }: { children: React.ReactNode }) {
 
 export function TableBody({ children }: { children: React.ReactNode }) {
   return (
-    <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
+    <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900/50">
       {children}
     </tbody>
   );
@@ -43,11 +43,26 @@ export function TableRow({
   className?: string;
   onClick?: () => void;
 }) {
+  const isClickable = Boolean(onClick);
+
   return (
     <tr
       onClick={onClick}
-      className={`hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors ${
-        onClick ? "cursor-pointer" : ""
+      tabIndex={isClickable ? 0 : undefined}
+      onKeyDown={
+        isClickable
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onClick?.();
+              }
+            }
+          : undefined
+      }
+      className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors ${
+        isClickable
+          ? "cursor-pointer focus:outline-none focus-visible:bg-slate-100 dark:focus-visible:bg-slate-800/90 focus-visible:ring-2 focus-visible:ring-indigo-500"
+          : ""
       } ${className}`}
     >
       {children}
@@ -72,14 +87,37 @@ export function TableHead({
     <th
       scope="col"
       onClick={sortable ? onSort : undefined}
-      className={`px-4 py-3.5 font-semibold ${
-        sortable ? "cursor-pointer select-none hover:text-indigo-600 dark:hover:text-indigo-400" : ""
+      tabIndex={sortable ? 0 : undefined}
+      onKeyDown={
+        sortable
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSort?.();
+              }
+            }
+          : undefined
+      }
+      aria-sort={
+        sortable && sortDirection
+          ? sortDirection === "asc"
+            ? "ascending"
+            : "descending"
+          : undefined
+      }
+      className={`px-4 py-3.5 font-semibold text-slate-700 dark:text-slate-300 ${
+        sortable
+          ? "cursor-pointer select-none hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
+          : ""
       } ${className}`}
     >
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1.5">
         {children}
         {sortable && sortDirection && (
-          <span className="text-indigo-600 dark:text-indigo-400">
+          <span
+            className="text-indigo-600 dark:text-indigo-400 font-bold"
+            aria-hidden="true"
+          >
             {sortDirection === "asc" ? "↑" : "↓"}
           </span>
         )}
@@ -95,5 +133,9 @@ export function TableCell({
   children?: React.ReactNode;
   className?: string;
 }) {
-  return <td className={`px-4 py-3.5 whitespace-nowrap ${className}`}>{children}</td>;
+  return (
+    <td className={`px-4 py-3.5 whitespace-nowrap text-slate-700 dark:text-slate-300 ${className}`}>
+      {children}
+    </td>
+  );
 }
