@@ -7,6 +7,7 @@ import {
   verifyCertificateIntegrity,
   revokeReleaseCertificate,
 } from './system-release-certificate.service.js';
+import { generateReleaseCertificateExportBundle } from './system-release-export.service.js';
 
 export async function evaluatePreCertificationHandler(
   req: Request,
@@ -117,6 +118,36 @@ export async function revokeReleaseCertificateHandler(
       success: true,
       data: result,
     });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function exportReleaseCertificateJsonHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const userId = req.user?.userId || (req as unknown as { user: { id: string } }).user?.id;
+    const userRole = req.user?.role || (req as unknown as { user: { role: string } }).user?.role;
+    const projectId = req.params.projectId as string;
+    const certificateId = req.params.certificateId as string;
+
+    const bundle = await generateReleaseCertificateExportBundle(
+      userId,
+      projectId,
+      certificateId,
+      userRole
+    );
+
+    const sanitizeFilename = (str: string) => str.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const safeTag = sanitizeFilename(bundle.releaseCertificate.releaseTag || 'certificate');
+    const filename = `release-certificate-${safeTag}-attestation-bundle.json`;
+
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.status(200).send(JSON.stringify(bundle, null, 2));
   } catch (error) {
     next(error);
   }

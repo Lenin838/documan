@@ -117,3 +117,80 @@ Execute container smoke testing at any time:
 ```bash
 pnpm test:container
 ```
+
+---
+
+## 7. System Release Certificate & Compliance Drift Export Bundle Verification (Offline)
+
+Documan CAND-01 exports standalone JSON attestation packages that include an integrity digest (`exportBundleDigest`). Auditors can independently recompute and verify this SHA-256 digest offline without calling the Documan API server.
+
+### Canonicalization & Digest Algorithm
+
+1. Load the exported JSON bundle file.
+2. Remove the `exportBundleDigest` property from the top-level object envelope.
+3. Recursively canonicalize all JSON keys in alphabetical order:
+   - Plain objects: sort keys lexicographically (`Array.from(Object.keys(obj)).sort()`).
+   - Arrays: preserve existing order, but canonicalize nested elements.
+   - Primitive values: preserve exactly as typed (numbers, booleans, strings, nulls).
+4. Serialize the canonicalized object to UTF-8 JSON text formatted with 2 spaces indentation (`JSON.stringify(canonicalObj, null, 2)`).
+5. Calculate SHA-256 hash over the resulting UTF-8 string, encoded as a hexadecimal string.
+6. Compare the computed hex digest against the value in the original `exportBundleDigest` field.
+
+### Verification Examples
+
+#### Node.js Verification Snippet
+
+```javascript
+const fs = require('fs');
+const crypto = require('crypto');
+
+function canonicalize(obj) {
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(canonicalize);
+  const sortedKeys = Object.keys(obj).sort();
+  const result = {};
+  for (const key of sortedKeys) {
+    result[key] = canonicalize(obj[key]);
+  }
+  return result;
+}
+
+const data = JSON.parse(fs.readFileSync('system-release-certificate-export.json', 'utf8'));
+const expectedDigest = data.exportBundleDigest;
+const { exportBundleDigest, ...envelope } = data;
+
+const canonicalized = canonicalize(envelope);
+const serialized = JSON.stringify(canonicalized, null, 2);
+const computedDigest = crypto.createHash('sha256').update(serialized, 'utf8').digest('hex');
+
+console.log('Expected Digest:', expectedDigest);
+console.log('Computed Digest:', computedDigest);
+console.log('Match:', expectedDigest === computedDigest ? 'VERIFIED PASSED' : 'VERIFICATION FAILED');
+```
+
+#### Python Verification Snippet
+
+```python
+import json
+import hashlib
+
+def canonicalize(val):
+    if isinstance(val, dict):
+        return {k: canonicalize(val[k]) for k in sorted(val.keys())}
+    elif isinstance(val, list):
+        return [canonicalize(item) for item in val]
+    return val
+
+with open('system-release-certificate-export.json', 'r', encoding='utf-8') as f:
+    data = json.load(f)
+
+expected_digest = data.get('exportBundleDigest')
+payload = {k: v for k, v in data.items() if k != 'exportBundleDigest'}
+canonicalized = canonicalize(payload)
+serialized = json.dumps(canonicalized, indent=2, ensure_ascii=False)
+computed_digest = hashlib.sha256(serialized.encode('utf-8')).hexdigest()
+
+print('Expected Digest:', expected_digest)
+print('Computed Digest:', computed_digest)
+print('Match:', 'VERIFIED PASSED' if expected_digest == computed_digest else 'VERIFICATION FAILED')
+```

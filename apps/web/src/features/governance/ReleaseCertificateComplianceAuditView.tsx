@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import React, { useState, useEffect } from 'react';
-import { auditReleaseCertificateComplianceDrift } from './governance.api';
+import React, { useState, useEffect, useCallback } from 'react';
+import { auditReleaseCertificateComplianceDrift, exportReleaseCertificateJson } from './governance.api';
 import type {
   ReleaseCertificateComplianceAuditDTO,
   BaselineDeltaItemDTO,
@@ -16,15 +16,18 @@ interface ReleaseCertificateComplianceAuditViewProps {
 
 export const ReleaseCertificateComplianceAuditView: React.FC<ReleaseCertificateComplianceAuditViewProps> = ({
   certificateId,
+  projectId,
 }) => {
   const [auditData, setAuditData] = useState<ReleaseCertificateComplianceAuditDTO | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+  const [exportError, setExportError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<
     'topology' | 'baselines' | 'contracts' | 'waivers' | 'attestations'
   >('baselines');
 
-  const runAudit = async (certId: string) => {
+  const runAudit = useCallback(async (certId: string) => {
     if (!certId) return;
     try {
       setLoading(true);
@@ -37,13 +40,47 @@ export const ReleaseCertificateComplianceAuditView: React.FC<ReleaseCertificateC
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const handleExportJson = async () => {
+    if (!certificateId) return;
+    const targetProjId = projectId || auditData?.auditMetadata?.rootProjectId;
+    if (!targetProjId) return;
+
+    try {
+      setIsExporting(true);
+      setExportError(null);
+      const { bundle, filename } = await exportReleaseCertificateJson(targetProjId, certificateId);
+      const jsonStr = JSON.stringify(bundle, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { message?: string } }; message?: string };
+      setExportError(errorObj.response?.data?.message || errorObj.message || 'Failed to export JSON bundle');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handlePrintReport = () => {
+    const targetProjId = projectId || auditData?.auditMetadata?.rootProjectId;
+    if (targetProjId && certificateId) {
+      window.open(`/projects/${targetProjId}/release-certificates/${certificateId}/print`, '_blank');
+    }
   };
 
   useEffect(() => {
     if (certificateId) {
       runAudit(certificateId);
     }
-  }, [certificateId]);
+  }, [certificateId, runAudit]);
 
   if (loading) {
     return (
@@ -139,16 +176,38 @@ export const ReleaseCertificateComplianceAuditView: React.FC<ReleaseCertificateC
           {complianceReason && (
             <p className="text-xs text-slate-300 italic mt-1.5">{complianceReason}</p>
           )}
+          {exportError && (
+            <p className="text-xs text-rose-400 font-medium mt-1">{exportError}</p>
+          )}
         </div>
-        <div className="flex items-center gap-3 text-xs bg-slate-800/80 px-3 py-2 rounded-lg border border-slate-700">
-          <div>
-            <span className="text-slate-400">Cert Status:</span>{' '}
-            <span className="font-semibold text-slate-200">{auditMetadata.certificateStatus}</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 text-xs bg-slate-800/80 px-3 py-2 rounded-lg border border-slate-700">
+            <div>
+              <span className="text-slate-400">Cert Status:</span>{' '}
+              <span className="font-semibold text-slate-200">{auditMetadata.certificateStatus}</span>
+            </div>
+            <div className="h-3 w-px bg-slate-700"></div>
+            <div>
+              <span className="text-slate-400">Live Readiness:</span>{' '}
+              <span className="font-semibold text-slate-200">{auditMetadata.liveSystemReleaseStatus}</span>
+            </div>
           </div>
-          <div className="h-3 w-px bg-slate-700"></div>
-          <div>
-            <span className="text-slate-400">Live Readiness:</span>{' '}
-            <span className="font-semibold text-slate-200">{auditMetadata.liveSystemReleaseStatus}</span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleExportJson}
+              disabled={isExporting}
+              className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold rounded-lg shadow transition-colors flex items-center gap-1.5"
+            >
+              {isExporting ? 'Exporting...' : '⬇ Export JSON'}
+            </button>
+            <button
+              type="button"
+              onClick={handlePrintReport}
+              className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition-colors flex items-center gap-1.5"
+            >
+              🖨 Print Report
+            </button>
           </div>
         </div>
       </div>
