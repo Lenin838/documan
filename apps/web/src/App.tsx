@@ -22,6 +22,9 @@ const ReviewsPage = lazy(() =>
 const UsersPage = lazy(() => import("./pages/UsersPage"));
 const UserDetailsPage = lazy(() => import("./pages/UserDetailsPage"));
 const EditUserPage = lazy(() => import("./pages/EditUserPage"));
+const ReleaseCertificatePrintPage = lazy(
+  () => import("./pages/ReleaseCertificatePrintPage")
+);
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 
 import { AppLayout } from "./components/layout/AppLayout";
@@ -83,6 +86,11 @@ function App() {
               <Route path="/trash" element={<TrashPage />} />
               <Route path="/reviews" element={<ReviewsPage />} />
             </Route>
+            {/* Standalone Printable Attestation Report Route (Without AppLayout) */}
+            <Route
+              path="/projects/:projectId/release-certificates/:certificateId/print"
+              element={<ReleaseCertificatePrintPage />}
+            />
           </Route>
 
           {/* Protected Admin Routes Wrapped in AppLayout */}

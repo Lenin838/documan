@@ -116,3 +116,19 @@ export async function auditReleaseCertificateComplianceDrift(
   );
   return res.data.data;
 }
+
+// CAND-01 Read-Only Release Certificate Export API call
+export async function exportReleaseCertificateJson(
+  projectId: string,
+  certificateId: string,
+): Promise<{ bundle: any; filename: string }> {
+  const res = await axios.post(
+    `${API_URL}/projects/${projectId}/release-certificates/${certificateId}/export/json`,
+    {},
+    { responseType: 'json' }
+  );
+  const disposition = res.headers['content-disposition'] || '';
+  const match = disposition.match(/filename="?([^"]+)"?/);
+  const filename = match ? match[1] : `release-certificate-${certificateId}-bundle.json`;
+  return { bundle: res.data, filename };
+}

@@ -7,6 +7,7 @@ import {
   getReleaseCertificateDetailsHandler,
   verifyCertificateIntegrityHandler,
   revokeReleaseCertificateHandler,
+  exportReleaseCertificateJsonHandler,
 } from './system-release-certificate.controller.js';
 import {
   compareReleaseCertificatesHandler,
@@ -30,5 +31,8 @@ router.get('/projects/:projectId/release-certificates', authenticate, listReleas
 router.get('/projects/:projectId/release-certificates/:certificateId', authenticate, getReleaseCertificateDetailsHandler);
 router.post('/projects/:projectId/release-certificates/:certificateId/verify', authenticate, verifyCertificateIntegrityHandler);
 router.post('/projects/:projectId/release-certificates/:certificateId/revoke', authenticate, revokeReleaseCertificateHandler);
+
+// CAND-01 Read-Only System Release Export Endpoint
+router.post('/projects/:projectId/release-certificates/:certificateId/export/json', authenticate, exportReleaseCertificateJsonHandler);
 
 export default router;
