@@ -17,16 +17,16 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <div
-      className={`flex flex-col items-center justify-center p-8 text-center bg-gray-50 dark:bg-gray-800/40 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg ${className}`}
+      className={`flex flex-col items-center justify-center p-8 text-center bg-[#191f31] border border-dashed border-[#1e293b] rounded-[6px] ${className}`}
     >
       {icon && (
-        <div className="mb-4 text-gray-400 dark:text-gray-500">{icon}</div>
+        <div className="mb-4 text-slate-500">{icon}</div>
       )}
-      <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+      <h3 className="text-base font-semibold text-slate-100">
         {title}
       </h3>
       {description && (
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 max-w-sm">
+        <p className="mt-1 text-xs text-slate-400 max-w-sm">
           {description}
         </p>
       )}

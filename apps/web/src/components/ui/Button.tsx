@@ -24,23 +24,23 @@ export function Button({
   ...props
 }: ButtonProps) {
   const baseClasses =
-    "inline-flex items-center justify-center font-medium font-sans rounded-lg transition-all duration-150 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 dark:focus-visible:ring-offset-slate-950 disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none disabled:transform-none shadow-sm";
+    "inline-flex items-center justify-center font-medium font-sans rounded transition-all duration-150 active:scale-[0.98] focus:outline-none focus-visible:ring-1 focus-visible:ring-sky-400 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0c1324] disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none disabled:transform-none shadow-sm";
 
   const variantClasses = {
     primary:
-      "bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white border border-indigo-500/50 shadow-indigo-900/30",
+      "bg-sky-400 hover:bg-sky-300 active:bg-sky-500 text-slate-950 font-semibold border border-sky-300/50 shadow-sm",
     secondary:
-      "bg-slate-800 hover:bg-slate-700 active:bg-slate-850 text-slate-200 border border-slate-700/80 hover:border-slate-600",
+      "bg-[#191f31] hover:bg-[#23293c] active:bg-slate-800 text-slate-200 border border-[#1e293b] hover:border-slate-700",
     outline:
-      "border border-slate-700 bg-slate-900/80 text-slate-200 hover:bg-slate-800 hover:text-white hover:border-slate-600",
+      "border border-[#1e293b] bg-[#191f31]/80 text-slate-200 hover:bg-[#23293c] hover:text-white hover:border-slate-700",
     danger:
-      "bg-red-600 hover:bg-red-500 active:bg-red-700 text-white border border-red-500/50 shadow-red-900/30",
+      "bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white border border-rose-500/50 shadow-sm",
     success:
-      "bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white border border-emerald-500/50 shadow-emerald-900/30",
+      "bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white border border-emerald-500/50 shadow-sm",
     warning:
-      "bg-amber-600 hover:bg-amber-500 active:bg-amber-700 text-white border border-amber-500/50 shadow-amber-900/30",
+      "bg-amber-600 hover:bg-amber-500 active:bg-amber-700 text-white border border-amber-500/50 shadow-sm",
     ghost:
-      "text-slate-400 hover:bg-slate-800/80 hover:text-slate-200 border border-transparent shadow-none",
+      "text-slate-400 hover:bg-[#191f31] hover:text-slate-200 border border-transparent shadow-none",
   };
 
   const sizeClasses = {

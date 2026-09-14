@@ -30,9 +30,9 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
-          <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 text-center">
-            <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 mx-auto flex items-center justify-center mb-4">
+        <div className="min-h-screen flex items-center justify-center bg-[#0c1324] p-4">
+          <div className="max-w-md w-full bg-[#191f31] border border-[#1e293b] rounded-[6px] shadow-2xl p-6 text-center">
+            <div className="w-12 h-12 rounded-full bg-[#f43f5e]/10 text-[#f43f5e] border border-[#f43f5e]/20 mx-auto flex items-center justify-center mb-4">
               <svg
                 className="w-6 h-6"
                 fill="none"
@@ -47,20 +47,20 @@ export class ErrorBoundary extends Component<Props, State> {
                 />
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+            <h2 className="text-xl font-bold text-slate-100 mb-2">
               Something went wrong
             </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-sm text-slate-400 mb-4">
               An unexpected rendering error occurred in the application.
             </p>
             {this.state.error && (
-              <div className="mb-6 p-3 bg-gray-100 dark:bg-gray-700/50 rounded text-left text-xs font-mono text-red-500 overflow-x-auto max-h-32">
+              <div className="mb-6 p-3 bg-[#0c1324] border border-[#1e293b] rounded text-left text-xs font-mono text-[#f43f5e] overflow-x-auto max-h-32">
                 {this.state.error.message}
               </div>
             )}
             <button
               onClick={this.handleReload}
-              className="w-full inline-flex justify-center items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md shadow-sm transition-colors text-sm"
+              className="w-full inline-flex justify-center items-center px-4 py-2 bg-[#38bdf8] hover:bg-[#7dd3fc] text-[#020617] font-semibold rounded shadow-sm focus:outline-none focus:ring-1 focus:ring-[#38bdf8] transition-colors text-sm"
             >
               Reload Application
             </button>

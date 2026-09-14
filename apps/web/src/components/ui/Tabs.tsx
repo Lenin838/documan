@@ -80,7 +80,7 @@ export function Tabs({ tabs, activeTab, onChange, className = "" }: TabsProps) {
   return (
     <div
       ref={tabListRef}
-      className={`border-b border-slate-200 dark:border-slate-800 ${className}`}
+      className={`border-b border-[#1e293b] ${className}`}
     >
       <nav
         className="-mb-px flex space-x-4 md:space-x-6 overflow-x-auto scrollbar-none"
@@ -103,28 +103,28 @@ export function Tabs({ tabs, activeTab, onChange, className = "" }: TabsProps) {
               onClick={() => !isDisabled && onChange(tab.id)}
               onKeyDown={(e) => !isDisabled && handleKeyDown(e, index)}
               tabIndex={isActive ? 0 : -1}
-              className={`whitespace-nowrap py-3 px-2 border-b-2 text-sm transition-all flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 dark:focus-visible:ring-offset-slate-950 rounded-t-md ${
+              className={`whitespace-nowrap py-3 px-2 border-b-2 text-sm transition-all flex items-center gap-2 focus:outline-none focus-visible:ring-1 focus-visible:ring-sky-400 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0c1324] rounded-t ${
                 isDisabled
-                  ? "border-transparent text-slate-400 dark:text-slate-600 opacity-50 cursor-not-allowed"
+                  ? "border-transparent text-slate-600 opacity-50 cursor-not-allowed"
                   : isActive
-                  ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-300 font-semibold bg-indigo-50/50 dark:bg-indigo-950/30"
-                  : "border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700 font-medium"
+                  ? "border-[#38bdf8] text-[#38bdf8] font-semibold"
+                  : "border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700 font-medium"
               }`}
             >
               {tab.icon}
               <span>{tab.label}</span>
               {isActive && (
                 <span
-                  className="w-1.5 h-1.5 rounded-full bg-indigo-600 dark:bg-indigo-400"
+                  className="w-1.5 h-1.5 rounded-full bg-[#38bdf8]"
                   aria-hidden="true"
                 />
               )}
               {tab.count !== undefined && (
                 <span
-                  className={`ml-1 py-0.5 px-2 text-xs rounded-full font-semibold ${
+                  className={`ml-1 py-0.5 px-2 text-xs rounded-full font-mono font-medium ${
                     isActive
-                      ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-200"
-                      : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                      ? "bg-sky-950/60 text-sky-200 border border-sky-800/60"
+                      : "bg-[#191f31] text-slate-400 border border-[#1e293b]"
                   }`}
                 >
                   {tab.count}

@@ -53,36 +53,36 @@ export function Modal({
     >
       <div className="flex min-h-screen items-center justify-center p-4 text-center sm:p-0">
         <div
-          className="fixed inset-0 bg-gray-500/75 dark:bg-gray-900/80 transition-opacity"
+          className="fixed inset-0 bg-[#0c1324]/85 backdrop-blur-xs transition-opacity"
           onClick={onClose}
           aria-hidden="true"
         />
         <div
-          className={`relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 text-left shadow-xl transition-all sm:my-8 w-full ${maxWidthClasses[maxWidth]}`}
+          className={`relative transform overflow-hidden rounded-[6px] bg-[#191f31] border border-[#1e293b] text-left shadow-2xl transition-all sm:my-8 w-full ${maxWidthClasses[maxWidth]}`}
         >
           {title && (
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <div className="px-6 py-4 border-b border-[#1e293b] flex items-center justify-between">
               <h3
                 id="modal-title"
-                className="text-lg font-semibold text-gray-900 dark:text-white"
+                className="text-lg font-semibold text-slate-50"
               >
                 {title}
               </h3>
               <button
                 type="button"
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 p-1 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                className="text-slate-400 hover:text-slate-200 p-1 rounded focus:outline-none focus-visible:ring-1 focus-visible:ring-sky-400"
                 aria-label="Close modal"
               >
                 ✕
               </button>
             </div>
           )}
-          <div className="px-6 py-5 text-gray-700 dark:text-gray-300">
+          <div className="px-6 py-5 text-slate-300">
             {children}
           </div>
           {footer && (
-            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800/60 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+            <div className="px-6 py-4 bg-[#151b2d] border-t border-[#1e293b] flex justify-end gap-3">
               {footer}
             </div>
           )}
