@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import React, { useState, useEffect, useCallback } from 'react';
 import { Badge } from '../../components/ui/Badge';
+import { GovernanceBanner } from '../../components/governance/GovernanceBanner';
 import { auditReleaseCertificateComplianceDrift, exportReleaseCertificateJson } from './governance.api';
 import type {
   ReleaseCertificateComplianceAuditDTO,
@@ -161,57 +162,55 @@ export const ReleaseCertificateComplianceAuditView: React.FC<ReleaseCertificateC
   return (
     <div className="p-6 bg-slate-900 text-slate-100 rounded-xl border border-slate-800 shadow-2xl space-y-6">
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-slate-800 gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h2 className="text-xl font-bold tracking-tight text-white">
-              Release Compliance Drift & Post-Certification Audit
-            </h2>
-            {getStatusBadge(complianceStatus)}
+      <GovernanceBanner
+        mode="drift"
+        title="Release Compliance Drift & Post-Certification Audit"
+        statusBadge={getStatusBadge(complianceStatus)}
+        description={
+          <div className="space-y-1">
+            <p className="text-xs text-slate-300 m-0">
+              Certified Release Tag: <span className="text-slate-100 font-mono font-semibold">{auditMetadata.releaseTag}</span> ({new Date(auditMetadata.certifiedAt).toLocaleString()})
+              {' • '}
+              Live Audit Target (T_now): <span className="text-slate-100 font-mono font-semibold">{new Date(auditMetadata.auditTimestamp).toLocaleString()}</span>
+            </p>
+            {complianceReason && (
+              <p className="text-xs text-slate-300 italic m-0">{complianceReason}</p>
+            )}
+            {exportError && (
+              <p className="text-xs text-rose-400 font-medium m-0">{exportError}</p>
+            )}
           </div>
-          <p className="text-xs text-slate-400 mt-1">
-            Certified Release Tag: <span className="text-slate-200 font-mono">{auditMetadata.releaseTag}</span> ({new Date(auditMetadata.certifiedAt).toLocaleString()})
-            {' • '}
-            Live Audit Target (T_now): <span className="text-slate-200 font-mono">{new Date(auditMetadata.auditTimestamp).toLocaleString()}</span>
-          </p>
-          {complianceReason && (
-            <p className="text-xs text-slate-300 italic mt-1.5">{complianceReason}</p>
-          )}
-          {exportError && (
-            <p className="text-xs text-rose-400 font-medium mt-1">{exportError}</p>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-3 text-xs bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
-            <div className="flex items-center gap-1.5">
-              <span className="text-slate-400">Cert Status:</span>
-              <Badge variant="historical" size="sm">{auditMetadata.certificateStatus}</Badge>
-            </div>
-            <div className="h-4 w-px bg-slate-700"></div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-slate-400">Live Readiness:</span>
-              <Badge variant="drift" size="sm">{auditMetadata.liveSystemReleaseStatus}</Badge>
-            </div>
-          </div>
+        }
+        metadata={[
+          {
+            label: 'Cert Status',
+            value: <Badge variant="historical" size="sm">{auditMetadata.certificateStatus}</Badge>,
+          },
+          {
+            label: 'Live Readiness',
+            value: <Badge variant="drift" size="sm">{auditMetadata.liveSystemReleaseStatus}</Badge>,
+          },
+        ]}
+        actions={
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={handleExportJson}
               disabled={isExporting}
-              className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold rounded-lg shadow transition-colors flex items-center gap-1.5"
+              className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold rounded-lg shadow transition-colors flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             >
               {isExporting ? 'Exporting...' : '⬇ Export JSON'}
             </button>
             <button
               type="button"
               onClick={handlePrintReport}
-              className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition-colors flex items-center gap-1.5"
+              className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition-colors flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             >
               🖨 Print Report
             </button>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* 5 Variance Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
