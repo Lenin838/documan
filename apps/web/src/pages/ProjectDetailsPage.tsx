@@ -39,8 +39,14 @@ export default function ProjectDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Tab State
-  const currentTab = searchParams.get("tab") || "overview";
+  // Tab State - Canonical 5-Tab Architecture with fallback for legacy tab queries
+  const rawTab = searchParams.get("tab") || "overview";
+  const currentTab =
+    rawTab === "architecture"
+      ? "relationships"
+      : rawTab === "change-management" || rawTab === "certificates"
+      ? "governance"
+      : rawTab;
 
   // Project editing state
   const [isEditing, setIsEditing] = useState(false);
@@ -148,15 +154,15 @@ export default function ProjectDetailsPage() {
 
   if (error || !project) {
     return (
-      <div className="p-6 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg">
-        <p className="font-semibold">{error || "Project not found"}</p>
+      <Card className="p-6 bg-[#191f31] border border-[#1e293b]">
+        <p className="font-semibold text-[#f43f5e]">{error || "Project not found"}</p>
         <Link
           to="/projects"
-          className="mt-3 inline-block font-medium text-indigo-600 hover:underline"
+          className="mt-3 inline-block font-mono text-sm text-[#38bdf8] hover:text-[#7dd3fc] transition-colors"
         >
           &larr; Back to Projects
         </Link>
-      </div>
+      </Card>
     );
   }
 
@@ -165,11 +171,11 @@ export default function ProjectDetailsPage() {
   );
 
   const tabs: TabItem[] = [
-    { id: "overview", label: "Overview & Documents", count: projectDocs.length },
-    { id: "governance", label: "Governance & Gates" },
-    { id: "architecture", label: "Architecture & Specs" },
-    { id: "change-management", label: "Change Management" },
-    { id: "certificates", label: "Certificates & Lineage" },
+    { id: "overview", label: "Overview" },
+    { id: "documents", label: "Documents", count: projectDocs.length },
+    { id: "relationships", label: "Relationships" },
+    { id: "knowledge", label: "Knowledge" },
+    { id: "governance", label: "Governance" },
   ];
 
   return (
@@ -183,23 +189,25 @@ export default function ProjectDetailsPage() {
       />
 
       {/* Project Card Header */}
-      <Card>
-        <CardBody>
+      <Card className="bg-[#191f31] border border-[#1e293b]">
+        <CardBody className="p-6">
           {!isEditing ? (
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
               <div>
                 <div className="flex items-center gap-3">
-                  <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">
+                  <h1 className="text-2xl font-extrabold text-slate-100 tracking-tight">
                     {project.name}
                   </h1>
                   {project.isOwner && (
-                    <Badge variant="info">Owner</Badge>
+                    <Badge variant="info" className="font-mono text-[10px] uppercase">
+                      Owner
+                    </Badge>
                   )}
                 </div>
-                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 max-w-3xl">
+                <p className="mt-1 text-sm text-slate-300 max-w-3xl leading-relaxed">
                   {project.description || "No description provided."}
                 </p>
-                <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
+                <p className="mt-2 text-xs font-mono text-slate-400">
                   Created on {new Date(project.createdAt).toLocaleDateString()}
                 </p>
               </div>
@@ -208,6 +216,7 @@ export default function ProjectDetailsPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => setIsEditing(true)}
+                  className="border-[#1e293b] text-slate-300 hover:text-slate-100 hover:bg-[#23293c]"
                 >
                   Edit Project
                 </Button>
@@ -215,11 +224,11 @@ export default function ProjectDetailsPage() {
             </div>
           ) : (
             <form onSubmit={handleUpdateProject} className="space-y-4">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+              <h3 className="text-lg font-bold text-slate-100">
                 Edit Project
               </h3>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="block text-xs font-mono text-slate-300 uppercase tracking-wider mb-1">
                   Project Name
                 </label>
                 <input
@@ -227,18 +236,18 @@ export default function ProjectDetailsPage() {
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   required
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  className="mt-1 block w-full px-3 py-2 border border-[#1e293b] rounded-[4px] shadow-sm bg-[#0c1324] text-slate-100 text-sm focus:border-[#38bdf8] focus:ring-1 focus:ring-[#38bdf8]"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="block text-xs font-mono text-slate-300 uppercase tracking-wider mb-1">
                   Description
                 </label>
                 <textarea
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
                   rows={3}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  className="mt-1 block w-full px-3 py-2 border border-[#1e293b] rounded-[4px] shadow-sm bg-[#0c1324] text-slate-100 text-sm focus:border-[#38bdf8] focus:ring-1 focus:ring-[#38bdf8]"
                 />
               </div>
               <div className="flex gap-2">
@@ -258,32 +267,36 @@ export default function ProjectDetailsPage() {
         </CardBody>
       </Card>
 
-      {/* Navigation Tabs */}
+      {/* Navigation Tabs - Exactly Five Tabs */}
       <Tabs tabs={tabs} activeTab={currentTab} onChange={handleTabChange} />
 
-      {/* Lazy Tab Panels */}
+      {/* Tab 1: Overview */}
       {currentTab === "overview" && (
-        <div className="space-y-8">
+        <div className="space-y-6">
           {projectId && <KnowledgeRiskRadarPanel projectId={projectId} />}
+        </div>
+      )}
 
-          {/* Project Documents Roster */}
-          <Card>
-            <CardHeader className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+      {/* Tab 2: Documents */}
+      {currentTab === "documents" && (
+        <div className="space-y-6">
+          <Card className="bg-[#191f31] border border-[#1e293b]">
+            <CardHeader className="flex items-center justify-between border-b border-[#1e293b] pb-4">
+              <h2 className="text-lg font-bold text-slate-100">
                 Assigned Documents ({projectDocs.length})
               </h2>
             </CardHeader>
-            <CardBody className="space-y-6">
+            <CardBody className="p-6 space-y-6">
               {project.isOwner && (
                 <form
                   onSubmit={handleAssignDocument}
-                  className="p-4 bg-gray-50 dark:bg-gray-800/60 rounded-lg border border-gray-200 dark:border-gray-700 space-y-3"
+                  className="p-4 bg-[#0c1324] rounded-[6px] border border-[#1e293b] space-y-3"
                 >
-                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                  <h4 className="text-xs font-mono text-slate-300 uppercase tracking-wider">
                     Assign Document to Project
                   </h4>
                   {assignError && (
-                    <p className="text-xs text-red-600 dark:text-red-400 font-medium">
+                    <p className="text-xs text-[#f43f5e] font-mono">
                       {assignError}
                     </p>
                   )}
@@ -291,7 +304,7 @@ export default function ProjectDetailsPage() {
                     <select
                       value={selectedDocId}
                       onChange={(e) => setSelectedDocId(e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                      className="flex-1 px-3 py-2 border border-[#1e293b] rounded-[4px] bg-[#191f31] text-slate-100 text-sm focus:border-[#38bdf8] focus:ring-1 focus:ring-[#38bdf8]"
                     >
                       <option value="">-- Select a Document --</option>
                       {unassignedDocs.map((doc) => (
@@ -314,11 +327,11 @@ export default function ProjectDetailsPage() {
               )}
 
               {projectDocs.length === 0 ? (
-                <p className="text-sm text-gray-500 italic">
+                <p className="text-sm text-slate-400 italic">
                   No documents currently assigned to this project.
                 </p>
               ) : (
-                <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                <div className="divide-y divide-[#1e293b]">
                   {projectDocs.map((doc) => (
                     <div
                       key={doc.id}
@@ -327,11 +340,11 @@ export default function ProjectDetailsPage() {
                       <div>
                         <Link
                           to={`/documents/${doc.id}`}
-                          className="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                          className="font-semibold text-[#38bdf8] hover:text-[#7dd3fc] transition-colors"
                         >
                           {doc.title}
                         </Link>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        <p className="text-xs font-mono text-slate-400 mt-0.5">
                           {doc.fileName} &bull; {doc.fileType}
                         </p>
                       </div>
@@ -340,7 +353,7 @@ export default function ProjectDetailsPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleRemoveDocument(doc.id)}
-                          className="text-red-600 hover:text-red-700 dark:text-red-400"
+                          className="text-[#f43f5e] hover:text-red-400 hover:bg-[#f43f5e]/10"
                         >
                           Remove
                         </Button>
@@ -354,19 +367,9 @@ export default function ProjectDetailsPage() {
         </div>
       )}
 
-      {currentTab === "governance" && projectId && (
-        <div className="space-y-8">
-          <GovernanceSection
-            projectId={projectId}
-            isOwnerOrAdmin={!!project.isOwner}
-          />
-          <SystemBaselineAlignmentSection projectId={projectId} />
-          <SystemGovernanceGateSection projectId={projectId} />
-        </div>
-      )}
-
-      {currentTab === "architecture" && projectId && (
-        <div className="space-y-8">
+      {/* Tab 3: Relationships */}
+      {currentTab === "relationships" && projectId && (
+        <div className="space-y-6">
           <ProjectArchitecturePanel
             projectId={projectId}
             isOwnerOrAdmin={Boolean(project?.isOwner)}
@@ -381,29 +384,43 @@ export default function ProjectDetailsPage() {
         </div>
       )}
 
-      {currentTab === "change-management" && projectId && (
+      {/* Tab 4: Knowledge */}
+      {currentTab === "knowledge" && projectId && (
+        <div className="space-y-6">
+          <KnowledgeRiskRadarPanel projectId={projectId} />
+        </div>
+      )}
+
+      {/* Tab 5: Governance */}
+      {currentTab === "governance" && projectId && (
         <div className="space-y-8">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-              Pre-Change Proposals & Simulations
+          <GovernanceSection
+            projectId={projectId}
+            isOwnerOrAdmin={!!project.isOwner}
+          />
+          <SystemBaselineAlignmentSection projectId={projectId} />
+          <SystemGovernanceGateSection projectId={projectId} />
+          <div className="space-y-4">
+            <h2 className="text-lg font-extrabold text-slate-100 tracking-tight">
+              Pre-Change Proposals &amp; Simulations
             </h2>
             <ProjectProposalsTab projectId={projectId} />
           </div>
-          <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+          <div className="space-y-4">
+            <h2 className="text-lg font-extrabold text-slate-100 tracking-tight">
               Multi-Document Change Packages
             </h2>
             <ProjectChangePackagesTab projectId={projectId} />
           </div>
-        </div>
-      )}
-
-      {currentTab === "certificates" && projectId && (
-        <div className="space-y-8">
-          <SystemReleaseLineageView
-            projectId={projectId}
-            projectName={project?.name}
-          />
+          <div className="space-y-4">
+            <h2 className="text-lg font-extrabold text-slate-100 tracking-tight">
+              Release Certificates &amp; Lineage
+            </h2>
+            <SystemReleaseLineageView
+              projectId={projectId}
+              projectName={project?.name}
+            />
+          </div>
         </div>
       )}
     </div>
