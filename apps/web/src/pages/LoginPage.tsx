@@ -51,7 +51,7 @@ export default function LoginPage() {
 
   if (isRestoring) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
         <LoadingSpinner label="Checking session..." />
       </div>
     );
@@ -62,13 +62,13 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white dark:bg-gray-800 p-8 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+    <main className="min-h-screen flex items-center justify-center bg-slate-950 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 bg-slate-900 p-8 rounded-2xl shadow-xl border border-slate-800/80">
         <div>
-          <h1 className="text-center text-3xl font-extrabold text-gray-900 dark:text-white">
+          <h1 className="text-center text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
             Sign in to Documan
           </h1>
-          <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
+          <p className="mt-2 text-center text-sm text-slate-400">
             Document management & developer workspace
           </p>
         </div>
@@ -77,9 +77,10 @@ export default function LoginPage() {
           {error && (
             <div
               role="alert"
-              className="p-3 rounded-md bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm font-medium"
+              className="p-3.5 rounded-xl bg-red-950/60 border border-red-800/80 text-red-300 text-sm font-medium flex items-center gap-2"
             >
-              {error}
+              <span className="text-red-400 shrink-0" aria-hidden="true">⚠</span>
+              <span>{error}</span>
             </div>
           )}
 
@@ -87,7 +88,7 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                className="block text-sm font-medium text-slate-300"
               >
                 Email Address
               </label>
@@ -99,14 +100,15 @@ export default function LoginPage() {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                aria-invalid={!!error}
+                className="mt-1 block w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl shadow-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-950 sm:text-sm transition-colors"
               />
             </div>
 
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                className="block text-sm font-medium text-slate-300"
               >
                 Password
               </label>
@@ -118,7 +120,8 @@ export default function LoginPage() {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                aria-invalid={!!error}
+                className="mt-1 block w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl shadow-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-950 sm:text-sm transition-colors"
               />
             </div>
           </div>
@@ -136,12 +139,12 @@ export default function LoginPage() {
           </div>
 
           <div className="text-center text-sm">
-            <span className="text-gray-600 dark:text-gray-400">
+            <span className="text-slate-400">
               Don't have an account?{" "}
             </span>
             <Link
               to={`/signup${returnUrlQuery}`}
-              className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+              className="font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
             >
               Sign up
             </Link>
