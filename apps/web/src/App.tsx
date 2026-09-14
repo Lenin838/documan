@@ -27,17 +27,13 @@ const ReleaseCertificatePrintPage = lazy(
 );
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 
+import { LoadingSpinner } from "./components/ui/LoadingSpinner";
 import { AppLayout } from "./components/layout/AppLayout";
 
 function LoadingFallback() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-          Loading...
-        </p>
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-[#0c1324]">
+      <LoadingSpinner label="Loading..." />
     </div>
   );
 }
@@ -53,7 +49,7 @@ function App() {
     <ErrorBoundary>
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-indigo-600 focus:text-white focus:rounded-md focus:shadow-lg"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-[#38bdf8] focus:text-[#020617] focus:font-semibold focus:rounded-[4px] focus:shadow-lg focus:outline-none focus:ring-1 focus:ring-[#38bdf8]"
       >
         Skip to main content
       </a>
