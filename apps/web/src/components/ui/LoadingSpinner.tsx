@@ -22,11 +22,11 @@ export function LoadingSpinner({
       className={`flex flex-col items-center justify-center gap-3 ${className}`}
     >
       <div
-        className={`${sizeClasses[size]} border-indigo-600 border-t-transparent rounded-full animate-spin`}
+        className={`${sizeClasses[size]} border-[#38bdf8] border-t-transparent rounded-full animate-spin`}
         aria-hidden="true"
       />
       {label && (
-        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+        <p className="text-xs font-mono text-slate-400">
           {label}
         </p>
       )}

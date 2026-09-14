@@ -40,18 +40,18 @@ export function Badge({
   const variantClasses: Record<string, string> = {
     success: "bg-emerald-950/70 text-emerald-300 border-emerald-800/80",
     warning: "bg-amber-950/70 text-amber-300 border-amber-800/80",
-    error: "bg-red-950/70 text-red-300 border-red-800/80",
+    error: "bg-rose-950/70 text-rose-300 border-rose-800/80",
     info: "bg-sky-950/70 text-sky-300 border-sky-800/80",
-    neutral: "bg-slate-800/80 text-slate-300 border-slate-700/80",
+    neutral: "bg-[#191f31] text-slate-300 border-[#1e293b]",
     historical:
-      "bg-[var(--color-cert-snapshot-bg,rgba(88,28,135,0.6))] text-[var(--color-cert-snapshot-text,#c084fc)] border-[var(--color-cert-snapshot-border,rgba(126,34,206,0.8))] shadow-sm shadow-purple-950/50",
+      "bg-[var(--color-cert-snapshot-bg,rgba(168,85,247,0.1))] text-[var(--color-cert-snapshot-text,#d8b4fe)] border-[var(--color-cert-snapshot-border,rgba(168,85,247,0.4))] shadow-sm",
     drift:
-      "bg-[var(--color-drift-live-bg,rgba(12,74,110,0.6))] text-[var(--color-drift-live-text,#38bdf8)] border-[var(--color-drift-live-border,rgba(3,105,161,0.8))] shadow-sm shadow-sky-950/50",
+      "bg-[var(--color-drift-live-bg,rgba(56,189,248,0.1))] text-[var(--color-drift-live-text,#7dd3fc)] border-[var(--color-drift-live-border,rgba(56,189,248,0.4))] shadow-sm",
   };
 
   const sizeClasses = {
-    sm: "px-2 py-0.5 text-xs font-semibold gap-1",
-    md: "px-2.5 py-1 text-xs font-semibold gap-1.5",
+    sm: "px-1.5 py-0.5 text-[10px] font-mono font-medium gap-1 h-5",
+    md: "px-2 py-0.5 text-xs font-mono font-medium gap-1.5 h-6",
   };
 
   // Render non-color state indicator glyph if requested
@@ -62,7 +62,7 @@ export function Badge({
     if (normalizedVariant === "historical") {
       return (
         <span
-          className="inline-flex items-center justify-center px-1 rounded text-[10px] font-mono leading-none bg-purple-950/90 text-purple-200 border border-purple-600/60"
+          className="inline-flex items-center justify-center px-1 rounded-[2px] text-[10px] font-mono leading-none bg-purple-950/90 text-purple-200 border border-purple-600/60"
           aria-label="Frozen Historical Certificate Snapshot"
           title="T_cert: Frozen Historical Certificate Snapshot"
         >
@@ -74,7 +74,7 @@ export function Badge({
     if (normalizedVariant === "drift") {
       return (
         <span
-          className="inline-flex items-center justify-center px-1 rounded text-[10px] font-mono leading-none bg-sky-950/90 text-sky-200 border border-sky-600/60"
+          className="inline-flex items-center justify-center px-1 rounded-[2px] text-[10px] font-mono leading-none bg-sky-950/90 text-sky-200 border border-sky-600/60"
           aria-label="Live System Compliance Drift"
           title="T_now: Live System Compliance Drift Evaluation"
         >
@@ -88,7 +88,7 @@ export function Badge({
 
   return (
     <span
-      className={`inline-flex items-center rounded-full border transition-colors ${
+      className={`inline-flex items-center rounded-[2px] border transition-colors ${
         variantClasses[normalizedVariant] || variantClasses.neutral
       } ${sizeClasses[size]} ${className}`}
       {...props}

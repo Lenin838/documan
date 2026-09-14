@@ -8,9 +8,9 @@ export function Table({
   className?: string;
 }) {
   return (
-    <div className="w-full overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900/90">
+    <div className="w-full overflow-x-auto rounded border border-[#1e293b] shadow-sm bg-[#191f31]">
       <table
-        className={`w-full text-left text-sm text-slate-700 dark:text-slate-300 ${className}`}
+        className={`w-full text-left text-sm text-slate-300 ${className}`}
       >
         {children}
       </table>
@@ -20,7 +20,7 @@ export function Table({
 
 export function TableHeader({ children }: { children: React.ReactNode }) {
   return (
-    <thead className="bg-slate-50 dark:bg-slate-800/80 text-xs uppercase tracking-wider font-semibold text-slate-700 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+    <thead className="bg-[#151b2d] text-xs font-mono uppercase tracking-wider font-semibold text-slate-400 border-b border-[#1e293b]">
       {children}
     </thead>
   );
@@ -28,7 +28,7 @@ export function TableHeader({ children }: { children: React.ReactNode }) {
 
 export function TableBody({ children }: { children: React.ReactNode }) {
   return (
-    <tbody className="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900/50">
+    <tbody className="divide-y divide-[#1e293b] bg-[#191f31]">
       {children}
     </tbody>
   );
@@ -59,9 +59,9 @@ export function TableRow({
             }
           : undefined
       }
-      className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors ${
+      className={`hover:bg-[#1e293b] transition-colors ${
         isClickable
-          ? "cursor-pointer focus:outline-none focus-visible:bg-slate-100 dark:focus-visible:bg-slate-800/90 focus-visible:ring-2 focus-visible:ring-indigo-500"
+          ? "cursor-pointer focus:outline-none focus-visible:bg-[#23293c] focus-visible:ring-1 focus-visible:ring-sky-400"
           : ""
       } ${className}`}
     >
@@ -105,9 +105,9 @@ export function TableHead({
             : "descending"
           : undefined
       }
-      className={`px-4 py-3.5 font-semibold text-slate-700 dark:text-slate-300 ${
+      className={`px-4 py-2 font-mono font-medium text-slate-300 ${
         sortable
-          ? "cursor-pointer select-none hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
+          ? "cursor-pointer select-none hover:text-sky-400 focus:outline-none focus-visible:ring-1 focus-visible:ring-sky-400 rounded-[2px]"
           : ""
       } ${className}`}
     >
@@ -115,7 +115,7 @@ export function TableHead({
         {children}
         {sortable && sortDirection && (
           <span
-            className="text-indigo-600 dark:text-indigo-400 font-bold"
+            className="text-sky-400 font-bold"
             aria-hidden="true"
           >
             {sortDirection === "asc" ? "↑" : "↓"}
@@ -134,7 +134,7 @@ export function TableCell({
   className?: string;
 }) {
   return (
-    <td className={`px-4 py-3.5 whitespace-nowrap text-slate-700 dark:text-slate-300 ${className}`}>
+    <td className={`px-4 py-2 whitespace-nowrap text-slate-300 ${className}`}>
       {children}
     </td>
   );
