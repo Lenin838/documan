@@ -47,18 +47,18 @@ export function AppLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased">
+    <div className="min-h-screen bg-[#0c1324] text-slate-100 flex flex-col font-sans antialiased">
       {/* Top Header */}
-      <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 shadow-sm">
+      <header className="sticky top-0 z-40 bg-[#191f31]/90 backdrop-blur-md border-b border-[#1e293b] shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Brand Logo & Desktop Nav */}
             <div className="flex items-center gap-8">
               <Link
                 to="/dashboard"
-                className="flex items-center gap-2.5 font-extrabold text-xl text-indigo-400 hover:text-indigo-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 rounded-md"
+                className="flex items-center gap-2.5 font-extrabold text-xl text-[#38bdf8] hover:text-[#7dd3fc] transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[#38bdf8] rounded-md"
               >
-                <div className="w-8 h-8 rounded-lg bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center text-indigo-400 shadow-inner">
+                <div className="w-8 h-8 rounded-lg bg-[#38bdf8]/10 border border-[#38bdf8]/30 flex items-center justify-center text-[#38bdf8] shadow-inner">
                   <svg
                     className="w-5 h-5"
                     fill="none"
@@ -84,10 +84,10 @@ export function AppLayout() {
                     key={item.path}
                     to={item.path}
                     className={({ isActive }) =>
-                      `px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
+                      `px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all focus:outline-none focus-visible:ring-1 focus-visible:ring-[#38bdf8] ${
                         isActive
-                          ? "bg-indigo-950/60 text-indigo-300 border border-indigo-500/40 shadow-sm"
-                          : "text-slate-300 hover:bg-slate-800 hover:text-slate-100"
+                          ? "bg-[#0c4a6e]/30 text-[#38bdf8] border border-[#38bdf8]/40 shadow-sm"
+                          : "text-slate-300 hover:bg-[#1e293b]/60 hover:text-slate-100"
                       }`
                     }
                   >
@@ -103,7 +103,7 @@ export function AppLayout() {
               <button
                 type="button"
                 onClick={() => navigate("/knowledge/search")}
-                className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-lg text-xs text-slate-400 hover:text-slate-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-[#0c1324] border border-[#1e293b] hover:border-[#334155] rounded-lg text-xs text-slate-400 hover:text-slate-200 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[#38bdf8]"
                 title="Global Search (Cmd+K)"
                 aria-label="Global Search (Cmd+K)"
               >
@@ -111,7 +111,7 @@ export function AppLayout() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <span>Search...</span>
-                <kbd className="font-mono text-[10px] bg-slate-900 border border-slate-800 px-1.5 py-0.5 rounded text-slate-400">
+                <kbd className="font-mono text-[10px] bg-[#191f31] border border-[#1e293b] px-1.5 py-0.5 rounded text-slate-400">
                   ⌘K
                 </kbd>
               </button>
@@ -120,10 +120,10 @@ export function AppLayout() {
 
               {/* User Dropdown / Controls */}
               {user && (
-                <div className="hidden sm:flex items-center gap-3 border-l border-slate-800 pl-4">
+                <div className="hidden sm:flex items-center gap-3 border-l border-[#1e293b] pl-4">
                   <div className="text-right text-xs">
                     <p className="font-semibold text-slate-200">{user.name}</p>
-                    <p className="text-indigo-400 uppercase tracking-wider text-[10px]">
+                    <p className="text-[#38bdf8] font-mono uppercase tracking-wider text-[10px]">
                       {user.role}
                     </p>
                   </div>
@@ -138,7 +138,7 @@ export function AppLayout() {
                 type="button"
                 id="mobile-menu-trigger"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden p-2 rounded-lg text-slate-300 hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                className="md:hidden p-2 rounded-lg text-slate-300 hover:bg-[#1e293b] focus:outline-none focus-visible:ring-1 focus-visible:ring-[#38bdf8]"
                 aria-label="Toggle Navigation Menu"
                 aria-expanded={mobileMenuOpen}
                 aria-controls="mobile-navigation-menu"
@@ -175,7 +175,7 @@ export function AppLayout() {
         {mobileMenuOpen && (
           <nav
             id="mobile-navigation-menu"
-            className="md:hidden border-b border-slate-800 bg-slate-900 px-4 pt-2 pb-4 space-y-1"
+            className="md:hidden border-b border-[#1e293b] bg-[#191f31] px-4 pt-2 pb-4 space-y-1"
             aria-label="Mobile Navigation"
           >
             {navItems.map((item) => (
@@ -184,10 +184,10 @@ export function AppLayout() {
                 to={item.path}
                 onClick={() => setMobileMenuOpen(false)}
                 className={({ isActive }) =>
-                  `block px-3 py-2 rounded-lg text-base font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                  `block px-3 py-2 rounded-lg text-base font-medium transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[#38bdf8] ${
                     isActive
-                      ? "bg-indigo-950/60 text-indigo-300 border-l-2 border-indigo-500 font-semibold"
-                      : "text-slate-300 hover:bg-slate-800"
+                      ? "bg-[#0c4a6e]/30 text-[#38bdf8] border-l-2 border-[#38bdf8] font-semibold"
+                      : "text-slate-300 hover:bg-[#1e293b]"
                   }`
                 }
               >
@@ -195,12 +195,12 @@ export function AppLayout() {
               </NavLink>
             ))}
             {user && (
-              <div className="pt-4 border-t border-slate-800 flex flex-col gap-2">
+              <div className="pt-4 border-t border-[#1e293b] flex flex-col gap-2">
                 <div className="px-3 py-1">
                   <p className="text-sm font-semibold text-slate-200">
                     {user.name} ({user.email})
                   </p>
-                  <p className="text-xs text-indigo-400 uppercase">{user.role}</p>
+                  <p className="text-xs text-[#38bdf8] font-mono uppercase">{user.role}</p>
                 </div>
                 <div className="flex gap-2 px-3 pt-2">
                   <Button variant="secondary" size="sm" onClick={() => void handleLogout()} className="flex-1">
@@ -222,7 +222,7 @@ export function AppLayout() {
       </main>
 
       {/* Subtle Footer */}
-      <footer className="bg-slate-900/60 border-t border-slate-800/80 py-4 text-center text-xs text-slate-500">
+      <footer className="bg-[#191f31]/60 border-t border-[#1e293b]/80 py-4 text-center text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4">
           Documan Product Platform &copy; 2026. All rights reserved.
         </div>

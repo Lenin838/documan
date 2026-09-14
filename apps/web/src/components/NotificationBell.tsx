@@ -136,13 +136,13 @@ export function NotificationBell() {
         aria-label="Notifications"
         aria-expanded={isOpen}
         aria-haspopup="true"
-        className="relative inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-slate-100 text-xs font-medium transition-all duration-150 hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+        className="relative inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#1e293b] hover:border-[#334155] bg-[#191f31] hover:bg-[#1e293b] text-slate-300 hover:text-slate-100 text-xs font-medium transition-all duration-150 hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-1 focus-visible:ring-[#38bdf8]"
       >
         <span className="text-sm leading-none" aria-hidden="true">🔔</span>
         <span className="hidden sm:inline">Notifications</span>
         {unreadCount > 0 && (
           <span
-            className="bg-red-600 text-white rounded-full px-1.5 py-0.5 text-[11px] font-bold leading-none min-w-[18px] text-center shadow-sm"
+            className="bg-[#f43f5e] text-white rounded-[2px] px-1.5 py-0.5 text-[10px] font-mono font-bold leading-none min-w-[18px] text-center shadow-sm"
           >
             {unreadCount}
           </span>
@@ -151,10 +151,10 @@ export function NotificationBell() {
 
       {isOpen && (
         <div
-          className="absolute right-0 top-[110%] w-[360px] max-h-[420px] bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-50 flex flex-col overflow-hidden text-slate-100"
+          className="absolute right-0 top-[110%] w-[360px] max-h-[420px] bg-[#191f31] border border-[#1e293b] rounded-[6px] shadow-2xl z-50 flex flex-col overflow-hidden text-slate-100"
         >
           <header
-            className="px-4 py-3 border-b border-slate-800 flex justify-between items-center bg-slate-900/90"
+            className="px-4 py-3 border-b border-[#1e293b] flex justify-between items-center bg-[#191f31]/90"
           >
             <strong className="text-xs font-semibold text-slate-200">
               Notifications ({unreadCount} unread)
@@ -163,14 +163,14 @@ export function NotificationBell() {
               <button
                 type="button"
                 onClick={() => void handleMarkAllAsRead()}
-                className="text-xs text-indigo-400 hover:text-indigo-300 font-medium hover:underline bg-transparent border-0 p-0 cursor-pointer"
+                className="text-xs text-[#38bdf8] hover:text-[#7dd3fc] font-medium hover:underline bg-transparent border-0 p-0 cursor-pointer"
               >
                 Mark all read
               </button>
             )}
           </header>
 
-          <div className="overflow-y-auto flex-1 divide-y divide-slate-800/60">
+          <div className="overflow-y-auto flex-1 divide-y divide-[#1e293b]/60">
             {loading && notifications.length === 0 ? (
               <p className="p-4 text-center text-slate-400 text-xs">
                 Loading notifications...
@@ -186,8 +186,8 @@ export function NotificationBell() {
                   onClick={() => void handleMarkAsRead(item)}
                   className={`p-3 text-xs transition-colors flex gap-3 items-start ${
                     item.isRead
-                      ? "bg-slate-900/60 hover:bg-slate-800/80 text-slate-300"
-                      : "bg-indigo-950/40 hover:bg-indigo-900/50 text-slate-100"
+                      ? "bg-[#191f31] hover:bg-[#1e293b]/60 text-slate-300"
+                      : "bg-[#0c4a6e]/20 hover:bg-[#0c4a6e]/30 text-slate-100"
                   } ${item.isAccessible ? "cursor-pointer" : "cursor-default"}`}
                 >
                   <span className="text-base leading-none" aria-hidden="true">
@@ -198,7 +198,7 @@ export function NotificationBell() {
                       {getNotificationMessage(item)}
                     </div>
                     {item.isAccessible && item.document ? (
-                      <div className="text-xs text-indigo-400 hover:text-indigo-300 mt-1 font-semibold truncate">
+                      <div className="text-xs text-[#38bdf8] hover:text-[#7dd3fc] mt-1 font-semibold truncate">
                         📄 {item.document.title}
                       </div>
                     ) : (
@@ -212,7 +212,7 @@ export function NotificationBell() {
                   </div>
                   {!item.isRead && (
                     <span
-                      className="w-2 h-2 rounded-full bg-indigo-500 mt-1 shrink-0"
+                      className="w-2 h-2 rounded-full bg-[#38bdf8] mt-1 shrink-0"
                       aria-hidden="true"
                     />
                   )}
