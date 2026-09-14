@@ -85,10 +85,10 @@ export default function ProjectsPage() {
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">
+          <h1 className="text-2xl font-extrabold text-slate-100">
             Projects & Workspaces
           </h1>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+          <p className="mt-1 text-sm text-slate-400">
             Group and manage documents within project context and technical boundaries.
           </p>
         </div>
@@ -101,21 +101,21 @@ export default function ProjectsPage() {
       </div>
 
       {showCreateForm && (
-        <Card>
+        <Card className="bg-[#191f31] border border-[#1e293b] rounded-[6px]">
           <CardHeader>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+            <h3 className="text-lg font-bold text-slate-100">
               Create New Project
             </h3>
           </CardHeader>
           <CardBody>
             <form onSubmit={handleCreateProject} className="space-y-4">
               {formError && (
-                <p className="text-xs text-red-600 dark:text-red-400 font-medium">
+                <p className="text-xs text-[#f43f5e] font-mono font-medium">
                   {formError}
                 </p>
               )}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 mb-1">
                   Project Name *
                 </label>
                 <input
@@ -124,11 +124,11 @@ export default function ProjectsPage() {
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Payment Microservice Redesign"
                   required
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                  className="mt-1 block w-full px-3 py-2 border border-[#1e293b] rounded bg-[#0c1324] text-slate-100 text-sm focus:border-[#38bdf8] focus:ring-1 focus:ring-[#38bdf8] focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 mb-1">
                   Description
                 </label>
                 <textarea
@@ -136,7 +136,7 @@ export default function ProjectsPage() {
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Optional brief description of this project"
                   rows={3}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                  className="mt-1 block w-full px-3 py-2 border border-[#1e293b] rounded bg-[#0c1324] text-slate-100 text-sm focus:border-[#38bdf8] focus:ring-1 focus:ring-[#38bdf8] focus:outline-none"
                 />
               </div>
               <Button type="submit" variant="primary" isLoading={submitting}>
@@ -154,7 +154,7 @@ export default function ProjectsPage() {
       )}
 
       {error && (
-        <div className="p-4 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-md text-sm font-medium">
+        <div className="p-4 bg-[#f43f5e]/10 border border-[#f43f5e]/20 text-[#f43f5e] rounded-md text-sm font-medium">
           {error}
         </div>
       )}
@@ -175,14 +175,14 @@ export default function ProjectsPage() {
         {projects.map((project) => (
           <Card
             key={project.id}
-            className="flex flex-col justify-between hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors"
+            className="flex flex-col justify-between bg-[#191f31] border border-[#1e293b] rounded-[6px] hover:border-[#38bdf8]/40 transition-colors"
           >
             <CardBody className="space-y-3">
               <div className="flex items-start justify-between gap-2">
-                <h3 className="font-bold text-lg text-gray-900 dark:text-white">
+                <h3 className="font-bold text-lg text-slate-100">
                   <Link
                     to={`/projects/${project.id}`}
-                    className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                    className="hover:text-[#38bdf8] transition-colors"
                   >
                     {project.name}
                   </Link>
@@ -190,15 +190,15 @@ export default function ProjectsPage() {
                 {project.isOwner && <Badge variant="info">Owner</Badge>}
               </div>
 
-              <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">
+              <p className="text-sm text-slate-400 line-clamp-3">
                 {project.description || "No description provided."}
               </p>
             </CardBody>
 
-            <CardFooter className="flex items-center justify-between text-xs">
+            <CardFooter className="flex items-center justify-between text-xs border-t border-[#1e293b]/60 pt-3">
               <Link
                 to={`/projects/${project.id}`}
-                className="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                className="font-semibold text-[#38bdf8] hover:text-[#7dd3fc] hover:underline"
               >
                 View Project Details &rarr;
               </Link>
@@ -206,7 +206,7 @@ export default function ProjectsPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => handleArchiveProject(project.id)}
-                className="text-red-600 hover:text-red-700 dark:text-red-400"
+                className="text-[#f43f5e] hover:text-red-400"
               >
                 Archive
               </Button>

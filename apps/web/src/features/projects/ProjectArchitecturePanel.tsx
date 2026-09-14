@@ -148,28 +148,28 @@ export const ProjectArchitecturePanel: React.FC<ProjectArchitecturePanelProps> =
 
   if (isLoading) {
     return (
-      <div style={{ padding: '2rem', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
-        <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Loading System Architecture Topology...</p>
+      <div className="p-8 bg-[#191f31] rounded-[6px] border border-[#1e293b] text-center">
+        <p className="text-slate-400 text-sm">Loading System Architecture Topology...</p>
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className="flex flex-col gap-6">
       {/* Header Banner */}
-      <div style={{ padding: '1.25rem', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="p-5 bg-[#191f31] rounded-[6px] border border-[#1e293b] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#0f172a', margin: 0 }}>
+          <h2 className="text-lg font-semibold text-slate-100 m-0">
             🌐 System Architecture Topology &amp; Cross-Project Governance
           </h2>
-          <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.25rem', margin: 0 }}>
+          <p className="text-xs text-slate-400 mt-1 m-0">
             Explicit project-level architectural landscape boundaries and contract governance metrics.
           </p>
         </div>
         {isOwnerOrAdmin && (
           <button
             onClick={handleOpenCreateModal}
-            style={{ padding: '0.5rem 1rem', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer' }}
+            className="px-4 py-2 bg-[#38bdf8] hover:bg-[#7dd3fc] text-[#020617] font-semibold border-none rounded text-xs focus:outline-none focus:ring-1 focus:ring-[#38bdf8] transition-colors cursor-pointer"
           >
             + Add Topology Link
           </button>
@@ -177,102 +177,102 @@ export const ProjectArchitecturePanel: React.FC<ProjectArchitecturePanelProps> =
       </div>
 
       {error && (
-        <div style={{ padding: '1rem', background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', borderRadius: '6px', fontSize: '0.875rem' }}>
+        <div className="p-4 bg-[#f43f5e]/10 border border-[#f43f5e]/20 text-[#f43f5e] rounded-[6px] text-xs font-mono">
           {error}
         </div>
       )}
 
       {/* Summary Cards */}
       {graph && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-          <div style={{ padding: '1rem', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="p-4 bg-[#191f31] rounded-[6px] border border-[#1e293b]">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold block">
               Connected Architecture Nodes
             </span>
-            <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#0f172a', marginTop: '0.25rem' }}>
+            <div className="text-2xl font-bold text-slate-100 mt-1">
               {graph.nodes.length}
             </div>
-            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Permission-aware project nodes</span>
+            <span className="text-[10px] text-slate-500 font-mono block mt-1">Permission-aware project nodes</span>
           </div>
 
-          <div style={{ padding: '1rem', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
+          <div className="p-4 bg-[#191f31] rounded-[6px] border border-[#1e293b]">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold block">
               Topology Edges
             </span>
-            <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#0f172a', marginTop: '0.25rem' }}>
+            <div className="text-2xl font-bold text-slate-100 mt-1">
               {graph.edges.length}
             </div>
-            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Architectural dependency links</span>
+            <span className="text-[10px] text-slate-500 font-mono block mt-1">Architectural dependency links</span>
           </div>
 
-          <div style={{ padding: '1rem', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
+          <div className="p-4 bg-[#191f31] rounded-[6px] border border-[#1e293b]">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold block">
               Cross-Project Contract Health
             </span>
-            <div style={{ fontSize: '1.25rem', fontWeight: 700, marginTop: '0.25rem', color: graph.edges.some((e) => e.hasActiveDrift) ? '#d97706' : '#059669' }}>
+            <div className={`text-base font-bold mt-1 ${graph.edges.some((e) => e.hasActiveDrift) ? 'text-[#f59e0b]' : 'text-[#10b981]'}`}>
               {graph.edges.some((e) => e.hasActiveDrift) ? '⚠️ Contract Drift Flagged' : '✅ Healthy & Aligned'}
             </div>
-            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Cross-project contract status</span>
+            <span className="text-[10px] text-slate-500 font-mono block mt-1">Cross-project contract status</span>
           </div>
         </div>
       )}
 
       {/* Topology Links List Table */}
-      <div style={{ background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-        <div style={{ padding: '1rem 1.25rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', fontWeight: 600, fontSize: '0.875rem', color: '#0f172a' }}>
+      <div className="bg-[#191f31] rounded-[6px] border border-[#1e293b] overflow-hidden">
+        <div className="px-5 py-4 bg-[#191f31]/90 border-b border-[#1e293b] font-semibold text-sm text-slate-200">
           Project Architecture Topology Links ({links.length})
         </div>
 
         {links.length === 0 ? (
-          <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b', fontSize: '0.875rem' }}>
+          <div className="p-8 text-center text-slate-400 text-sm">
             No architecture topology links defined for this project yet.
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', textAlign: 'left' }}>
-              <thead style={{ background: '#f8fafc', color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase' }}>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-xs text-left">
+              <thead className="bg-[#0c1324] text-slate-400 text-[10px] font-mono uppercase tracking-wider">
                 <tr>
-                  <th style={{ padding: '0.75rem 1rem' }}>Source Project</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>Topology Type</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>Target Project</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>Description</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>Created By</th>
-                  {isOwnerOrAdmin && <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Actions</th>}
+                  <th className="p-3">Source Project</th>
+                  <th className="p-3">Topology Type</th>
+                  <th className="p-3">Target Project</th>
+                  <th className="p-3">Description</th>
+                  <th className="p-3">Created By</th>
+                  {isOwnerOrAdmin && <th className="p-3 text-right">Actions</th>}
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-[#1e293b]/60 text-slate-200">
                 {links.map((link) => {
                   const isSourceCurrent = link.sourceProjectId?._id === projectId;
                   return (
-                    <tr key={link._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '0.75rem 1rem', fontWeight: 600, color: '#0f172a' }}>
+                    <tr key={link._id} className="hover:bg-[#1e293b]/40 transition-colors">
+                      <td className="p-3 font-semibold text-slate-100">
                         {link.sourceProjectId?.name || '[Project]'}
                       </td>
-                      <td style={{ padding: '0.75rem 1rem' }}>
-                        <span style={{ display: 'inline-block', padding: '0.2rem 0.5rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600, border: '1px solid #cbd5e1', background: '#f1f5f9' }}>
+                      <td className="p-3">
+                        <span className="inline-block px-2 py-0.5 rounded-[2px] text-[10px] font-mono font-semibold border border-[#38bdf8]/30 bg-[#38bdf8]/10 text-[#38bdf8]">
                           → {link.type}
                         </span>
                       </td>
-                      <td style={{ padding: '0.75rem 1rem', fontWeight: 600, color: '#0f172a' }}>
+                      <td className="p-3 font-semibold text-slate-100">
                         {link.targetProjectId?.name || '[Project]'}
                       </td>
-                      <td style={{ padding: '0.75rem 1rem', color: '#64748b' }}>
+                      <td className="p-3 text-slate-400">
                         {link.description || '—'}
                       </td>
-                      <td style={{ padding: '0.75rem 1rem', color: '#94a3b8', fontSize: '0.75rem' }}>
+                      <td className="p-3 text-slate-500 font-mono text-[10px]">
                         {link.createdBy?.name || 'User'}
                       </td>
                       {isOwnerOrAdmin && (
-                        <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
+                        <td className="p-3 text-right">
                           {isSourceCurrent ? (
                             <button
                               onClick={() => handleDelete(link._id)}
-                              style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
+                              className="bg-none border-none text-[#f43f5e] hover:text-red-400 cursor-pointer text-xs font-semibold"
                             >
                               Remove
                             </button>
                           ) : (
-                            <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic' }}>Incoming</span>
+                            <span className="text-[10px] text-slate-500 italic">Incoming</span>
                           )}
                         </td>
                       )}
@@ -287,28 +287,28 @@ export const ProjectArchitecturePanel: React.FC<ProjectArchitecturePanelProps> =
 
       {/* Create Modal */}
       {isCreateModalOpen && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-          <div style={{ background: '#fff', borderRadius: '8px', width: '100%', maxWidth: '420px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>Add Architecture Topology Link</h3>
-              <button onClick={() => setIsCreateModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
+        <div className="fixed inset-0 z-50 bg-[#0c1324]/85 flex items-center justify-center p-4">
+          <div className="bg-[#191f31] border border-[#1e293b] rounded-[6px] shadow-2xl w-full max-w-md p-6 flex flex-col gap-4 text-slate-100">
+            <div className="flex justify-between items-center border-b border-[#1e293b] pb-3">
+              <h3 className="m-0 text-base font-semibold text-slate-100">Add Architecture Topology Link</h3>
+              <button onClick={() => setIsCreateModalOpen(false)} className="bg-none border-none text-slate-400 hover:text-slate-100 cursor-pointer text-base">✕</button>
             </div>
 
             {formError && (
-              <div style={{ padding: '0.5rem', background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', fontSize: '0.75rem', borderRadius: '4px' }}>
+              <div className="p-2 bg-[#f43f5e]/10 border border-[#f43f5e]/20 text-[#f43f5e] text-xs font-mono rounded">
                 {formError}
               </div>
             )}
 
-            <form onSubmit={handleCreateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <form onSubmit={handleCreateSubmit} className="flex flex-col gap-4">
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 mb-1">
                   Target Project
                 </label>
                 <select
                   value={targetProjectId}
                   onChange={(e) => setTargetProjectId(e.target.value)}
-                  style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.875rem' }}
+                  className="w-full p-2 rounded border border-[#1e293b] bg-[#0c1324] text-slate-100 text-xs focus:border-[#38bdf8] focus:ring-1 focus:ring-[#38bdf8] focus:outline-none"
                   required
                 >
                   {allProjects.map((p) => (
@@ -320,13 +320,13 @@ export const ProjectArchitecturePanel: React.FC<ProjectArchitecturePanelProps> =
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 mb-1">
                   Topology Relationship Type
                 </label>
                 <select
                   value={topologyType}
                   onChange={(e) => setTopologyType(e.target.value as ProjectTopologyType)}
-                  style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.875rem' }}
+                  className="w-full p-2 rounded border border-[#1e293b] bg-[#0c1324] text-slate-100 text-xs focus:border-[#38bdf8] focus:ring-1 focus:ring-[#38bdf8] focus:outline-none"
                 >
                   <option value="DEPENDS_ON">DEPENDS_ON (This project requires target)</option>
                   <option value="PROVIDES_API_TO">PROVIDES_API_TO (This project exposes API to target)</option>
@@ -336,7 +336,7 @@ export const ProjectArchitecturePanel: React.FC<ProjectArchitecturePanelProps> =
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 mb-1">
                   Description / Context (Optional)
                 </label>
                 <textarea
@@ -344,22 +344,22 @@ export const ProjectArchitecturePanel: React.FC<ProjectArchitecturePanelProps> =
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Architectural boundary description..."
                   rows={3}
-                  style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.875rem' }}
+                  className="w-full p-2 rounded border border-[#1e293b] bg-[#0c1324] text-slate-100 text-xs focus:border-[#38bdf8] focus:ring-1 focus:ring-[#38bdf8] focus:outline-none"
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0' }}>
+              <div className="flex justify-end gap-2 pt-3 border-t border-[#1e293b]">
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  style={{ padding: '0.5rem 1rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '0.875rem', cursor: 'pointer' }}
+                  className="px-4 py-2 bg-[#0c1324] border border-[#1e293b] text-slate-300 rounded text-xs hover:bg-[#1e293b] transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  style={{ padding: '0.5rem 1rem', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '0.875rem', cursor: 'pointer' }}
+                  className="px-4 py-2 bg-[#38bdf8] hover:bg-[#7dd3fc] text-[#020617] font-semibold border-none rounded text-xs transition-colors cursor-pointer"
                 >
                   {isSubmitting ? 'Saving...' : 'Create Link'}
                 </button>
