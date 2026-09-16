@@ -55,3 +55,31 @@ export const signupRateLimiter = rateLimit({
     },
   },
 });
+
+export const verifyOtpRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: {
+      code: "TOO_MANY_VERIFY_ATTEMPTS",
+      message: "Too many verification attempts. Please try again later.",
+    },
+  },
+});
+
+export const resendOtpRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 3,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: {
+      code: "TOO_MANY_RESEND_ATTEMPTS",
+      message: "Too many resend attempts. Please try again later.",
+    },
+  },
+});

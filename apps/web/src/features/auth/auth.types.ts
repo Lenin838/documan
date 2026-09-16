@@ -6,6 +6,7 @@ export interface AuthUser {
   email: string;
   role: UserRole;
   isActive: boolean;
+  isEmailVerified?: boolean;
 }
 
 export interface LoginRequest {
@@ -39,4 +40,30 @@ export interface RegisterRequest {
   password: string;
 }
 
-export type RegisterResponse = LoginResponse;
+export interface RegisterResponse {
+  success: boolean;
+  data: {
+    message: string;
+    email: string;
+    resendCooldown: number;
+  };
+}
+
+export interface VerifyOtpRequest {
+  email: string;
+  otp: string;
+}
+
+export type VerifyOtpResponse = LoginResponse;
+
+export interface ResendOtpRequest {
+  email: string;
+}
+
+export interface ResendOtpResponse {
+  success: boolean;
+  data: {
+    message: string;
+    resendCooldown: number;
+  };
+}

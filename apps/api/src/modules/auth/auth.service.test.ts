@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import bcrypt from "bcrypt";
 
-const { mockRefreshToken, mockUser } = vi.hoisted(() => {
+const { mockRefreshToken, mockUser, mockSignupOtp } = vi.hoisted(() => {
   process.env.MONGO_URI = "mongodb://127.0.0.1:27017/documan_test";
 
   process.env.JWT_SECRET = "test-secret-that-is-at-least-32-characters-long";
@@ -17,6 +17,13 @@ const { mockRefreshToken, mockUser } = vi.hoisted(() => {
     mockUser: {
       findOne: vi.fn(),
       findById: vi.fn(),
+      create: vi.fn(),
+    },
+
+    mockSignupOtp: {
+      findOne: vi.fn(),
+      findOneAndUpdate: vi.fn(),
+      deleteOne: vi.fn(),
     },
   };
 });
@@ -27,6 +34,10 @@ vi.mock("./refresh-token.model.js", () => ({
 
 vi.mock("../users/user.model.js", () => ({
   User: mockUser,
+}));
+
+vi.mock("./signup-otp.model.js", () => ({
+  SignupOtp: mockSignupOtp,
 }));
 
 import {
@@ -133,6 +144,7 @@ describe("auth service", () => {
         _id: "user-123",
         id: "user-123",
         isActive: false,
+        isEmailVerified: true,
       });
 
       await expect(
@@ -156,6 +168,7 @@ describe("auth service", () => {
         _id: "user-123",
         id: "user-123",
         isActive: true,
+        isEmailVerified: true,
       };
 
       mockRefreshToken.findOne.mockResolvedValue(storedToken);
@@ -252,6 +265,7 @@ describe("auth service", () => {
     it("should reject an inactive user", async () => {
       mockUser.findOne.mockResolvedValue({
         isActive: false,
+        isEmailVerified: true,
       });
 
       await expect(
@@ -265,9 +279,27 @@ describe("auth service", () => {
       });
     });
 
+    it("should reject an unverified email user", async () => {
+      mockUser.findOne.mockResolvedValue({
+        isActive: true,
+        isEmailVerified: false,
+      });
+
+      await expect(
+        loginUser({
+          email: "unverified@example.com",
+          password: "password123",
+        }),
+      ).rejects.toMatchObject({
+        statusCode: 403,
+        code: "EMAIL_NOT_VERIFIED",
+      });
+    });
+
     it("should reject an incorrect password", async () => {
       mockUser.findOne.mockResolvedValue({
         isActive: true,
+        isEmailVerified: true,
         passwordHash: await bcrypt.hash("correct-password", 4),
       });
 
@@ -282,7 +314,7 @@ describe("auth service", () => {
       });
     });
 
-    it("should successfully log in and create a refresh token", async () => {
+    it("should successfully log in and create a refresh token for verified user", async () => {
       const user = {
         _id: "user-123",
         id: "user-123",
@@ -290,6 +322,7 @@ describe("auth service", () => {
         email: "user@example.com",
         role: "user" as const,
         isActive: true,
+        isEmailVerified: true,
         passwordHash: await bcrypt.hash("password123", 4),
       };
 
@@ -313,6 +346,7 @@ describe("auth service", () => {
         email: user.email,
         role: user.role,
         isActive: user.isActive,
+        isEmailVerified: user.isEmailVerified,
       });
 
       expect(mockRefreshToken.create).toHaveBeenCalledWith(
