@@ -29,6 +29,7 @@ import "../modules/change-proposals/change-proposal.model.js";
 import "../modules/change-packages/change-package.model.js";
 import "../modules/change-packages/change-package-attestation.model.js";
 import "../modules/auth/refresh-token.model.js";
+import "../modules/auth/signup-otp.model.js";
 import "../modules/document-shares/document-share.model.js";
 
 export async function syncDatabaseIndexes(): Promise<void> {
