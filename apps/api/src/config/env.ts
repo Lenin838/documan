@@ -35,6 +35,16 @@ const envSchema = z.object({
     .int()
     .positive()
     .default(7),
+
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().optional().default(587),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().optional().default('"Documan Security" <no-reply@documan.app>'),
+  SMTP_SECURE: z
+    .preprocess((val) => val === 'true' || val === true, z.boolean())
+    .optional()
+    .default(false),
 });
 
 export const env = envSchema.parse(process.env);
