@@ -17,6 +17,8 @@ export const createUserSchema = z.object({
     .string()
     .min(8, 'Password must be at least 8 characters')
     .max(100, 'Password must not exceed 100 characters'),
+
+  isEmailVerified: z.boolean().optional(),
 });
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;

@@ -5,6 +5,8 @@ import { AppError } from "../../errors/app-error.js";
 import { env } from "../../config/env.js";
 import {
   registerUser,
+  verifySignupOtp,
+  resendSignupOtp,
   loginUser,
   logoutUser,
   logoutAllSessions,
@@ -15,6 +17,16 @@ export const registerController: RequestHandler = async (req, res, next) => {
   try {
     const result = await registerUser(req.body);
 
+    return sendSuccess(res, result, 201);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const verifyOtpController: RequestHandler = async (req, res, next) => {
+  try {
+    const result = await verifySignupOtp(req.body);
+
     res.cookie("documan_refresh_token", result.refreshToken, {
       httpOnly: true,
       secure: env.NODE_ENV === "production",
@@ -23,14 +35,20 @@ export const registerController: RequestHandler = async (req, res, next) => {
       path: "/api/v1/auth",
     });
 
-    return sendSuccess(
-      res,
-      {
-        accessToken: result.accessToken,
-        user: result.user,
-      },
-      201,
-    );
+    return sendSuccess(res, {
+      accessToken: result.accessToken,
+      user: result.user,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const resendOtpController: RequestHandler = async (req, res, next) => {
+  try {
+    const result = await resendSignupOtp(req.body);
+
+    return sendSuccess(res, result, 200);
   } catch (error) {
     return next(error);
   }

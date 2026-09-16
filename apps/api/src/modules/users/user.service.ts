@@ -17,6 +17,7 @@ interface UserResponse {
   email: string;
   role: 'user' | 'admin';
   isActive: boolean;
+  isEmailVerified: boolean;
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -46,6 +47,7 @@ export async function createUser(
     name: input.name,
     email: input.email,
     passwordHash,
+    isEmailVerified: input.isEmailVerified ?? true,
   });
 
   return {
@@ -54,6 +56,7 @@ export async function createUser(
     email: user.email,
     role: user.role,
     isActive: user.isActive,
+    isEmailVerified: user.isEmailVerified,
     isDeleted: user.isDeleted,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
@@ -67,7 +70,7 @@ export async function getCurrentUser(
     _id: userId,
     isDeleted: false,
   }).select(
-    'name email role isActive isDeleted createdAt updatedAt',
+    'name email role isActive isEmailVerified isDeleted createdAt updatedAt',
   );
 
   if (!user) {
@@ -84,6 +87,7 @@ export async function getCurrentUser(
     email: user.email,
     role: user.role,
     isActive: user.isActive,
+    isEmailVerified: user.isEmailVerified ?? true,
     isDeleted: user.isDeleted,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
@@ -109,7 +113,7 @@ export async function updateCurrentUser(
       runValidators: true,
     },
   ).select(
-    'name email role isActive isDeleted createdAt updatedAt',
+    'name email role isActive isEmailVerified isDeleted createdAt updatedAt',
   );
 
   if (!user) {
@@ -126,6 +130,7 @@ export async function updateCurrentUser(
     email: user.email,
     role: user.role,
     isActive: user.isActive,
+    isEmailVerified: user.isEmailVerified ?? true,
     isDeleted: user.isDeleted,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
@@ -247,7 +252,7 @@ export async function getAllUsers(
   const [users, total] = await Promise.all([
     User.find(filter)
       .select(
-        'name email role isActive isDeleted createdAt updatedAt',
+        'name email role isActive isEmailVerified isDeleted createdAt updatedAt',
       )
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -263,6 +268,7 @@ export async function getAllUsers(
       email: user.email,
       role: user.role,
       isActive: user.isActive,
+      isEmailVerified: user.isEmailVerified ?? true,
       isDeleted: user.isDeleted,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
@@ -284,7 +290,7 @@ export async function getUserById(
     _id: userId,
     isDeleted: false,
   }).select(
-    'name email role isActive isDeleted createdAt updatedAt',
+    'name email role isActive isEmailVerified isDeleted createdAt updatedAt',
   );
 
   if (!user) {
@@ -301,6 +307,7 @@ export async function getUserById(
     email: user.email,
     role: user.role,
     isActive: user.isActive,
+    isEmailVerified: user.isEmailVerified ?? true,
     isDeleted: user.isDeleted,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
@@ -374,6 +381,7 @@ export async function adminUpdateUser(
     email: user.email,
     role: user.role,
     isActive: user.isActive,
+    isEmailVerified: user.isEmailVerified ?? true,
     isDeleted: user.isDeleted,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
@@ -430,6 +438,7 @@ export async function updateUserStatus(
     email: user.email,
     role: user.role,
     isActive: user.isActive,
+    isEmailVerified: user.isEmailVerified ?? true,
     isDeleted: user.isDeleted,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,

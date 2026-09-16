@@ -2,6 +2,8 @@ import { create } from "zustand";
 
 import {
   register as registerRequest,
+  verifyOtp as verifyOtpRequest,
+  resendOtp as resendOtpRequest,
   login as loginRequest,
   logout as logoutRequest,
   logoutAll as logoutAllRequest,
@@ -9,7 +11,14 @@ import {
   getCurrentUser,
 } from "./auth.api";
 
-import type { AuthUser, LoginRequest, RegisterRequest } from "./auth.types";
+import type {
+  AuthUser,
+  LoginRequest,
+  RegisterRequest,
+  RegisterResponse,
+  ResendOtpResponse,
+  VerifyOtpRequest,
+} from "./auth.types";
 
 interface AuthState {
   accessToken: string | null;
@@ -18,7 +27,9 @@ interface AuthState {
   isLoading: boolean;
   isRestoring: boolean;
 
-  signup: (userData: RegisterRequest) => Promise<void>;
+  signup: (userData: RegisterRequest) => Promise<RegisterResponse["data"]>;
+  verifyOtp: (payload: VerifyOtpRequest) => Promise<void>;
+  resendOtp: (payload: { email: string }) => Promise<ResendOtpResponse["data"]>;
   login: (credentials: LoginRequest) => Promise<void>;
   restoreSession: () => Promise<void>;
   logout: () => Promise<void>;
@@ -42,12 +53,42 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     try {
       const response = await registerRequest(userData);
+      return response.data;
+    } finally {
+      set({
+        isLoading: false,
+      });
+    }
+  },
+
+  verifyOtp: async (payload) => {
+    set({
+      isLoading: true,
+    });
+
+    try {
+      const response = await verifyOtpRequest(payload);
 
       set({
         accessToken: response.data.accessToken,
         user: response.data.user,
         isAuthenticated: true,
       });
+    } finally {
+      set({
+        isLoading: false,
+      });
+    }
+  },
+
+  resendOtp: async (payload) => {
+    set({
+      isLoading: true,
+    });
+
+    try {
+      const response = await resendOtpRequest(payload);
+      return response.data;
     } finally {
       set({
         isLoading: false,

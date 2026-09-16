@@ -8,12 +8,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
   mockRegisterController,
+  mockVerifyOtpController,
+  mockResendOtpController,
   mockLoginController,
   mockRefreshController,
   mockLogoutController,
   mockLogoutAllController,
   mockAuthenticate,
   mockSignupRateLimiter,
+  mockVerifyOtpRateLimiter,
+  mockResendOtpRateLimiter,
   mockLoginRateLimiter,
   mockRefreshRateLimiter,
 } = vi.hoisted(() => ({
@@ -21,6 +25,20 @@ const {
     return res.status(201).json({
       success: true,
       data: "register",
+    });
+  }),
+
+  mockVerifyOtpController: vi.fn((_req, res) => {
+    return res.status(200).json({
+      success: true,
+      data: "verify-otp",
+    });
+  }),
+
+  mockResendOtpController: vi.fn((_req, res) => {
+    return res.status(200).json({
+      success: true,
+      data: "resend-otp",
     });
   }),
 
@@ -60,6 +78,14 @@ const {
     next();
   }),
 
+  mockVerifyOtpRateLimiter: vi.fn((_req, _res, next) => {
+    next();
+  }),
+
+  mockResendOtpRateLimiter: vi.fn((_req, _res, next) => {
+    next();
+  }),
+
   mockLoginRateLimiter: vi.fn((_req, _res, next) => {
     next();
   }),
@@ -71,6 +97,8 @@ const {
 
 vi.mock("./auth.controller.js", () => ({
   registerController: mockRegisterController,
+  verifyOtpController: mockVerifyOtpController,
+  resendOtpController: mockResendOtpController,
   loginController: mockLoginController,
   refreshController: mockRefreshController,
   logoutController: mockLogoutController,
@@ -83,6 +111,8 @@ vi.mock("../../middleware/auth.middleware.js", () => ({
 
 vi.mock("../../middleware/rate-limit.middleware.js", () => ({
   signupRateLimiter: mockSignupRateLimiter,
+  verifyOtpRateLimiter: mockVerifyOtpRateLimiter,
+  resendOtpRateLimiter: mockResendOtpRateLimiter,
   loginRateLimiter: mockLoginRateLimiter,
   refreshRateLimiter: mockRefreshRateLimiter,
 }));
@@ -136,6 +166,56 @@ describe("authRouter", () => {
       });
 
       expect(mockSignupRateLimiter).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("POST /register/verify-otp", () => {
+    it("should route the request to verify-otp controller", async () => {
+      const app = createApp();
+
+      const response = await request(app).post("/auth/register/verify-otp").send({
+        email: "jane@example.com",
+        otp: "123456",
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toBe("verify-otp");
+      expect(mockVerifyOtpController).toHaveBeenCalledTimes(1);
+    });
+
+    it("should apply the verify-otp rate limiter", async () => {
+      const app = createApp();
+
+      await request(app).post("/auth/register/verify-otp").send({
+        email: "jane@example.com",
+        otp: "123456",
+      });
+
+      expect(mockVerifyOtpRateLimiter).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("POST /register/resend-otp", () => {
+    it("should route the request to resend-otp controller", async () => {
+      const app = createApp();
+
+      const response = await request(app).post("/auth/register/resend-otp").send({
+        email: "jane@example.com",
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toBe("resend-otp");
+      expect(mockResendOtpController).toHaveBeenCalledTimes(1);
+    });
+
+    it("should apply the resend-otp rate limiter", async () => {
+      const app = createApp();
+
+      await request(app).post("/auth/register/resend-otp").send({
+        email: "jane@example.com",
+      });
+
+      expect(mockResendOtpRateLimiter).toHaveBeenCalledTimes(1);
     });
   });
 

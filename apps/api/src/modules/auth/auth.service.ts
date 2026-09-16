@@ -9,18 +9,146 @@ import {
 } from "../../utils/refresh-token.js";
 import { generateAccessToken } from "../../utils/jwt.js";
 import { RefreshToken } from "./refresh-token.model.js";
-import type { LoginInput, RegisterInput } from "./auth.schema.js";
+import type {
+  LoginInput,
+  RegisterInput,
+  VerifyOtpInput,
+  ResendOtpInput,
+} from "./auth.schema.js";
 import { User } from "../users/user.model.js";
 import { createUser } from "../users/user.service.js";
+import { SignupOtp } from "./signup-otp.model.js";
+import { generateOtp, hashOtp, verifyOtpHash } from "../../utils/otp.js";
+import { emailService } from "../../utils/email.service.js";
 
 export async function registerUser(input: RegisterInput) {
-  const createdUser = await createUser({
-    name: input.name,
-    email: input.email,
-    password: input.password,
-  });
+  const normalizedEmail = input.email.toLowerCase();
+  const existingUser = await User.findOne({ email: normalizedEmail });
 
-  const accessToken = generateAccessToken(createdUser.id);
+  if (existingUser) {
+    if (existingUser.isEmailVerified) {
+      throw new AppError(
+        "User with this email already exists",
+        409,
+        "USER_ALREADY_EXISTS",
+      );
+    }
+
+    const passwordHash = await bcrypt.hash(input.password, 12);
+    existingUser.name = input.name;
+    existingUser.passwordHash = passwordHash;
+    await existingUser.save();
+  } else {
+    await createUser({
+      name: input.name,
+      email: input.email,
+      password: input.password,
+      isEmailVerified: false,
+    });
+  }
+
+  const otp = generateOtp();
+  const tokenHash = hashOtp(otp);
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+  await SignupOtp.findOneAndUpdate(
+    { email: normalizedEmail },
+    {
+      $set: {
+        tokenHash,
+        expiresAt,
+        failedAttempts: 0,
+        attemptsExceeded: false,
+        lastSentAt: new Date(),
+        resendCount: 0,
+      },
+    },
+    { upsert: true, new: true },
+  );
+
+  try {
+    await emailService.sendVerificationOtp(normalizedEmail, input.name, otp);
+  } catch (_error) {
+    throw new AppError(
+      "Failed to dispatch verification email. Please try again.",
+      500,
+      "EMAIL_DELIVERY_FAILED",
+    );
+  }
+
+  return {
+    message:
+      "Registration successful. Please verify your email with the 6-digit code sent to your inbox.",
+    email: normalizedEmail,
+    resendCooldown: 60,
+  };
+}
+
+export async function verifySignupOtp(input: VerifyOtpInput) {
+  const normalizedEmail = input.email.toLowerCase();
+  const otpRecord = await SignupOtp.findOne({ email: normalizedEmail });
+
+  if (!otpRecord) {
+    throw new AppError("Invalid verification code", 400, "INVALID_OTP");
+  }
+
+  if (otpRecord.attemptsExceeded) {
+    throw new AppError(
+      "Maximum verification attempts exceeded. Please request a new code.",
+      400,
+      "ATTEMPTS_EXCEEDED",
+    );
+  }
+
+  if (otpRecord.expiresAt.getTime() < Date.now()) {
+    throw new AppError(
+      "Verification code has expired. Please request a new code.",
+      400,
+      "OTP_EXPIRED",
+    );
+  }
+
+  const isMatch = verifyOtpHash(input.otp, otpRecord.tokenHash);
+
+  if (!isMatch) {
+    otpRecord.failedAttempts += 1;
+
+    if (otpRecord.failedAttempts >= 5) {
+      otpRecord.attemptsExceeded = true;
+    }
+
+    await otpRecord.save();
+
+    if (otpRecord.attemptsExceeded) {
+      throw new AppError(
+        "Maximum verification attempts exceeded. Please request a new code.",
+        400,
+        "ATTEMPTS_EXCEEDED",
+      );
+    }
+
+    const remaining = 5 - otpRecord.failedAttempts;
+    throw new AppError(
+      `Invalid verification code. You have ${remaining} attempt${
+        remaining === 1 ? "" : "s"
+      } remaining.`,
+      400,
+      "INVALID_OTP",
+    );
+  }
+
+  const user = await User.findOne({ email: normalizedEmail });
+
+  if (!user) {
+    throw new AppError("User not found", 404, "USER_NOT_FOUND");
+  }
+
+  user.isEmailVerified = true;
+  await user.save();
+
+  await SignupOtp.deleteOne({ email: normalizedEmail });
+
+  const accessToken = generateAccessToken(user.id);
   const refreshToken = generateRefreshToken();
   const refreshTokenHash = hashRefreshToken(refreshToken);
   const familyId = randomUUID();
@@ -29,7 +157,7 @@ export async function registerUser(input: RegisterInput) {
   expiresAt.setDate(expiresAt.getDate() + env.REFRESH_TOKEN_EXPIRES_IN_DAYS);
 
   await RefreshToken.create({
-    userId: createdUser.id,
+    userId: user._id,
     tokenHash: refreshTokenHash,
     familyId,
     expiresAt,
@@ -40,12 +168,84 @@ export async function registerUser(input: RegisterInput) {
     accessToken,
     refreshToken,
     user: {
-      id: createdUser.id,
-      name: createdUser.name,
-      email: createdUser.email,
-      role: createdUser.role,
-      isActive: createdUser.isActive,
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      isActive: user.isActive,
+      isEmailVerified: user.isEmailVerified,
     },
+  };
+}
+
+export async function resendSignupOtp(input: ResendOtpInput) {
+  const normalizedEmail = input.email.toLowerCase();
+  const user = await User.findOne({ email: normalizedEmail });
+
+  if (!user || user.isEmailVerified) {
+    return {
+      message: "A new verification code has been dispatched to your email address.",
+      resendCooldown: 60,
+    };
+  }
+
+  const otpRecord = await SignupOtp.findOne({ email: normalizedEmail });
+
+  if (otpRecord) {
+    const secondsSinceLastSent =
+      (Date.now() - new Date(otpRecord.lastSentAt).getTime()) / 1000;
+
+    if (secondsSinceLastSent < 60) {
+      throw new AppError(
+        "Please wait 60 seconds before requesting another code.",
+        429,
+        "RESEND_COOLDOWN_ACTIVE",
+      );
+    }
+
+    if (otpRecord.resendCount >= 3 && secondsSinceLastSent < 3600) {
+      throw new AppError(
+        "Maximum resend attempts reached for this hour. Please try again later.",
+        429,
+        "RESEND_LIMIT_EXCEEDED",
+      );
+    }
+  }
+
+  const newOtp = generateOtp();
+  const tokenHash = hashOtp(newOtp);
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+  const currentResendCount = otpRecord ? otpRecord.resendCount + 1 : 1;
+
+  await SignupOtp.findOneAndUpdate(
+    { email: normalizedEmail },
+    {
+      $set: {
+        tokenHash,
+        expiresAt,
+        failedAttempts: 0,
+        attemptsExceeded: false,
+        lastSentAt: new Date(),
+        resendCount: currentResendCount,
+      },
+    },
+    { upsert: true, new: true },
+  );
+
+  try {
+    await emailService.sendVerificationOtp(normalizedEmail, user.name, newOtp);
+  } catch (_error) {
+    throw new AppError(
+      "Failed to dispatch verification email. Please try again.",
+      500,
+      "EMAIL_DELIVERY_FAILED",
+    );
+  }
+
+  return {
+    message: "A new verification code has been dispatched to your email address.",
+    resendCooldown: 60,
   };
 }
 
@@ -60,6 +260,14 @@ export async function loginUser(input: LoginInput) {
 
   if (!user.isActive) {
     throw new AppError("User account is inactive", 403, "ACCOUNT_INACTIVE");
+  }
+
+  if (!user.isEmailVerified) {
+    throw new AppError(
+      "Please verify your email address before logging in",
+      403,
+      "EMAIL_NOT_VERIFIED",
+    );
   }
 
   const passwordMatches = await bcrypt.compare(
@@ -97,6 +305,7 @@ export async function loginUser(input: LoginInput) {
       email: user.email,
       role: user.role,
       isActive: user.isActive,
+      isEmailVerified: user.isEmailVerified,
     },
   };
 }
@@ -149,6 +358,14 @@ export async function refreshAccessToken(refreshToken: string) {
 
   if (!user.isActive) {
     throw new AppError("User account is inactive", 403, "ACCOUNT_INACTIVE");
+  }
+
+  if (!user.isEmailVerified) {
+    throw new AppError(
+      "Please verify your email address before logging in",
+      403,
+      "EMAIL_NOT_VERIFIED",
+    );
   }
 
   storedToken.revokedAt = new Date();

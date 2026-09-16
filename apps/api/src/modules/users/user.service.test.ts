@@ -69,6 +69,7 @@ function createUserDocument(
     passwordHash: 'hashed-password',
     role: 'user' as const,
     isActive: true,
+    isEmailVerified: true,
     isDeleted: false,
     createdAt: new Date('2026-01-01'),
     updatedAt: new Date('2026-01-02'),
@@ -120,6 +121,7 @@ describe('createUser', () => {
       name: 'Test User',
       email: 'test@example.com',
       passwordHash: 'hashed-password',
+      isEmailVerified: true,
     });
 
     expect(result).toEqual({
@@ -128,6 +130,7 @@ describe('createUser', () => {
       email: 'test@example.com',
       role: 'user',
       isActive: true,
+      isEmailVerified: true,
       isDeleted: false,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
@@ -171,7 +174,7 @@ describe('getCurrentUser', () => {
     });
 
     expect(query.select).toHaveBeenCalledWith(
-      'name email role isActive isDeleted createdAt updatedAt',
+      'name email role isActive isEmailVerified isDeleted createdAt updatedAt',
     );
 
     expect(result).toEqual({
@@ -180,6 +183,7 @@ describe('getCurrentUser', () => {
       email: 'test@example.com',
       role: 'user',
       isActive: true,
+      isEmailVerified: true,
       isDeleted: false,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
@@ -234,7 +238,7 @@ describe('updateCurrentUser', () => {
     );
 
     expect(query.select).toHaveBeenCalledWith(
-      'name email role isActive isDeleted createdAt updatedAt',
+      'name email role isActive isEmailVerified isDeleted createdAt updatedAt',
     );
 
     expect(result.name).toBe('Updated User');
@@ -391,6 +395,7 @@ describe('getAllUsers', () => {
       email: 'test@example.com',
       role: 'user',
       isActive: true,
+      isEmailVerified: true,
       isDeleted: false,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
@@ -485,7 +490,7 @@ describe('getUserById', () => {
     });
 
     expect(query.select).toHaveBeenCalledWith(
-      'name email role isActive isDeleted createdAt updatedAt',
+      'name email role isActive isEmailVerified isDeleted createdAt updatedAt',
     );
 
     expect(result).toEqual({
@@ -494,6 +499,7 @@ describe('getUserById', () => {
       email: 'test@example.com',
       role: 'user',
       isActive: true,
+      isEmailVerified: true,
       isDeleted: false,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
@@ -568,6 +574,7 @@ describe('adminUpdateUser', () => {
       email: 'updated@example.com',
       role: 'admin',
       isActive: true,
+      isEmailVerified: true,
       isDeleted: false,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
