@@ -30,7 +30,7 @@ export const verifyOtpController: RequestHandler = async (req, res, next) => {
     res.cookie("documan_refresh_token", result.refreshToken, {
       httpOnly: true,
       secure: env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: "none",
       maxAge: env.REFRESH_TOKEN_EXPIRES_IN_DAYS * 24 * 60 * 60 * 1000,
       path: "/api/v1/auth",
     });
@@ -61,7 +61,7 @@ export const loginController: RequestHandler = async (req, res, next) => {
     res.cookie("documan_refresh_token", result.refreshToken, {
       httpOnly: true,
       secure: env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: "none",
       maxAge: env.REFRESH_TOKEN_EXPIRES_IN_DAYS * 24 * 60 * 60 * 1000,
       path: "/api/v1/auth",
     });
@@ -94,7 +94,7 @@ export const refreshController: RequestHandler = async (req, res, next) => {
     res.cookie("documan_refresh_token", result.refreshToken, {
       httpOnly: true,
       secure: env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: "none",
       maxAge: env.REFRESH_TOKEN_EXPIRES_IN_DAYS * 24 * 60 * 60 * 1000,
       path: "/api/v1/auth",
     });
@@ -118,7 +118,7 @@ export const logoutController: RequestHandler = async (req, res, next) => {
     res.clearCookie("documan_refresh_token", {
       httpOnly: true,
       secure: env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: "none",
       path: "/api/v1/auth",
     });
 
@@ -143,7 +143,7 @@ export const logoutAllController: RequestHandler = async (req, res, next) => {
     res.clearCookie("documan_refresh_token", {
       httpOnly: true,
       secure: env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: "none",
       path: "/api/v1/auth",
     });
 

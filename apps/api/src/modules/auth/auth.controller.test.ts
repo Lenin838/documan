@@ -96,7 +96,7 @@ describe("auth controller", () => {
         "refresh-token-123",
         expect.objectContaining({
           httpOnly: true,
-          sameSite: "lax",
+          sameSite: "none",
           path: "/api/v1/auth",
         }),
       );
@@ -188,7 +188,7 @@ describe("auth controller", () => {
         "new-refresh-token",
         expect.objectContaining({
           httpOnly: true,
-          sameSite: "lax",
+          sameSite: "none",
           path: "/api/v1/auth",
         }),
       );
@@ -247,7 +247,7 @@ describe("auth controller", () => {
         "documan_refresh_token",
         expect.objectContaining({
           httpOnly: true,
-          sameSite: "lax",
+          sameSite: "none",
           path: "/api/v1/auth",
         }),
       );
@@ -351,7 +351,7 @@ describe("auth controller", () => {
         "documan_refresh_token",
         expect.objectContaining({
           httpOnly: true,
-          sameSite: "lax",
+          sameSite: "none",
           path: "/api/v1/auth",
         }),
       );
