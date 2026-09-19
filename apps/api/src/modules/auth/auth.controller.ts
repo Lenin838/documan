@@ -15,6 +15,7 @@ import {
 
 export const registerController: RequestHandler = async (req, res, next) => {
   try {
+    req.log.info({ email: req.body?.email }, "Incoming registration request");
     const result = await registerUser(req.body);
 
     return sendSuccess(res, result, 201);

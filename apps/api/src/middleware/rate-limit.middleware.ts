@@ -2,7 +2,7 @@ import rateLimit from "express-rate-limit";
 
 export const loginRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 5,
+  limit: 50,
   standardHeaders: "draft-8",
   legacyHeaders: false,
   message: {
@@ -16,7 +16,7 @@ export const loginRateLimiter = rateLimit({
 
 export const refreshRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 10,
+  limit: 100,
   standardHeaders: "draft-8",
   legacyHeaders: false,
   message: {
@@ -44,7 +44,7 @@ export const gateCheckRateLimiter = rateLimit({
 
 export const signupRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 5,
+  limit: 50,
   standardHeaders: "draft-8",
   legacyHeaders: false,
   message: {
