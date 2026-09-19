@@ -38,9 +38,23 @@ app.use(
 
 app.use(helmet());
 
+const allowedOrigins = env.CORS_ORIGIN.split(',').map((o) =>
+  o.trim().replace(/\/$/, ''),
+);
+
 app.use(
   cors({
-    origin: env.CORS_ORIGIN,
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const normalizedOrigin = origin.replace(/\/$/, '');
+      if (
+        allowedOrigins.includes(normalizedOrigin) ||
+        allowedOrigins.includes('*')
+      ) {
+        return callback(null, true);
+      }
+      return callback(new Error(`CORS policy violation: ${origin} not allowed`));
+    },
     credentials: true,
   }),
 );

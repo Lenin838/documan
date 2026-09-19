@@ -9,7 +9,7 @@ import type { RefreshResponse } from '../features/auth/auth.types';
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true,
-  timeout: 10000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },

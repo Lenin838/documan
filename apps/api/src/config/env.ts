@@ -13,7 +13,6 @@ const envSchema = z.object({
 
   CORS_ORIGIN: z
     .string()
-    .url()
     .default('http://localhost:5173'),
 
   LOG_LEVEL: z

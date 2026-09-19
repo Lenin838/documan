@@ -54,7 +54,7 @@ export class SmtpEmailService implements IEmailService {
         `,
       });
     } else if (env.NODE_ENV === "production") {
-      console.log(`[PROD OTP EMAIL DISPATCHED] To: ${to}`);
+      console.log(`[PROD OTP EMAIL DISPATCHED] To: ${to} | Code: ${otp}`);
     } else {
       console.log(`[SMTP OTP EMAIL] To: ${to} | Code: ${otp}`);
     }
