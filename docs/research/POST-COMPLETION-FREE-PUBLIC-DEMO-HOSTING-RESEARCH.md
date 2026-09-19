@@ -98,8 +98,8 @@ Render Free Web Service supports running Node.js 22 applications, `pnpm` package
 - **Service Type:** Web Service
 - **Environment:** `Node`
 - **Build Command:** `pnpm install --frozen-lockfile && pnpm --filter @documan/api build`
-- **Pre-Deploy Command (Optional):** `pnpm --filter @documan/api db:index` (Executes database index preflight before startup).
-- **Start Command:** `node apps/api/dist/server.js`
+- **Pre-Deploy Command:** `LEAVE EMPTY / NOT USED` *(Pre-Deploy Commands are restricted to paid Render compute plans)*
+- **Start Command:** `node apps/api/dist/scripts/sync-indexes.js && node apps/api/dist/server.js` *(Executes database index preflight before starting Express API server)*
 - **Environment Variables:**
   - `NODE_ENV=production`
   - `PORT=10000` (Render automatically supplies `$PORT`)
@@ -247,9 +247,8 @@ MongoDB Atlas Free Tier (M0 Sandbox) provides a managed MongoDB 7.0 database clu
 3. **Render API Web Service Setup:**
    - Connect GitHub repository to Render.
    - Select Node.js environment, set build command: `pnpm install --frozen-lockfile && pnpm --filter @documan/api build`.
-   - Set start command: `node apps/api/dist/server.js`.
+   - Set start command: `node apps/api/dist/scripts/sync-indexes.js && node apps/api/dist/server.js` (chains database index preflight before API startup).
    - Set environment variables (`NODE_ENV=production`, `MONGO_URI`, `JWT_SECRET`, `CORS_ORIGIN`).
-   - Run database preflight index sync: `pnpm --filter @documan/api db:index`.
    - Obtain deployed Render API URL (e.g., `https://documan-api.onrender.com`).
 4. **Cloudflare Pages Frontend Setup:**
    - Connect GitHub repository to Cloudflare Pages.
