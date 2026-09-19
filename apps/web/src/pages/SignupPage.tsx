@@ -77,10 +77,13 @@ export default function SignupPage() {
       );
     } catch (err: unknown) {
       const apiError = err as {
+        message?: string;
         response?: { data?: { error?: { message?: string } } };
       };
       const message =
         apiError.response?.data?.error?.message ||
+        apiError.message ||
+        (err instanceof Error ? err.message : null) ||
         "Failed to create account. Please try again.";
 
       setError(message);
