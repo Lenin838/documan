@@ -33,8 +33,9 @@ describe("Email Service", () => {
 
     await service.sendVerificationOtp("user@example.com", "John Doe", "123456");
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      "[DEV OTP EMAIL] To: user@example.com | Name: John Doe | Code: 123456",
+    expect(consoleSpy).toHaveBeenNthCalledWith(
+      2,
+      "[DEV OTP EMAIL] To: user@example.com | Name: John Doe | Verification Code: 123456",
     );
   });
 

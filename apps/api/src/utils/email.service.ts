@@ -8,7 +8,11 @@ export interface IEmailService {
 export class ConsoleEmailService implements IEmailService {
   async sendVerificationOtp(to: string, name: string, otp: string): Promise<void> {
     if (env.NODE_ENV === "development" || env.NODE_ENV === "test") {
-      console.log(`[DEV OTP EMAIL] To: ${to} | Name: ${name} | Code: ${otp}`);
+      console.log(`\n=================================================================`);
+      console.log(`[DEV OTP EMAIL] To: ${to} | Name: ${name} | Verification Code: ${otp}`);
+      console.log(`[NOTE] SMTP_HOST is not set in .env. Email was NOT sent over network.`);
+      console.log(`[NOTE] To send real inbox emails, configure SMTP_HOST, SMTP_USER, etc.`);
+      console.log(`=================================================================\n`);
     }
   }
 }

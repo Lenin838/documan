@@ -23,6 +23,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [otp, setOtp] = useState("");
+  const [devOtp, setDevOtp] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [cooldown, setCooldown] = useState(0);
@@ -72,6 +73,10 @@ export default function SignupPage() {
 
       setStep("verify_otp");
       setCooldown(res.resendCooldown || 60);
+      if (res.devOtpCode) {
+        setDevOtp(res.devOtpCode);
+        setOtp(res.devOtpCode);
+      }
       setSuccessMessage(
         res.message || "A 6-digit verification code has been sent to your email.",
       );
@@ -128,6 +133,10 @@ export default function SignupPage() {
     try {
       const res = await resendOtp({ email });
       setCooldown(res.resendCooldown || 60);
+      if (res.devOtpCode) {
+        setDevOtp(res.devOtpCode);
+        setOtp(res.devOtpCode);
+      }
       setSuccessMessage(
         res.message || "A new verification code has been sent to your email.",
       );
@@ -304,6 +313,22 @@ export default function SignupPage() {
             </div>
 
             <form className="mt-8 space-y-6" onSubmit={handleVerifyOtpSubmit}>
+              {devOtp && (
+                <div
+                  role="status"
+                  className="p-3.5 rounded-xl bg-amber-950/60 border border-amber-800/80 text-amber-200 text-sm font-medium space-y-1"
+                >
+                  <div className="flex items-center gap-2 text-amber-300 font-semibold">
+                    <span aria-hidden="true">💡</span>
+                    <span>Local Dev Notice (No SMTP Configured)</span>
+                  </div>
+                  <p className="text-xs text-amber-300/90 leading-relaxed">
+                    Real email dispatch requires <code className="bg-amber-900/50 px-1 py-0.5 rounded text-amber-200">SMTP_HOST</code> in <code className="bg-amber-900/50 px-1 py-0.5 rounded text-amber-200">.env</code>. Your test verification code is:{" "}
+                    <span className="font-mono font-bold tracking-wider text-amber-100 text-sm select-all">{devOtp}</span>
+                  </p>
+                </div>
+              )}
+
               {successMessage && (
                 <div
                   role="status"
@@ -381,6 +406,7 @@ export default function SignupPage() {
                     setError("");
                     setSuccessMessage("");
                     setOtp("");
+                    setDevOtp(null);
                   }}
                   className="font-medium text-slate-400 hover:text-slate-300 transition-colors"
                 >
