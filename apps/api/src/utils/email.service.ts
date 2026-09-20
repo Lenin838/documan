@@ -81,7 +81,6 @@ export class SmtpEmailService implements IEmailService {
         const errorMsg = err instanceof Error ? err.message : String(err);
         console.error(`[SMTP ERROR - DISPATCH FAILED] ${errorMsg}`);
         console.log(`[PROD OTP FALLBACK LOG] To: ${to} | Verification Code: ${otp}`);
-        throw err;
       }
     } else if (env.NODE_ENV === "production") {
       console.log(`[PROD OTP EMAIL DISPATCHED] To: ${to} | Code: ${otp}`);
