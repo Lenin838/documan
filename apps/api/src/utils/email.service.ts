@@ -22,6 +22,10 @@ export class SmtpEmailService implements IEmailService {
 
   constructor() {
     if (env.SMTP_HOST) {
+      const cleanPass = env.SMTP_PASS
+        ? env.SMTP_PASS.replace(/["'\s]/g, "")
+        : undefined;
+
       this.transporter = nodemailer.createTransport({
         host: env.SMTP_HOST,
         port: env.SMTP_PORT,
@@ -32,7 +36,7 @@ export class SmtpEmailService implements IEmailService {
         auth: env.SMTP_USER
           ? {
               user: env.SMTP_USER,
-              pass: env.SMTP_PASS,
+              pass: cleanPass,
             }
           : undefined,
       });
@@ -73,9 +77,6 @@ export class SmtpEmailService implements IEmailService {
       } catch (err: unknown) {
         const errorMsg = err instanceof Error ? err.message : String(err);
         console.error(`[SMTP ERROR - DISPATCH FAILED] ${errorMsg}`);
-        if (env.NODE_ENV === "development" || env.NODE_ENV === "test") {
-          console.log(`[DEV OTP EMAIL FALLBACK] To: ${to} | Code: ${otp}`);
-        }
         throw err;
       }
     } else if (env.NODE_ENV === "production") {

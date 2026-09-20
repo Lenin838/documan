@@ -46,7 +46,6 @@ export interface RegisterResponse {
     message: string;
     email: string;
     resendCooldown: number;
-    devOtpCode?: string;
   };
 }
 
@@ -66,6 +65,5 @@ export interface ResendOtpResponse {
   data: {
     message: string;
     resendCooldown: number;
-    devOtpCode?: string;
   };
 }

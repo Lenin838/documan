@@ -76,14 +76,11 @@ export async function registerUser(input: RegisterInput) {
     );
   }
 
-  const isDevNoSmtp = env.NODE_ENV === "development" && !env.SMTP_HOST;
-
   return {
     message:
       "Registration successful. Please verify your email with the 6-digit code sent to your inbox.",
     email: normalizedEmail,
     resendCooldown: 60,
-    ...(isDevNoSmtp ? { devOtpCode: otp } : {}),
   };
 }
 
@@ -246,12 +243,9 @@ export async function resendSignupOtp(input: ResendOtpInput) {
     );
   }
 
-  const isDevNoSmtp = env.NODE_ENV === "development" && !env.SMTP_HOST;
-
   return {
     message: "A new verification code has been dispatched to your email address.",
     resendCooldown: 60,
-    ...(isDevNoSmtp ? { devOtpCode: newOtp } : {}),
   };
 }
 
