@@ -26,9 +26,9 @@ export class SmtpEmailService implements IEmailService {
         host: env.SMTP_HOST,
         port: env.SMTP_PORT,
         secure: env.SMTP_SECURE || env.SMTP_PORT === 465,
-        connectionTimeout: 5000,
-        greetingTimeout: 5000,
-        socketTimeout: 5000,
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 10000,
         auth: env.SMTP_USER
           ? {
               user: env.SMTP_USER,
@@ -64,16 +64,19 @@ export class SmtpEmailService implements IEmailService {
           }),
           new Promise((_, reject) =>
             setTimeout(
-              () => reject(new Error("SMTP sendMail timed out after 5000ms")),
-              5000,
+              () => reject(new Error("SMTP sendMail timed out after 10000ms")),
+              10000,
             ),
           ),
         ]);
         console.log(`[SMTP OTP EMAIL DISPATCHED] To: ${to}`);
       } catch (err: unknown) {
         const errorMsg = err instanceof Error ? err.message : String(err);
-        console.error(`[SMTP ERROR - FALLING BACK TO LOG] ${errorMsg}`);
-        console.log(`[PROD OTP EMAIL DISPATCHED] To: ${to} | Code: ${otp}`);
+        console.error(`[SMTP ERROR - DISPATCH FAILED] ${errorMsg}`);
+        if (env.NODE_ENV === "development" || env.NODE_ENV === "test") {
+          console.log(`[DEV OTP EMAIL FALLBACK] To: ${to} | Code: ${otp}`);
+        }
+        throw err;
       }
     } else if (env.NODE_ENV === "production") {
       console.log(`[PROD OTP EMAIL DISPATCHED] To: ${to} | Code: ${otp}`);
@@ -83,17 +86,20 @@ export class SmtpEmailService implements IEmailService {
   }
 }
 
-let activeEmailService: IEmailService =
-  env.SMTP_HOST || env.NODE_ENV === "production"
-    ? new SmtpEmailService()
-    : new ConsoleEmailService();
+let customEmailService: IEmailService | null = null;
 
 export function getEmailService(): IEmailService {
-  return activeEmailService;
+  if (customEmailService) {
+    return customEmailService;
+  }
+  if (env.SMTP_HOST || env.NODE_ENV === "production") {
+    return new SmtpEmailService();
+  }
+  return new ConsoleEmailService();
 }
 
 export function setEmailService(service: IEmailService): void {
-  activeEmailService = service;
+  customEmailService = service;
 }
 
 export const emailService = {
