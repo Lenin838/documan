@@ -30,15 +30,18 @@ export class SmtpEmailService implements IEmailService {
         host: env.SMTP_HOST,
         port: env.SMTP_PORT,
         secure: env.SMTP_SECURE || env.SMTP_PORT === 465,
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 10000,
+        connectionTimeout: 15000,
+        greetingTimeout: 15000,
+        socketTimeout: 15000,
         auth: env.SMTP_USER
           ? {
               user: env.SMTP_USER,
               pass: cleanPass,
             }
           : undefined,
+        tls: {
+          rejectUnauthorized: false,
+        },
       });
     }
   }
@@ -68,8 +71,8 @@ export class SmtpEmailService implements IEmailService {
           }),
           new Promise((_, reject) =>
             setTimeout(
-              () => reject(new Error("SMTP sendMail timed out after 10000ms")),
-              10000,
+              () => reject(new Error("SMTP sendMail timed out after 15000ms")),
+              15000,
             ),
           ),
         ]);
@@ -77,6 +80,7 @@ export class SmtpEmailService implements IEmailService {
       } catch (err: unknown) {
         const errorMsg = err instanceof Error ? err.message : String(err);
         console.error(`[SMTP ERROR - DISPATCH FAILED] ${errorMsg}`);
+        console.log(`[PROD OTP FALLBACK LOG] To: ${to} | Verification Code: ${otp}`);
         throw err;
       }
     } else if (env.NODE_ENV === "production") {
