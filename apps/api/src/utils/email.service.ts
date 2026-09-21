@@ -36,18 +36,26 @@ export class SmtpEmailService implements IEmailService {
         ? env.SMTP_PASS.replace(/["'\s]/g, "")
         : undefined;
 
+      const isGmail =
+        (env.SMTP_HOST && env.SMTP_HOST.includes("gmail")) ||
+        (env.SMTP_USER && env.SMTP_USER.includes("gmail"));
+
       const host = env.SMTP_HOST || "smtp.gmail.com";
-      const port = env.SMTP_PORT || 587;
-      const secure = env.SMTP_SECURE || port === 465;
+      const port = env.SMTP_PORT || (isGmail ? 465 : 587);
+      const secure = env.SMTP_SECURE !== undefined ? env.SMTP_SECURE : (port === 465 || isGmail);
 
       const transportConfig: any = {
+        pool: true,
+        maxConnections: 3,
+        maxMessages: 100,
         host,
         port,
         secure,
+        family: 4,
         lookup: customLookup,
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 10000,
+        connectionTimeout: 15000,
+        greetingTimeout: 15000,
+        socketTimeout: 15000,
         auth: env.SMTP_USER
           ? {
               user: env.SMTP_USER,
@@ -56,6 +64,7 @@ export class SmtpEmailService implements IEmailService {
           : undefined,
         tls: {
           rejectUnauthorized: false,
+          minVersion: "TLSv1.2",
         },
       };
 
@@ -99,8 +108,8 @@ export class SmtpEmailService implements IEmailService {
           }),
           new Promise((_, reject) =>
             setTimeout(
-              () => reject(new Error("SMTP sendMail timed out after 10000ms")),
-              10000,
+              () => reject(new Error("SMTP sendMail timed out after 15000ms")),
+              15000,
             ),
           ),
         ]);
@@ -122,151 +131,11 @@ export class SmtpEmailService implements IEmailService {
   }
 }
 
-export class ResendEmailService implements IEmailService {
-  private apiKey: string;
-  private fallbackSmtp: SmtpEmailService;
-
-  constructor(apiKey: string) {
-    this.apiKey = apiKey.trim();
-    this.fallbackSmtp = new SmtpEmailService();
-  }
-
-  async sendVerificationOtp(to: string, name: string, otp: string): Promise<void> {
-    let fromAddress = "Documan Security <onboarding@resend.dev>";
-
-    if (env.SMTP_FROM && env.SMTP_FROM.trim()) {
-      const cleanFrom = env.SMTP_FROM.trim().replace(/^["']|["']$/g, "");
-      const isPublicDomain = /@(gmail|yahoo|hotmail|outlook|icloud)\./i.test(cleanFrom);
-      if (!isPublicDomain && cleanFrom.includes("@")) {
-        fromAddress = cleanFrom.includes("<")
-          ? cleanFrom
-          : `"Documan Security" <${cleanFrom}>`;
-      }
-    }
-
-    try {
-      const response = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: fromAddress,
-          to: [to],
-          subject: `${otp} is your Documan Verification Code`,
-          text: `Hello ${name},\n\nYour Documan email verification code is: ${otp}\n\nThis code will expire in 10 minutes. If you did not request this code, please ignore this email.\n\nBest regards,\nDocuman Security Team`,
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 8px; background-color: #ffffff;">
-              <h2 style="color: #1e293b; margin-top: 0;">Email Verification Code</h2>
-              <p style="color: #475569; line-height: 1.5;">Hello <strong>${name}</strong>,</p>
-              <p style="color: #475569; line-height: 1.5;">Thank you for registering with Documan. Please enter the following 6-digit verification code to complete your signup:</p>
-              <div style="background-color: #f1f5f9; border-radius: 6px; padding: 16px; text-align: center; margin: 24px 0;">
-                <span style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #2563eb;">${otp}</span>
-              </div>
-              <p style="color: #64748b; font-size: 14px;">This code is valid for 10 minutes. If you did not request this email, please ignore it.</p>
-              <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-              <p style="color: #94a3b8; font-size: 12px; margin-bottom: 0;">Documan Enterprise Document Management & Governance</p>
-            </div>
-          `,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Resend API returned HTTP ${response.status}: ${errorText}`);
-      }
-
-      logger.info({ to, otp }, "[RESEND OTP EMAIL DISPATCHED] Email sent successfully via Resend API");
-      console.log(`[RESEND OTP EMAIL DISPATCHED] To: ${to}`);
-    } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      logger.warn({ to, otp, error: errorMsg }, "[RESEND API FAILED - FALLING BACK TO SMTP]");
-      console.warn(`[RESEND API FAILED] ${errorMsg}. Falling back to SMTP...`);
-      await this.fallbackSmtp.sendVerificationOtp(to, name, otp);
-    }
-  }
-}
-
-export class BrevoEmailService implements IEmailService {
-  private apiKey: string;
-  private fallbackService?: IEmailService | undefined;
-
-  constructor(apiKey: string, fallbackService?: IEmailService | undefined) {
-    this.apiKey = apiKey.trim();
-    this.fallbackService = fallbackService;
-  }
-
-  async sendVerificationOtp(to: string, name: string, otp: string): Promise<void> {
-    const senderUser = env.SMTP_USER || "documanapi@gmail.com";
-    const senderName = "Documan Security";
-
-    try {
-      const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-        method: "POST",
-        headers: {
-          accept: "application/json",
-          "api-key": this.apiKey,
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          sender: { name: senderName, email: senderUser },
-          to: [{ email: to, name }],
-          subject: `${otp} is your Documan Verification Code`,
-          textContent: `Hello ${name},\n\nYour Documan email verification code is: ${otp}\n\nThis code will expire in 10 minutes.\n\nBest regards,\nDocuman Security Team`,
-          htmlContent: `
-            <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 8px; background-color: #ffffff;">
-              <h2 style="color: #1e293b; margin-top: 0;">Email Verification Code</h2>
-              <p style="color: #475569; line-height: 1.5;">Hello <strong>${name}</strong>,</p>
-              <p style="color: #475569; line-height: 1.5;">Thank you for registering with Documan. Please enter the following 6-digit verification code to complete your signup:</p>
-              <div style="background-color: #f1f5f9; border-radius: 6px; padding: 16px; text-align: center; margin: 24px 0;">
-                <span style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #2563eb;">${otp}</span>
-              </div>
-              <p style="color: #64748b; font-size: 14px;">This code is valid for 10 minutes. If you did not request this email, please ignore it.</p>
-              <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-              <p style="color: #94a3b8; font-size: 12px; margin-bottom: 0;">Documan Enterprise Document Management & Governance</p>
-            </div>
-          `,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Brevo API returned HTTP ${response.status}: ${errorText}`);
-      }
-
-      logger.info({ to, otp }, "[BREVO OTP EMAIL DISPATCHED] Email sent successfully via Brevo API");
-      console.log(`[BREVO OTP EMAIL DISPATCHED] To: ${to}`);
-    } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      logger.warn({ to, otp, error: errorMsg }, "[BREVO API ERROR] Brevo API email dispatch failed");
-      console.warn(`[BREVO API ERROR] ${errorMsg}`);
-
-      if (this.fallbackService) {
-        await this.fallbackService.sendVerificationOtp(to, name, otp);
-      } else {
-        console.log(`[PROD OTP FALLBACK LOG] To: ${to} | Verification Code: ${otp}`);
-      }
-    }
-  }
-}
-
 let customEmailService: IEmailService | null = null;
 
 export function getEmailService(): IEmailService {
   if (customEmailService) {
     return customEmailService;
-  }
-  if (env.BREVO_API_KEY && env.BREVO_API_KEY.trim()) {
-    return new BrevoEmailService(
-      env.BREVO_API_KEY,
-      env.RESEND_API_KEY
-        ? new ResendEmailService(env.RESEND_API_KEY)
-        : new SmtpEmailService(),
-    );
-  }
-  if (env.RESEND_API_KEY && env.RESEND_API_KEY.trim()) {
-    return new ResendEmailService(env.RESEND_API_KEY);
   }
   if (env.SMTP_HOST || env.SMTP_USER || env.NODE_ENV === "production") {
     return new SmtpEmailService();

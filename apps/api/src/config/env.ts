@@ -35,17 +35,15 @@ const envSchema = z.object({
     .positive()
     .default(7),
 
-  BREVO_API_KEY: z.string().optional(),
-  RESEND_API_KEY: z.string().optional(),
   SMTP_HOST: z.string().optional(),
-  SMTP_PORT: z.coerce.number().int().positive().optional().default(587),
+  SMTP_PORT: z.coerce.number().int().positive().optional().default(465),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
-  SMTP_FROM: z.string().optional().default('"Documan Security" <no-reply@documan.app>'),
+  SMTP_FROM: z.string().optional().default('"Documan Security" <documanapi@gmail.com>'),
   SMTP_SECURE: z
     .preprocess((val) => val === 'true' || val === true, z.boolean())
     .optional()
-    .default(false),
+    .default(true),
 });
 
 export const env = envSchema.parse(process.env);
