@@ -147,13 +147,17 @@ export class ResendEmailService implements IEmailService {
   }
 
   async sendVerificationOtp(to: string, name: string, otp: string): Promise<void> {
-    const rawFrom = env.SMTP_FROM && env.SMTP_FROM.trim()
-      ? env.SMTP_FROM.trim().replace(/^["']|["']$/g, "")
-      : "Documan Security <onboarding@resend.dev>";
+    let fromAddress = "Documan Security <onboarding@resend.dev>";
 
-    const fromAddress = rawFrom.includes("<")
-      ? rawFrom
-      : `"Documan Security" <${rawFrom.includes("@") ? rawFrom : "onboarding@resend.dev"}>`;
+    if (env.SMTP_FROM && env.SMTP_FROM.trim()) {
+      const cleanFrom = env.SMTP_FROM.trim().replace(/^["']|["']$/g, "");
+      const isPublicDomain = /@(gmail|yahoo|hotmail|outlook|icloud)\./i.test(cleanFrom);
+      if (!isPublicDomain && cleanFrom.includes("@")) {
+        fromAddress = cleanFrom.includes("<")
+          ? cleanFrom
+          : `"Documan Security" <${cleanFrom}>`;
+      }
+    }
 
     try {
       const response = await fetch("https://api.resend.com/emails", {
