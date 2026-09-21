@@ -17,6 +17,7 @@ vi.mock("../config/env.js", () => ({
 import {
   ConsoleEmailService,
   SmtpEmailService,
+  ResendEmailService,
   emailService,
   setEmailService,
   getEmailService,
@@ -46,6 +47,26 @@ describe("Email Service", () => {
     await service.sendVerificationOtp("user@example.com", "John Doe", "123456");
 
     expect(consoleSpy).toHaveBeenCalled();
+  });
+
+  it("should send email via fetch in ResendEmailService", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ id: "resend-msg-123" }), { status: 200 }),
+    );
+
+    const service = new ResendEmailService("re_test123456789");
+    await service.sendVerificationOtp("user@example.com", "Jane Doe", "987654");
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      "https://api.resend.com/emails",
+      expect.objectContaining({
+        method: "POST",
+        headers: {
+          Authorization: "Bearer re_test123456789",
+          "Content-Type": "application/json",
+        },
+      }),
+    );
   });
 
   it("should allow setting a custom active email service", async () => {
