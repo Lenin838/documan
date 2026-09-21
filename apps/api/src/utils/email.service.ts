@@ -26,10 +26,14 @@ export class SmtpEmailService implements IEmailService {
         ? env.SMTP_PASS.replace(/["'\s]/g, "")
         : undefined;
 
+      const isGmail = env.SMTP_HOST.includes("gmail");
+      const port = isGmail ? 465 : env.SMTP_PORT;
+      const secure = isGmail || port === 465 || env.SMTP_SECURE;
+
       this.transporter = nodemailer.createTransport({
         host: env.SMTP_HOST,
-        port: env.SMTP_PORT,
-        secure: env.SMTP_SECURE || env.SMTP_PORT === 465,
+        port,
+        secure,
         connectionTimeout: 15000,
         greetingTimeout: 15000,
         socketTimeout: 15000,
