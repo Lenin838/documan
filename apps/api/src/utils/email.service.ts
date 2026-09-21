@@ -36,45 +36,28 @@ export class SmtpEmailService implements IEmailService {
         ? env.SMTP_PASS.replace(/["'\s]/g, "")
         : undefined;
 
-      const isGmail =
-        (env.SMTP_HOST && env.SMTP_HOST.includes("gmail")) ||
-        (env.SMTP_USER && env.SMTP_USER.includes("gmail"));
+      const host = env.SMTP_HOST || "smtp.gmail.com";
+      const port = env.SMTP_PORT || 587;
+      const secure = env.SMTP_SECURE || port === 465;
 
-      const transportConfig: any = isGmail
-        ? {
-            service: "gmail",
-            auth: env.SMTP_USER
-              ? {
-                  user: env.SMTP_USER,
-                  pass: cleanPass,
-                }
-              : undefined,
-            lookup: customLookup,
-            connectionTimeout: 10000,
-            greetingTimeout: 10000,
-            socketTimeout: 10000,
-            tls: {
-              rejectUnauthorized: false,
-            },
-          }
-        : {
-            host: env.SMTP_HOST,
-            port: env.SMTP_PORT,
-            secure: env.SMTP_SECURE || env.SMTP_PORT === 465,
-            lookup: customLookup,
-            connectionTimeout: 10000,
-            greetingTimeout: 10000,
-            socketTimeout: 10000,
-            auth: env.SMTP_USER
-              ? {
-                  user: env.SMTP_USER,
-                  pass: cleanPass,
-                }
-              : undefined,
-            tls: {
-              rejectUnauthorized: false,
-            },
-          };
+      const transportConfig: any = {
+        host,
+        port,
+        secure,
+        lookup: customLookup,
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 10000,
+        auth: env.SMTP_USER
+          ? {
+              user: env.SMTP_USER,
+              pass: cleanPass,
+            }
+          : undefined,
+        tls: {
+          rejectUnauthorized: false,
+        },
+      };
 
       this.transporter = nodemailer.createTransport(transportConfig);
     }
@@ -141,9 +124,11 @@ export class SmtpEmailService implements IEmailService {
 
 export class ResendEmailService implements IEmailService {
   private apiKey: string;
+  private fallbackSmtp: SmtpEmailService;
 
   constructor(apiKey: string) {
     this.apiKey = apiKey.trim();
+    this.fallbackSmtp = new SmtpEmailService();
   }
 
   async sendVerificationOtp(to: string, name: string, otp: string): Promise<void> {
@@ -196,9 +181,9 @@ export class ResendEmailService implements IEmailService {
       console.log(`[RESEND OTP EMAIL DISPATCHED] To: ${to}`);
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : String(err);
-      logger.error({ to, otp, error: errorMsg }, "[RESEND ERROR - DISPATCH FAILED] Resend API email dispatch error");
-      console.error(`[RESEND ERROR - DISPATCH FAILED] ${errorMsg}`);
-      console.log(`[PROD OTP FALLBACK LOG] To: ${to} | Verification Code: ${otp}`);
+      logger.warn({ to, otp, error: errorMsg }, "[RESEND API FAILED - FALLING BACK TO SMTP]");
+      console.warn(`[RESEND API FAILED] ${errorMsg}. Falling back to SMTP...`);
+      await this.fallbackSmtp.sendVerificationOtp(to, name, otp);
     }
   }
 }
