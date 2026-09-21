@@ -49,7 +49,8 @@ app.use(
       const normalizedOrigin = origin.replace(/\/$/, '');
       if (
         allowedOrigins.includes(normalizedOrigin) ||
-        allowedOrigins.includes('*')
+        allowedOrigins.includes('*') ||
+        normalizedOrigin.endsWith('.vercel.app')
       ) {
         return callback(null, true);
       }
