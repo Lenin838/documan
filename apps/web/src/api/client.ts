@@ -6,8 +6,14 @@ import axios, {
 import { useAuthStore } from '../features/auth/auth.store';
 import type { RefreshResponse } from '../features/auth/auth.types';
 
+const rawUrl = import.meta.env.VITE_API_URL;
+
 const BASE_URL =
-  import.meta.env.VITE_API_URL || 'https://documan-api.onrender.com/api/v1';
+  import.meta.env.MODE === 'production'
+    ? rawUrl && !rawUrl.includes('localhost')
+      ? rawUrl
+      : 'https://documan-api.onrender.com/api/v1'
+    : rawUrl || 'http://localhost:4000/api/v1';
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
