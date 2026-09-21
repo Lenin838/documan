@@ -1,3 +1,4 @@
+import dns from "node:dns";
 import nodemailer, { type Transporter } from "nodemailer";
 import { env } from "../config/env.js";
 import { logger } from "../config/logger.js";
@@ -5,6 +6,15 @@ import { logger } from "../config/logger.js";
 export interface IEmailService {
   sendVerificationOtp(to: string, name: string, otp: string): Promise<void>;
 }
+
+const customLookup = (
+  hostname: string,
+  options: any,
+  callback: (err: Error | null, address: string | any[], family?: number) => void,
+) => {
+  const opts = typeof options === "object" && options !== null ? options : {};
+  return dns.lookup(hostname, { ...opts, family: 4, all: false }, callback);
+};
 
 export class ConsoleEmailService implements IEmailService {
   async sendVerificationOtp(to: string, name: string, otp: string): Promise<void> {
@@ -21,30 +31,28 @@ export class SmtpEmailService implements IEmailService {
   private transporter: Transporter | null = null;
 
   constructor() {
-    if (env.SMTP_HOST) {
+    if (env.SMTP_HOST || env.SMTP_USER) {
       const cleanPass = env.SMTP_PASS
         ? env.SMTP_PASS.replace(/["'\s]/g, "")
         : undefined;
 
       const isGmail =
-        env.SMTP_HOST.includes("gmail") ||
+        (env.SMTP_HOST && env.SMTP_HOST.includes("gmail")) ||
         (env.SMTP_USER && env.SMTP_USER.includes("gmail"));
 
-      const transportConfig = isGmail
+      const transportConfig: any = isGmail
         ? {
-            host: "smtp.gmail.com",
-            port: 465,
-            secure: true,
-            family: 4,
+            service: "gmail",
             auth: env.SMTP_USER
               ? {
                   user: env.SMTP_USER,
                   pass: cleanPass,
                 }
               : undefined,
-            connectionTimeout: 15000,
-            greetingTimeout: 15000,
-            socketTimeout: 15000,
+            lookup: customLookup,
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 10000,
             tls: {
               rejectUnauthorized: false,
             },
@@ -53,10 +61,10 @@ export class SmtpEmailService implements IEmailService {
             host: env.SMTP_HOST,
             port: env.SMTP_PORT,
             secure: env.SMTP_SECURE || env.SMTP_PORT === 465,
-            family: 4,
-            connectionTimeout: 15000,
-            greetingTimeout: 15000,
-            socketTimeout: 15000,
+            lookup: customLookup,
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 10000,
             auth: env.SMTP_USER
               ? {
                   user: env.SMTP_USER,
@@ -74,10 +82,16 @@ export class SmtpEmailService implements IEmailService {
 
   async sendVerificationOtp(to: string, name: string, otp: string): Promise<void> {
     if (this.transporter) {
-      const fromAddress =
-        env.SMTP_FROM && env.SMTP_FROM.includes("@")
-          ? env.SMTP_FROM
-          : `"Documan Security" <${env.SMTP_USER || "no-reply@documan.app"}>`;
+      const senderUser = env.SMTP_USER || "documanapi@gmail.com";
+      let fromAddress = `"Documan Security" <${senderUser}>`;
+      if (env.SMTP_FROM && env.SMTP_FROM.trim()) {
+        const cleanFrom = env.SMTP_FROM.trim().replace(/^["']|["']$/g, "");
+        if (cleanFrom.includes("@")) {
+          fromAddress = cleanFrom.includes("<")
+            ? cleanFrom
+            : `"Documan Security" <${cleanFrom}>`;
+        }
+      }
 
       try {
         await Promise.race([
@@ -102,8 +116,8 @@ export class SmtpEmailService implements IEmailService {
           }),
           new Promise((_, reject) =>
             setTimeout(
-              () => reject(new Error("SMTP sendMail timed out after 15000ms")),
-              15000,
+              () => reject(new Error("SMTP sendMail timed out after 10000ms")),
+              10000,
             ),
           ),
         ]);
@@ -131,7 +145,7 @@ export function getEmailService(): IEmailService {
   if (customEmailService) {
     return customEmailService;
   }
-  if (env.SMTP_HOST || env.NODE_ENV === "production") {
+  if (env.SMTP_HOST || env.SMTP_USER || env.NODE_ENV === "production") {
     return new SmtpEmailService();
   }
   return new ConsoleEmailService();
