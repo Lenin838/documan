@@ -1,5 +1,6 @@
 import nodemailer, { type Transporter } from "nodemailer";
 import { env } from "../config/env.js";
+import { logger } from "../config/logger.js";
 
 export interface IEmailService {
   sendVerificationOtp(to: string, name: string, otp: string): Promise<void>;
@@ -8,10 +9,9 @@ export interface IEmailService {
 export class ConsoleEmailService implements IEmailService {
   async sendVerificationOtp(to: string, name: string, otp: string): Promise<void> {
     if (env.NODE_ENV === "development" || env.NODE_ENV === "test") {
+      logger.info({ to, name, otp }, "[DEV OTP EMAIL] Local console dispatch");
       console.log(`\n=================================================================`);
       console.log(`[DEV OTP EMAIL] To: ${to} | Name: ${name} | Verification Code: ${otp}`);
-      console.log(`[NOTE] SMTP_HOST is not set in .env. Email was NOT sent over network.`);
-      console.log(`[NOTE] To send real inbox emails, configure SMTP_HOST, SMTP_USER, etc.`);
       console.log(`=================================================================\n`);
     }
   }
@@ -85,15 +85,19 @@ export class SmtpEmailService implements IEmailService {
             ),
           ),
         ]);
+        logger.info({ to, otp }, "[SMTP OTP EMAIL DISPATCHED] Email sent successfully over network");
         console.log(`[SMTP OTP EMAIL DISPATCHED] To: ${to}`);
       } catch (err: unknown) {
         const errorMsg = err instanceof Error ? err.message : String(err);
+        logger.error({ to, otp, error: errorMsg }, "[SMTP ERROR - DISPATCH FAILED] SMTP email dispatch error");
         console.error(`[SMTP ERROR - DISPATCH FAILED] ${errorMsg}`);
         console.log(`[PROD OTP FALLBACK LOG] To: ${to} | Verification Code: ${otp}`);
       }
     } else if (env.NODE_ENV === "production") {
+      logger.info({ to, otp }, "[PROD OTP EMAIL DISPATCHED] Unconfigured SMTP log fallback");
       console.log(`[PROD OTP EMAIL DISPATCHED] To: ${to} | Code: ${otp}`);
     } else {
+      logger.info({ to, otp }, "[SMTP OTP EMAIL] Local dev fallback");
       console.log(`[SMTP OTP EMAIL] To: ${to} | Code: ${otp}`);
     }
   }

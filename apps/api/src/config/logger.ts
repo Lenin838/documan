@@ -3,7 +3,7 @@ import pino from 'pino';
 import { env } from './env.js';
 
 const loggerOptions = {
-  level: env.LOG_LEVEL,
+  level: env.LOG_LEVEL || 'info',
 };
 
 if (env.NODE_ENV === 'development') {
