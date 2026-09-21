@@ -40,14 +40,12 @@ export class SmtpEmailService implements IEmailService {
         (env.SMTP_HOST && env.SMTP_HOST.includes("gmail")) ||
         (env.SMTP_USER && env.SMTP_USER.includes("gmail"));
 
-      const host = env.SMTP_HOST || "smtp.gmail.com";
-      const port = env.SMTP_PORT || (isGmail ? 465 : 587);
-      const secure = env.SMTP_SECURE !== undefined ? env.SMTP_SECURE : (port === 465 || isGmail);
+      // For Gmail, force Port 465 (SSL) and secure: true to prevent Render Port 587 STARTTLS socket timeouts
+      const host = isGmail ? "smtp.gmail.com" : (env.SMTP_HOST || "smtp.gmail.com");
+      const port = isGmail ? 465 : (env.SMTP_PORT || 465);
+      const secure = isGmail ? true : (env.SMTP_SECURE !== undefined ? env.SMTP_SECURE : port === 465);
 
       const transportConfig: any = {
-        pool: true,
-        maxConnections: 3,
-        maxMessages: 100,
         host,
         port,
         secure,
