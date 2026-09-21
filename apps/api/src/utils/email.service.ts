@@ -52,10 +52,15 @@ export class SmtpEmailService implements IEmailService {
 
   async sendVerificationOtp(to: string, name: string, otp: string): Promise<void> {
     if (this.transporter) {
+      const fromAddress =
+        env.SMTP_FROM && env.SMTP_FROM.includes("@")
+          ? env.SMTP_FROM
+          : `"Documan Security" <${env.SMTP_USER || "no-reply@documan.app"}>`;
+
       try {
         await Promise.race([
           this.transporter.sendMail({
-            from: env.SMTP_FROM,
+            from: fromAddress,
             to,
             subject: `${otp} is your Documan Verification Code`,
             text: `Hello ${name},\n\nYour Documan email verification code is: ${otp}\n\nThis code will expire in 10 minutes. If you did not request this code, please ignore this email.\n\nBest regards,\nDocuman Security Team`,
