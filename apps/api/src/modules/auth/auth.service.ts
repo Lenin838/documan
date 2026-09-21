@@ -73,11 +73,14 @@ export async function registerUser(input: RegisterInput) {
     );
   });
 
+  const isDevMode = env.NODE_ENV === "development" || env.NODE_ENV === "test";
+
   return {
     message:
       "Registration successful. Please verify your email with the 6-digit code sent to your inbox.",
     email: normalizedEmail,
     resendCooldown: 60,
+    ...(isDevMode ? { devOtpCode: otp } : {}),
   };
 }
 
@@ -237,9 +240,12 @@ export async function resendSignupOtp(input: ResendOtpInput) {
     );
   });
 
+  const isDevMode = env.NODE_ENV === "development" || env.NODE_ENV === "test";
+
   return {
     message: "A new verification code has been dispatched to your email address.",
     resendCooldown: 60,
+    ...(isDevMode ? { devOtpCode: newOtp } : {}),
   };
 }
 
