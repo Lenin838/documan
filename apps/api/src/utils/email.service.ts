@@ -1,27 +1,9 @@
-import dns from "node:dns";
 import nodemailer, { type Transporter } from "nodemailer";
 import { env } from "../config/env.js";
 import { logger } from "../config/logger.js";
 
 export interface IEmailService {
   sendVerificationOtp(to: string, name: string, otp: string): Promise<void>;
-}
-
-async function resolveHostIp(hostname: string): Promise<string> {
-  if (hostname.includes("gmail")) {
-    try {
-      const ips = await dns.promises.resolve4("smtp.gmail.com");
-      if (ips && ips.length > 0 && typeof ips[0] === "string") {
-        return ips[0];
-      }
-    } catch (err) {
-      logger.warn(
-        { error: err instanceof Error ? err.message : String(err) },
-        "[DNS RESOLVE WARNING] c-ares DNS fallback",
-      );
-    }
-  }
-  return hostname;
 }
 
 export class ConsoleEmailService implements IEmailService {
@@ -36,73 +18,55 @@ export class ConsoleEmailService implements IEmailService {
 }
 
 export class SmtpEmailService implements IEmailService {
-  private transporterPromise: Promise<Transporter | null>;
+  private transporter: Transporter | null = null;
 
   constructor() {
-    this.transporterPromise = this.initTransporter();
-  }
+    if (env.SMTP_HOST || env.SMTP_USER) {
+      const cleanPass = env.SMTP_PASS
+        ? env.SMTP_PASS.replace(/["'\s]/g, "")
+        : undefined;
 
-  private async initTransporter(): Promise<Transporter | null> {
-    if (!env.SMTP_HOST && !env.SMTP_USER) {
-      return null;
-    }
+      const isGmail =
+        (env.SMTP_HOST && env.SMTP_HOST.includes("gmail")) ||
+        (env.SMTP_USER && env.SMTP_USER.includes("gmail"));
 
-    const cleanPass = env.SMTP_PASS
-      ? env.SMTP_PASS.replace(/["'\s]/g, "")
-      : undefined;
-
-    const isGmail =
-      (env.SMTP_HOST && env.SMTP_HOST.includes("gmail")) ||
-      (env.SMTP_USER && env.SMTP_USER.includes("gmail"));
-
-    const rawHost = isGmail ? "smtp.gmail.com" : (env.SMTP_HOST || "smtp.gmail.com");
-    const port = isGmail ? 465 : (env.SMTP_PORT || 465);
-    const secure = isGmail ? true : (env.SMTP_SECURE !== undefined ? env.SMTP_SECURE : port === 465);
-
-    const targetHost = isGmail ? await resolveHostIp(rawHost) : rawHost;
-
-    const transportConfig: any = {
-      host: targetHost,
-      port,
-      secure,
-      auth: env.SMTP_USER
+      const transportConfig: any = isGmail
         ? {
-            user: env.SMTP_USER,
-            pass: cleanPass,
+            service: "gmail",
+            auth: env.SMTP_USER
+              ? {
+                  user: env.SMTP_USER,
+                  pass: cleanPass,
+                }
+              : undefined,
+            connectionTimeout: 20000,
+            greetingTimeout: 20000,
+            socketTimeout: 20000,
           }
-        : undefined,
-      tls: {
-        servername: isGmail ? "smtp.gmail.com" : rawHost,
-        rejectUnauthorized: false,
-        minVersion: "TLSv1.2",
-      },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 10000,
-    };
+        : {
+            host: env.SMTP_HOST || "smtp.gmail.com",
+            port: env.SMTP_PORT || 465,
+            secure: env.SMTP_SECURE !== undefined ? env.SMTP_SECURE : true,
+            auth: env.SMTP_USER
+              ? {
+                  user: env.SMTP_USER,
+                  pass: cleanPass,
+                }
+              : undefined,
+            connectionTimeout: 20000,
+            greetingTimeout: 20000,
+            socketTimeout: 20000,
+            tls: {
+              rejectUnauthorized: false,
+            },
+          };
 
-    const transporter = nodemailer.createTransport(transportConfig);
-
-    if (env.NODE_ENV !== "test") {
-      try {
-        await transporter.verify();
-        logger.info({ targetHost }, "[SMTP CONNECTED] Direct IPv4 socket verified");
-        console.log(`[SMTP CONNECTED] Verified connection to ${targetHost}`);
-      } catch (err) {
-        logger.warn(
-          { error: err instanceof Error ? err.message : String(err) },
-          "[SMTP VERIFY WARNING] Pre-warm connection failed",
-        );
-      }
+      this.transporter = nodemailer.createTransport(transportConfig);
     }
-
-    return transporter;
   }
 
   async sendVerificationOtp(to: string, name: string, otp: string): Promise<void> {
-    const transporter = await this.transporterPromise;
-
-    if (transporter) {
+    if (this.transporter) {
       const senderUser = env.SMTP_USER || "documanapi@gmail.com";
       let fromAddress = `"Documan Security" <${senderUser}>`;
       if (env.SMTP_FROM && env.SMTP_FROM.trim()) {
@@ -116,7 +80,7 @@ export class SmtpEmailService implements IEmailService {
 
       try {
         await Promise.race([
-          transporter.sendMail({
+          this.transporter.sendMail({
             from: fromAddress,
             to,
             subject: `${otp} is your Documan Verification Code`,
@@ -137,8 +101,8 @@ export class SmtpEmailService implements IEmailService {
           }),
           new Promise((_, reject) =>
             setTimeout(
-              () => reject(new Error("SMTP sendMail timed out after 10000ms")),
-              10000,
+              () => reject(new Error("SMTP sendMail timed out after 25000ms")),
+              25000,
             ),
           ),
         ]);
