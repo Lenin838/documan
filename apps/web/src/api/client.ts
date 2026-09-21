@@ -6,8 +6,11 @@ import axios, {
 import { useAuthStore } from '../features/auth/auth.store';
 import type { RefreshResponse } from '../features/auth/auth.types';
 
+const BASE_URL =
+  import.meta.env.VITE_API_URL || 'https://documan-api.onrender.com/api/v1';
+
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: BASE_URL,
   withCredentials: true,
   timeout: 30000,
   headers: {
@@ -28,7 +31,7 @@ async function refreshAccessToken(): Promise<string | null> {
 
   refreshPromise = axios
     .post<RefreshResponse>(
-      `${import.meta.env.VITE_API_URL}/auth/refresh`,
+      `${BASE_URL}/auth/refresh`,
       {},
       {
         withCredentials: true,
