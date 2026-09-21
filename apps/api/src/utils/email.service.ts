@@ -1,5 +1,5 @@
 import dns from "node:dns";
-import nodemailer, { type Transporter, type SendMailOptions } from "nodemailer";
+import nodemailer, { type Transporter } from "nodemailer";
 import { env } from "../config/env.js";
 import { logger } from "../config/logger.js";
 
@@ -7,14 +7,22 @@ export interface IEmailService {
   sendVerificationOtp(to: string, name: string, otp: string): Promise<void>;
 }
 
-const customLookup = (
-  hostname: string,
-  options: any,
-  callback: (err: Error | null, address: string | any[], family?: number) => void,
-) => {
-  const opts = typeof options === "object" && options !== null ? options : {};
-  return dns.lookup(hostname, { ...opts, family: 4, all: false }, callback);
-};
+async function resolveHostIp(hostname: string): Promise<string> {
+  if (hostname.includes("gmail")) {
+    try {
+      const ips = await dns.promises.resolve4("smtp.gmail.com");
+      if (ips && ips.length > 0 && typeof ips[0] === "string") {
+        return ips[0];
+      }
+    } catch (err) {
+      logger.warn(
+        { error: err instanceof Error ? err.message : String(err) },
+        "[DNS RESOLVE WARNING] c-ares DNS fallback",
+      );
+    }
+  }
+  return hostname;
+}
 
 export class ConsoleEmailService implements IEmailService {
   async sendVerificationOtp(to: string, name: string, otp: string): Promise<void> {
@@ -28,91 +36,73 @@ export class ConsoleEmailService implements IEmailService {
 }
 
 export class SmtpEmailService implements IEmailService {
-  private transporter: Transporter | null = null;
+  private transporterPromise: Promise<Transporter | null>;
 
   constructor() {
-    if (env.SMTP_HOST || env.SMTP_USER) {
-      const cleanPass = env.SMTP_PASS
-        ? env.SMTP_PASS.replace(/["'\s]/g, "")
-        : undefined;
-
-      const isGmail =
-        (env.SMTP_HOST && env.SMTP_HOST.includes("gmail")) ||
-        (env.SMTP_USER && env.SMTP_USER.includes("gmail"));
-
-      const host = isGmail ? "smtp.gmail.com" : (env.SMTP_HOST || "smtp.gmail.com");
-      const port = isGmail ? 465 : (env.SMTP_PORT || 465);
-      const secure = isGmail ? true : (env.SMTP_SECURE !== undefined ? env.SMTP_SECURE : port === 465);
-
-      const transportConfig: any = {
-        pool: true,
-        maxConnections: 3,
-        maxMessages: 100,
-        host,
-        port,
-        secure,
-        family: 4,
-        lookup: customLookup,
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 10000,
-        auth: env.SMTP_USER
-          ? {
-              user: env.SMTP_USER,
-              pass: cleanPass,
-            }
-          : undefined,
-        tls: {
-          rejectUnauthorized: false,
-          minVersion: "TLSv1.2",
-        },
-      };
-
-      this.transporter = nodemailer.createTransport(transportConfig);
-
-      if (env.NODE_ENV !== "test") {
-        this.transporter.verify().then(() => {
-          logger.info("[SMTP CONNECTED] Transporter verified & pooled connection ready");
-          console.log("[SMTP CONNECTED] Transporter verified & pooled connection ready");
-        }).catch((err) => {
-          logger.warn({ error: err instanceof Error ? err.message : String(err) }, "[SMTP VERIFY WARNING] Pre-warm connection failed");
-        });
-      }
-    }
+    this.transporterPromise = this.initTransporter();
   }
 
-  private async dispatchWithRetry(mailOptions: SendMailOptions, maxRetries = 3): Promise<void> {
-    if (!this.transporter) return;
-    let lastError: Error | null = null;
+  private async initTransporter(): Promise<Transporter | null> {
+    if (!env.SMTP_HOST && !env.SMTP_USER) {
+      return null;
+    }
 
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const cleanPass = env.SMTP_PASS
+      ? env.SMTP_PASS.replace(/["'\s]/g, "")
+      : undefined;
+
+    const isGmail =
+      (env.SMTP_HOST && env.SMTP_HOST.includes("gmail")) ||
+      (env.SMTP_USER && env.SMTP_USER.includes("gmail"));
+
+    const rawHost = isGmail ? "smtp.gmail.com" : (env.SMTP_HOST || "smtp.gmail.com");
+    const port = isGmail ? 465 : (env.SMTP_PORT || 465);
+    const secure = isGmail ? true : (env.SMTP_SECURE !== undefined ? env.SMTP_SECURE : port === 465);
+
+    const targetHost = isGmail ? await resolveHostIp(rawHost) : rawHost;
+
+    const transportConfig: any = {
+      host: targetHost,
+      port,
+      secure,
+      auth: env.SMTP_USER
+        ? {
+            user: env.SMTP_USER,
+            pass: cleanPass,
+          }
+        : undefined,
+      tls: {
+        servername: isGmail ? "smtp.gmail.com" : rawHost,
+        rejectUnauthorized: false,
+        minVersion: "TLSv1.2",
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
+    };
+
+    const transporter = nodemailer.createTransport(transportConfig);
+
+    if (env.NODE_ENV !== "test") {
       try {
-        await Promise.race([
-          this.transporter.sendMail(mailOptions),
-          new Promise((_, reject) =>
-            setTimeout(
-              () => reject(new Error(`SMTP sendMail timed out on attempt ${attempt} of ${maxRetries}`)),
-              8000,
-            ),
-          ),
-        ]);
-        return;
-      } catch (err: unknown) {
-        lastError = err instanceof Error ? err : new Error(String(err));
+        await transporter.verify();
+        logger.info({ targetHost }, "[SMTP CONNECTED] Direct IPv4 socket verified");
+        console.log(`[SMTP CONNECTED] Verified connection to ${targetHost}`);
+      } catch (err) {
         logger.warn(
-          { attempt, maxRetries, error: lastError.message },
-          `[SMTP RETRY WARNING] Attempt ${attempt} failed. Retrying...`,
+          { error: err instanceof Error ? err.message : String(err) },
+          "[SMTP VERIFY WARNING] Pre-warm connection failed",
         );
-        if (attempt < maxRetries) {
-          await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
-        }
       }
     }
-    throw lastError || new Error("SMTP dispatch failed after retries");
+
+    return transporter;
   }
 
   async sendVerificationOtp(to: string, name: string, otp: string): Promise<void> {
-    if (this.transporter) {
+    const transporter = await this.transporterPromise;
+
+    if (transporter) {
       const senderUser = env.SMTP_USER || "documanapi@gmail.com";
       let fromAddress = `"Documan Security" <${senderUser}>`;
       if (env.SMTP_FROM && env.SMTP_FROM.trim()) {
@@ -125,25 +115,33 @@ export class SmtpEmailService implements IEmailService {
       }
 
       try {
-        await this.dispatchWithRetry({
-          from: fromAddress,
-          to,
-          subject: `${otp} is your Documan Verification Code`,
-          text: `Hello ${name},\n\nYour Documan email verification code is: ${otp}\n\nThis code will expire in 10 minutes. If you did not request this code, please ignore this email.\n\nBest regards,\nDocuman Security Team`,
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 8px; background-color: #ffffff;">
-              <h2 style="color: #1e293b; margin-top: 0;">Email Verification Code</h2>
-              <p style="color: #475569; line-height: 1.5;">Hello <strong>${name}</strong>,</p>
-              <p style="color: #475569; line-height: 1.5;">Thank you for registering with Documan. Please enter the following 6-digit verification code to complete your signup:</p>
-              <div style="background-color: #f1f5f9; border-radius: 6px; padding: 16px; text-align: center; margin: 24px 0;">
-                <span style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #2563eb;">${otp}</span>
+        await Promise.race([
+          transporter.sendMail({
+            from: fromAddress,
+            to,
+            subject: `${otp} is your Documan Verification Code`,
+            text: `Hello ${name},\n\nYour Documan email verification code is: ${otp}\n\nThis code will expire in 10 minutes. If you did not request this code, please ignore this email.\n\nBest regards,\nDocuman Security Team`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 8px; background-color: #ffffff;">
+                <h2 style="color: #1e293b; margin-top: 0;">Email Verification Code</h2>
+                <p style="color: #475569; line-height: 1.5;">Hello <strong>${name}</strong>,</p>
+                <p style="color: #475569; line-height: 1.5;">Thank you for registering with Documan. Please enter the following 6-digit verification code to complete your signup:</p>
+                <div style="background-color: #f1f5f9; border-radius: 6px; padding: 16px; text-align: center; margin: 24px 0;">
+                  <span style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #2563eb;">${otp}</span>
+                </div>
+                <p style="color: #64748b; font-size: 14px;">This code is valid for 10 minutes. If you did not request this email, please ignore it.</p>
+                <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+                <p style="color: #94a3b8; font-size: 12px; margin-bottom: 0;">Documan Enterprise Document Management & Governance</p>
               </div>
-              <p style="color: #64748b; font-size: 14px;">This code is valid for 10 minutes. If you did not request this email, please ignore it.</p>
-              <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-              <p style="color: #94a3b8; font-size: 12px; margin-bottom: 0;">Documan Enterprise Document Management & Governance</p>
-            </div>
-          `,
-        });
+            `,
+          }),
+          new Promise((_, reject) =>
+            setTimeout(
+              () => reject(new Error("SMTP sendMail timed out after 10000ms")),
+              10000,
+            ),
+          ),
+        ]);
 
         logger.info({ to, otp }, "[SMTP OTP EMAIL DISPATCHED] Email sent successfully over network");
         console.log(`[SMTP OTP EMAIL DISPATCHED] To: ${to}`);
