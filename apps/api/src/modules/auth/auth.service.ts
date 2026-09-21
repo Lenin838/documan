@@ -26,61 +26,47 @@ export async function registerUser(input: RegisterInput) {
   const existingUser = await User.findOne({ email: normalizedEmail });
 
   if (existingUser) {
-    if (existingUser.isEmailVerified) {
-      throw new AppError(
-        "User with this email already exists",
-        409,
-        "USER_ALREADY_EXISTS",
-      );
-    }
-
-    const passwordHash = await bcrypt.hash(input.password, 12);
-    existingUser.name = input.name;
-    existingUser.passwordHash = passwordHash;
-    await existingUser.save();
-  } else {
-    await createUser({
-      name: input.name,
-      email: input.email,
-      password: input.password,
-      isEmailVerified: false,
-    });
+    throw new AppError(
+      "User with this email already exists",
+      409,
+      "USER_ALREADY_EXISTS",
+    );
   }
 
-  const otp = generateOtp();
-  const tokenHash = hashOtp(otp);
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-  await SignupOtp.findOneAndUpdate(
-    { email: normalizedEmail },
-    {
-      $set: {
-        tokenHash,
-        expiresAt,
-        failedAttempts: 0,
-        attemptsExceeded: false,
-        lastSentAt: new Date(),
-        resendCount: 0,
-      },
-    },
-    { upsert: true, new: true },
-  );
-
-  emailService.sendVerificationOtp(normalizedEmail, input.name, otp).catch((err) => {
-    console.error(
-      `[BG EMAIL DISPATCH ERROR] Failed to send registration OTP to ${normalizedEmail}:`,
-      err,
-    );
+  const user = await createUser({
+    name: input.name,
+    email: input.email,
+    password: input.password,
+    isEmailVerified: true,
   });
 
-  const isDevMode = env.NODE_ENV === "development" || env.NODE_ENV === "test";
+  const accessToken = generateAccessToken(user.id);
+  const refreshToken = generateRefreshToken();
+  const refreshTokenHash = hashRefreshToken(refreshToken);
+  const familyId = randomUUID();
+
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + env.REFRESH_TOKEN_EXPIRES_IN_DAYS);
+
+  await RefreshToken.create({
+    userId: user.id,
+    tokenHash: refreshTokenHash,
+    familyId,
+    expiresAt,
+    revokedAt: null,
+  });
 
   return {
-    message:
-      "Registration successful. Please verify your email with the 6-digit code sent to your inbox.",
-    email: normalizedEmail,
-    resendCooldown: 60,
-    ...(isDevMode ? { devOtpCode: otp } : {}),
+    accessToken,
+    refreshToken,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      isActive: user.isActive,
+      isEmailVerified: true,
+    },
   };
 }
 
@@ -263,11 +249,8 @@ export async function loginUser(input: LoginInput) {
   }
 
   if (!user.isEmailVerified) {
-    throw new AppError(
-      "Please verify your email address before logging in",
-      403,
-      "EMAIL_NOT_VERIFIED",
-    );
+    user.isEmailVerified = true;
+    await user.save();
   }
 
   const passwordMatches = await bcrypt.compare(

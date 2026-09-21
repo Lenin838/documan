@@ -53,6 +53,13 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     try {
       const response = await registerRequest(userData);
+
+      set({
+        accessToken: response.data.accessToken,
+        user: response.data.user,
+        isAuthenticated: true,
+      });
+
       return response.data;
     } finally {
       set({

@@ -18,7 +18,22 @@ export const registerController: RequestHandler = async (req, res, next) => {
     req.log.info({ email: req.body?.email }, "Incoming registration request");
     const result = await registerUser(req.body);
 
-    return sendSuccess(res, result, 201);
+    res.cookie("documan_refresh_token", result.refreshToken, {
+      httpOnly: true,
+      secure: env.NODE_ENV === "production",
+      sameSite: "none",
+      maxAge: env.REFRESH_TOKEN_EXPIRES_IN_DAYS * 24 * 60 * 60 * 1000,
+      path: "/api/v1/auth",
+    });
+
+    return sendSuccess(
+      res,
+      {
+        accessToken: result.accessToken,
+        user: result.user,
+      },
+      201,
+    );
   } catch (error) {
     return next(error);
   }

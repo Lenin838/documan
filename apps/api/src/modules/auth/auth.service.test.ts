@@ -279,21 +279,28 @@ describe("auth service", () => {
       });
     });
 
-    it("should reject an unverified email user", async () => {
+    it("should auto-verify an unverified email user during login", async () => {
+      const mockSave = vi.fn().mockResolvedValue(true);
+      const mockPasswordHash = await bcrypt.hash("password123", 4);
       mockUser.findOne.mockResolvedValue({
+        _id: "user-123",
+        id: "user-123",
+        name: "Test User",
+        email: "unverified@example.com",
+        role: "user",
         isActive: true,
         isEmailVerified: false,
+        passwordHash: mockPasswordHash,
+        save: mockSave,
       });
 
-      await expect(
-        loginUser({
-          email: "unverified@example.com",
-          password: "password123",
-        }),
-      ).rejects.toMatchObject({
-        statusCode: 403,
-        code: "EMAIL_NOT_VERIFIED",
+      const result = await loginUser({
+        email: "unverified@example.com",
+        password: "password123",
       });
+
+      expect(mockSave).toHaveBeenCalled();
+      expect(result.user.isEmailVerified).toBe(true);
     });
 
     it("should reject an incorrect password", async () => {

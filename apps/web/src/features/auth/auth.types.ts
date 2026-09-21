@@ -40,15 +40,7 @@ export interface RegisterRequest {
   password: string;
 }
 
-export interface RegisterResponse {
-  success: boolean;
-  data: {
-    message: string;
-    email: string;
-    resendCooldown: number;
-    devOtpCode?: string;
-  };
-}
+export type RegisterResponse = LoginResponse;
 
 export interface VerifyOtpRequest {
   email: string;
