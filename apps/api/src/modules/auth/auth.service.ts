@@ -66,15 +66,12 @@ export async function registerUser(input: RegisterInput) {
     { upsert: true, new: true },
   );
 
-  try {
-    await emailService.sendVerificationOtp(normalizedEmail, input.name, otp);
-  } catch (_error) {
-    throw new AppError(
-      "Failed to dispatch verification email. Please try again.",
-      500,
-      "EMAIL_DELIVERY_FAILED",
+  emailService.sendVerificationOtp(normalizedEmail, input.name, otp).catch((err) => {
+    console.error(
+      `[BG EMAIL DISPATCH ERROR] Failed to send registration OTP to ${normalizedEmail}:`,
+      err,
     );
-  }
+  });
 
   return {
     message:
@@ -233,15 +230,12 @@ export async function resendSignupOtp(input: ResendOtpInput) {
     { upsert: true, new: true },
   );
 
-  try {
-    await emailService.sendVerificationOtp(normalizedEmail, user.name, newOtp);
-  } catch (_error) {
-    throw new AppError(
-      "Failed to dispatch verification email. Please try again.",
-      500,
-      "EMAIL_DELIVERY_FAILED",
+  emailService.sendVerificationOtp(normalizedEmail, user.name, newOtp).catch((err) => {
+    console.error(
+      `[BG EMAIL DISPATCH ERROR] Failed to send resend OTP to ${normalizedEmail}:`,
+      err,
     );
-  }
+  });
 
   return {
     message: "A new verification code has been dispatched to your email address.",
